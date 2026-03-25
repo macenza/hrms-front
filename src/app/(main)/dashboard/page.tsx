@@ -25,9 +25,9 @@ export default function DashboardPage() {
                     {/* Period selector */}
                     <button
                         className={`
-              flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium
-              transition-colors duration-200
-              ${isDark
+                flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium
+                transition-colors duration-200
+                ${isDark
                                 ? "bg-gray-800 text-gray-300 border border-gray-700 hover:bg-gray-700"
                                 : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
                             }
