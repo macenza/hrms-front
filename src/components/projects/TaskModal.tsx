@@ -1,135 +1,186 @@
 'use client';
 
-import React, { useState } from 'react';
-import { X, Calendar, Flag, Tag } from 'lucide-react';
-import clsx from 'clsx';
+import React, { useState, useEffect } from 'react';
+import { Calendar, Flag, Tag as TagIcon } from 'lucide-react';
+import { cn } from '@/utils/cn';
+
+// UI Components
+import { Modal } from '@/components/ui/Modal';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+
+// Data Contract for Tasks
+export interface TaskFormData {
+    title: string;
+    description: string;
+    priority: 'Low' | 'Medium' | 'High' | 'Critical';
+    tag: string;
+    dueDate: string;
+}
 
 interface TaskModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onSubmit: (task: any) => void;
-    task: any | null;
+    onSubmit: (task: TaskFormData) => void;
+    task: any | null; // Data of the task being edited
 }
 
-export default function TaskModal({ isOpen, onClose, onSubmit, task }: TaskModalProps) {
-    const [title, setTitle] = useState(task ? task.title : '');
-    const [description, setDescription] = useState(task ? task.description : '');
-    const [priority, setPriority] = useState(task ? task.priority : 'Medium');
-    const [tag, setTag] = useState(task ? task.tag : 'General');
-    const [date, setDate] = useState(task ? task.date : '');
+const initialFormState: TaskFormData = {
+    title: '',
+    description: '',
+    priority: 'Medium',
+    tag: 'General',
+    dueDate: '',
+};
 
-    if (!isOpen) return null;
+export default function TaskModal({ isOpen, onClose, onSubmit, task }: TaskModalProps) {
+    const [formData, setFormData] = useState<TaskFormData>(initialFormState);
+
+    // Sync form state with the task prop when it changes (for editing)
+    useEffect(() => {
+        if (task) {
+            setFormData({
+                title: task.title || '',
+                description: task.description || '',
+                priority: task.priority || 'Medium',
+                tag: task.tag || 'General',
+                dueDate: task.dueDate || '',
+            });
+        } else {
+            setFormData(initialFormState);
+        }
+    }, [task, isOpen]);
+
+    const handleChange = (
+        e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+    ) => {
+        const { name, value } = e.target;
+        setFormData((prev) => ({ ...prev, [name]: value }));
+    };
+
+    const handleClose = () => {
+        setFormData(initialFormState);
+        onClose();
+    };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        onSubmit({ title, description, priority, tag, date: date || new Date().toLocaleDateString() });
-        setTitle('');
-        setDescription('');
+        onSubmit(formData);
+        handleClose();
     };
 
     return (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-gray-900/40 backdrop-blur-sm transition-opacity" onClick={onClose} />
-            
-            <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200">
-                <div className="flex justify-between items-center p-6 border-b border-gray-100">
-                    <h2 className="text-xl font-bold text-gray-900">{task ? 'Edit Task' : 'Create New Task'}</h2>
-                    <button onClick={onClose} className="p-2 text-gray-400 hover:bg-gray-100 rounded-full transition-colors">
-                        <X size={20} />
-                    </button>
+        <Modal
+            isOpen={isOpen}
+            onClose={handleClose}
+            title={task ? 'Edit Task' : 'Create New Task'}
+            className="max-w-lg"
+        >
+            <form onSubmit={handleSubmit} className="space-y-5">
+
+                {/* Task Title */}
+                <div className="space-y-1.5">
+                    <label className="text-sm font-bold text-gray-700">Task Title</label>
+                    <Input
+                        name="title"
+                        value={formData.title}
+                        onChange={handleChange}
+                        placeholder="e.g. Design Homepage"
+                        required
+                    />
                 </div>
 
-                <form onSubmit={handleSubmit} className="p-6 space-y-5">
-                    <div className="space-y-2">
-                        <label className="text-sm font-bold text-gray-700">Task Title</label>
-                        <input
-                            type="text"
-                            value={title}
-                            onChange={(e) => setTitle(e.target.value)}
-                            className="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#4F7CF3]/20 focus:border-[#4F7CF3] font-medium text-gray-900 transition-all"
-                            placeholder="e.g. Design Homepage"
-                            required
-                        />
-                    </div>
+                {/* Description */}
+                <div className="space-y-1.5">
+                    <label className="text-sm font-bold text-gray-700">Description</label>
+                    <textarea
+                        name="description"
+                        value={formData.description}
+                        onChange={handleChange}
+                        className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 h-24 resize-none text-gray-700 transition-all text-sm"
+                        placeholder="Add detailed instructions..."
+                    />
+                </div>
 
-                    <div className="space-y-2">
-                        <label className="text-sm font-bold text-gray-700">Description</label>
-                        <textarea
-                            value={description}
-                            onChange={(e) => setDescription(e.target.value)}
-                            className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#4F7CF3]/20 focus:border-[#4F7CF3] h-24 resize-none text-gray-700 transition-all"
-                            placeholder="Add detailed instructions..."
-                        />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <label className="text-sm font-bold text-gray-700">Priority</label>
-                            <div className="relative">
-                                <Flag size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                                <select
-                                    value={priority}
-                                    onChange={(e) => setPriority(e.target.value)}
-                                    className="w-full py-2.5 pl-10 pr-4 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#4F7CF3]/20 focus:border-[#4F7CF3] appearance-none bg-white text-gray-700 font-medium cursor-pointer"
-                                >
-                                    <option>Low</option>
-                                    <option>Medium</option>
-                                    <option>High</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div className="space-y-2">
-                            <label className="text-sm font-bold text-gray-700">Due Date</label>
-                            <div className="relative">
-                                <Calendar size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                                <input
-                                    type="date"
-                                    value={date}
-                                    onChange={(e) => setDate(e.target.value)}
-                                    className="w-full py-2.5 pl-10 pr-4 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#4F7CF3]/20 focus:border-[#4F7CF3] text-gray-600 font-medium cursor-pointer"
-                                />
-                            </div>
+                {/* Priority & Due Date Row */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                        <label className="text-sm font-bold text-gray-700">Priority</label>
+                        <div className="relative">
+                            <Flag size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                            <select
+                                name="priority"
+                                value={formData.priority}
+                                onChange={handleChange}
+                                className="w-full h-10 pl-10 pr-4 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent text-sm bg-white font-medium cursor-pointer appearance-none"
+                            >
+                                <option value="Low">Low</option>
+                                <option value="Medium">Medium</option>
+                                <option value="High">High</option>
+                                <option value="Critical">Critical</option>
+                            </select>
                         </div>
                     </div>
 
-                    <div className="space-y-2 pb-2">
-                        <label className="text-sm font-bold text-gray-700">Task Tag</label>
-                        <div className="flex flex-wrap gap-2">
-                            {['General', 'Design', 'Development', 'Meeting'].map(t => (
-                                <button
-                                    type="button"
-                                    key={t}
-                                    onClick={() => setTag(t)}
-                                    className={clsx(
-                                        "px-4 py-2 rounded-lg text-xs font-bold transition-all border",
-                                        tag === t 
-                                            ? "bg-[#4F7CF3]/10 border-[#4F7CF3] text-[#4F7CF3] shadow-sm" 
-                                            : "bg-white border-gray-200 text-gray-500 hover:bg-gray-50 hover:text-gray-700"
-                                    )}
-                                >
-                                    {t}
-                                </button>
-                            ))}
+                    <div className="space-y-1.5">
+                        <label className="text-sm font-bold text-gray-700">Due Date</label>
+                        <div className="relative">
+                            <Calendar size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                            <Input
+                                type="date"
+                                name="dueDate"
+                                value={formData.dueDate}
+                                onChange={handleChange}
+                                className="pl-10"
+                                required
+                            />
                         </div>
                     </div>
+                </div>
 
-                    <div className="pt-4 border-t border-gray-100 flex gap-3">
-                        <button
-                            type="button"
-                            onClick={onClose}
-                            className="flex-1 py-3 bg-white border border-gray-200 text-gray-600 rounded-xl text-sm font-bold hover:bg-gray-50 transition-colors"
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            type="submit"
-                            className="flex-1 py-3 bg-[#4F7CF3] text-white rounded-xl text-sm font-bold shadow-sm hover:bg-[#3A62D7] transition-colors"
-                        >
-                            {task ? 'Save Changes' : 'Create Task'}
-                        </button>
+                {/* Task Tags (Selection Buttons) */}
+                <div className="space-y-2 pb-2">
+                    <label className="text-sm font-bold text-gray-700 flex items-center gap-2">
+                        <TagIcon size={16} className="text-gray-400" /> Task Tag
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                        {['General', 'Design', 'Development', 'Meeting', 'Research'].map(t => (
+                            <button
+                                type="button"
+                                key={t}
+                                onClick={() => setFormData(prev => ({ ...prev, tag: t }))}
+                                className={cn(
+                                    "px-4 py-2 rounded-lg text-xs font-bold transition-all border",
+                                    formData.tag === t
+                                        ? "bg-blue-50 border-blue-600 text-blue-600 shadow-sm"
+                                        : "bg-white border-gray-200 text-gray-500 hover:bg-gray-50"
+                                )}
+                            >
+                                {t}
+                            </button>
+                        ))}
                     </div>
-                </form>
-            </div>
-        </div>
+                </div>
+
+                {/* Footer Actions */}
+                <div className="pt-6 mt-6 border-t border-gray-100 flex gap-3">
+                    <Button
+                        variant="ghost"
+                        type="button"
+                        onClick={handleClose}
+                        className="flex-1"
+                    >
+                        Cancel
+                    </Button>
+                    <Button
+                        variant="primary"
+                        type="submit"
+                        className="flex-1 shadow-md shadow-blue-500/20"
+                    >
+                        {task ? 'Save Changes' : 'Create Task'}
+                    </Button>
+                </div>
+            </form>
+        </Modal>
     );
 }

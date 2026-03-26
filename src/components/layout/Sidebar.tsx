@@ -3,24 +3,12 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { cn } from '@/utils/cn';
 import {
-    LayoutDashboard,
-    Users,
-    CalendarCheck,
-    CalendarDays,
-    Briefcase,
-    DollarSign,
-    CreditCard,
-    Package,
-    Bell,
-    Settings,
-    LogOut,
-    Sun,
-    Moon
+    LayoutDashboard, Users, CalendarCheck, CalendarDays, Briefcase,
+    DollarSign, CreditCard, Package, Bell, Settings, LogOut, Sun, Moon, X
 } from 'lucide-react';
-import clsx from 'clsx';
 
-// Added 'href' to map to our Next.js route groups
 const menuItems = [
     { id: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { id: 'Employees', href: '/employees', icon: Users, label: 'Employees' },
@@ -34,76 +22,118 @@ const menuItems = [
     { id: 'Settings', href: '/settings', icon: Settings, label: 'Settings' },
 ];
 
-export default function Sidebar() {
-    // Automatically grab the current URL path
+interface SidebarProps {
+    isOpen: boolean;
+    onClose: () => void;
+}
+
+export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     const pathname = usePathname();
+
+    // In the future, replace this with: const { theme, setTheme } = useTheme(); from 'next-themes'
     const [isDarkMode, setIsDarkMode] = useState(false);
 
+    const handleLogout = () => {
+        // When auth is ready:
+        // await signOut({ callbackUrl: '/login' });
+        console.log("User triggered logout");
+    };
+
     return (
-        <div className="fixed left-0 top-0 h-full w-[250px] bg-[#F8F9FB] border-r border-gray-200 flex flex-col transition-all duration-300 z-20 hidden md:flex">
-            {/* Logo */}
-            <div className="h-16 flex items-center px-6 border-b border-gray-100">
-                <h1 className="text-2xl font-bold text-[#4F7CF3]">MACENZA</h1>
-            </div>
+        <>
+            {/* Mobile Backdrop Overlay */}
+            {isOpen && (
+                <div
+                    className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm z-40 md:hidden animate-in fade-in duration-200"
+                    onClick={onClose}
+                    aria-hidden="true"
+                />
+            )}
 
-            {/* Menu */}
-            <nav className="flex-1 py-6 px-4 space-y-1 overflow-y-auto">
-                {menuItems.map((item) => {
-                    const Icon = item.icon;
-                    
-                    // Determine if this link is active
-                    // We use exact match for dashboard, and startsWith for others so sub-pages (like /employees/profile) keep the parent tab highlighted
-                    const isActive = 
-                        item.href === '/dashboard' 
-                            ? pathname === '/dashboard'
-                            : pathname.startsWith(item.href);
+            {/* Sidebar Panel */}
+            <div className={cn(
+                "fixed left-0 top-0 h-full w-[250px] bg-gray-50 border-r border-gray-200 flex flex-col transition-transform duration-300 z-50",
+                // Mobile: Slide in/out based on state. Desktop: Always visible (translate-x-0) and push content (md:static or controlled by layout)
+                isOpen ? "translate-x-0" : "-translate-x-full",
+                "md:translate-x-0"
+            )}>
 
-                    return (
-                        <Link
-                            key={item.id}
-                            href={item.href}
-                            className={clsx(
-                                "w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200",
-                                isActive
-                                    ? "bg-[#4F7CF3] text-white shadow-lg shadow-blue-500/20"
-                                    : "text-[#6B7280] hover:bg-white hover:text-[#1F2937] hover:shadow-sm"
-                            )}
-                        >
-                            <Icon size={20} strokeWidth={2} />
-                            <span className="font-medium">{item.label}</span>
-                        </Link>
-                    );
-                })}
-            </nav>
-
-            {/* Bottom Actions */}
-            <div className="p-4 border-t border-gray-200">
-                <div className="bg-white rounded-xl p-1 flex items-center justify-between mb-4 border border-gray-200">
+                {/* Logo & Close Button */}
+                <div className="h-20 flex items-center justify-between px-6 border-b border-gray-200">
+                    <h1 className="text-2xl font-bold text-blue-600 tracking-tight">MACENZA</h1>
+                    {/* Mobile Close Button */}
                     <button
-                        className={clsx(
-                            "flex-1 flex items-center justify-center py-2 rounded-lg text-sm font-medium transition-all",
-                            !isDarkMode ? "bg-white shadow-sm text-gray-800" : "text-gray-400"
-                        )}
-                        onClick={() => setIsDarkMode(false)}
+                        onClick={onClose}
+                        className="md:hidden p-2 -mr-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 rounded-lg transition-colors"
                     >
-                        <Sun size={16} className="mr-2" /> Light
-                    </button>
-                    <button
-                        className={clsx(
-                            "flex-1 flex items-center justify-center py-2 rounded-lg text-sm font-medium transition-all",
-                            isDarkMode ? "bg-gray-800 text-white shadow-sm" : "text-gray-400"
-                        )}
-                        onClick={() => setIsDarkMode(true)}
-                    >
-                        <Moon size={16} className="mr-2" /> Dark
+                        <X size={20} />
                     </button>
                 </div>
 
-                <button className="w-full flex items-center space-x-3 px-4 py-3 text-[#EB5757] hover:bg-red-50 rounded-xl transition-colors">
-                    <LogOut size={20} />
-                    <span className="font-medium">Logout</span>
-                </button>
+                {/* Menu */}
+                <nav className="flex-1 py-6 px-4 space-y-1.5 overflow-y-auto custom-scrollbar">
+                    {menuItems.map((item) => {
+                        const Icon = item.icon;
+                        const isActive = item.href === '/dashboard'
+                            ? pathname === '/dashboard'
+                            : pathname.startsWith(item.href);
+
+                        return (
+                            <Link
+                                key={item.id}
+                                href={item.href}
+                                onClick={() => onClose()} // Auto-close sidebar on mobile when a link is clicked
+                                className={cn(
+                                    "w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 group outline-none focus-visible:ring-2 focus-visible:ring-blue-600",
+                                    isActive
+                                        ? "bg-blue-600 text-white shadow-md shadow-blue-500/20"
+                                        : "text-gray-500 hover:bg-white hover:text-gray-900 hover:shadow-sm"
+                                )}
+                            >
+                                <Icon size={20} strokeWidth={isActive ? 2.5 : 2} className={cn("transition-transform duration-200", !isActive && "group-hover:scale-110")} />
+                                <span className="font-semibold text-sm">{item.label}</span>
+                            </Link>
+                        );
+                    })}
+                </nav>
+
+                {/* Bottom Actions */}
+                <div className="p-4 border-t border-gray-200 bg-gray-50">
+
+                    {/* Theme Toggle */}
+                    <div className="bg-white rounded-xl p-1 flex items-center justify-between mb-4 border border-gray-200 shadow-sm">
+                        <button
+                            className={cn(
+                                "flex-1 flex items-center justify-center py-2 rounded-lg text-sm font-semibold transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600",
+                                !isDarkMode ? "bg-white shadow-sm text-gray-900" : "text-gray-400 hover:text-gray-600"
+                            )}
+                            onClick={() => setIsDarkMode(false)}
+                            aria-label="Enable Light Mode"
+                        >
+                            <Sun size={16} className="mr-2" strokeWidth={2.5} /> Light
+                        </button>
+                        <button
+                            className={cn(
+                                "flex-1 flex items-center justify-center py-2 rounded-lg text-sm font-semibold transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600",
+                                isDarkMode ? "bg-gray-800 text-white shadow-sm" : "text-gray-400 hover:text-gray-600"
+                            )}
+                            onClick={() => setIsDarkMode(true)}
+                            aria-label="Enable Dark Mode"
+                        >
+                            <Moon size={16} className="mr-2" strokeWidth={2.5} /> Dark
+                        </button>
+                    </div>
+
+                    {/* Logout */}
+                    <button
+                        onClick={handleLogout}
+                        className="w-full flex items-center space-x-3 px-4 py-3 text-red-500 hover:bg-red-50 hover:text-red-600 rounded-xl transition-colors outline-none focus-visible:ring-2 focus-visible:ring-red-500 group"
+                    >
+                        <LogOut size={20} strokeWidth={2.5} className="group-hover:-translate-x-1 transition-transform" />
+                        <span className="font-semibold text-sm">Logout</span>
+                    </button>
+                </div>
             </div>
-        </div>
+        </>
     );
 }

@@ -1,53 +1,75 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Download, Plus, Laptop } from 'lucide-react';
+import { Download, Plus } from 'lucide-react';
+
+// UI Components
+import { Button } from '@/components/ui/Button';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
+
+// Feature Components
 import AssetStats from '@/components/assets/AssetStats';
 import AssetTable from '@/components/assets/AssetTable';
 import AssignAssetModal from '@/components/assets/AssignAssetModal';
 
 export default function AssetsPage() {
+    // State for modal management
     const [isModalOpen, setIsModalOpen] = useState(false);
+
+    // In the future, this is where fetch data hooks.
+    // e.g., const { data: assets, isLoading } = useAssets();
+    // e.g., const { data: stats } = useAssetStats();
 
     return (
         <div className="space-y-6 animate-in fade-in duration-300">
-            {/* Header */}
+            {/* Header Section */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900">Asset Management</h1>
-                    <p className="text-sm text-gray-500 mt-1">Track company hardware, software licenses, and equipment</p>
+                    <p className="text-sm text-gray-500 mt-1">
+                        Track company hardware, software licenses, and equipment
+                    </p>
                 </div>
                 
                 <div className="flex items-center gap-3">
-                    <button className="flex items-center gap-2 px-4 py-2.5 border border-gray-200 text-gray-600 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors shadow-sm">
+                    <Button variant="outline" className="gap-2">
                         <Download size={16} />
                         <span className="hidden sm:inline">Export Inventory</span>
-                    </button>
-                    <button 
+                    </Button>
+                    
+                    <Button 
+                        variant="primary" 
                         onClick={() => setIsModalOpen(true)}
-                        className="flex items-center gap-2 px-4 py-2.5 bg-[#4F7CF3] text-white rounded-lg text-sm font-bold hover:bg-[#3A62D7] transition-colors shadow-sm shadow-blue-500/30"
+                        className="gap-2 shadow-sm shadow-blue-500/30"
                     >
                         <Plus size={18} strokeWidth={2.5} />
                         Assign Asset
-                    </button>
+                    </Button>
                 </div>
             </div>
 
             {/* Statistics Cards */}
+            {/* When API is ready, pass the data: <AssetStats data={stats} /> */}
             <AssetStats />
 
             {/* Main Data Table */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-lg font-bold text-gray-900">Company Assets List</h2>
-                </div>
-                <AssetTable />
-            </div>
+            <Card className="border-gray-200">
+                <CardHeader className="pb-4">
+                    <CardTitle className="text-lg">Company Assets List</CardTitle>
+                </CardHeader>
+                {/* Removed internal padding on CardContent to let the table span edge-to-edge if desired, 
+                    or keep standard padding depending on client preference */}
+                <CardContent>
+                    {/* When API is ready, pass the data: <AssetTable assets={assets} /> */}
+                    <AssetTable />
+                </CardContent>
+            </Card>
 
             {/* Application Modal */}
             <AssignAssetModal 
                 isOpen={isModalOpen} 
                 onClose={() => setIsModalOpen(false)} 
+                // onSubmit={(payload) => handleAssignAsset(payload)}
             />
         </div>
     );

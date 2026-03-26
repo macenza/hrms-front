@@ -1,98 +1,196 @@
-import React from 'react';
-import { Mail, Phone, MapPin, Gift, User, Calendar, Hash } from 'lucide-react';
+'use client';
 
-export default function PersonalInfoTab() {
+import React, { useState } from 'react';
+import { Landmark, Hash, CreditCard, Building2, ShieldCheck, Eye, EyeOff, FileText } from 'lucide-react';
+
+// UI Components
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
+import { Badge } from '@/components/ui/Badge';
+import { Button } from '@/components/ui/Button';
+
+// Data Contracts for Backend Integration
+export type VerificationStatus = 'Verified' | 'Pending' | 'Rejected';
+
+export interface BankDetails {
+    bankName: string;
+    accountName: string;
+    accountNumber: string;
+    ifscCode: string; // Or Routing Number based on your region
+    branch: string;
+    status: VerificationStatus;
+}
+
+export interface StatutoryDetails {
+    panNumber: string; // Or SSN / National Tax ID
+    aadhaarNumber: string; // Or National ID
+    uanNumber: string; // Universal Account Number (Provident Fund)
+    pfNumber: string;
+    status: VerificationStatus;
+}
+
+interface BankComplianceTabProps {
+    bankData?: BankDetails;
+    statutoryData?: StatutoryDetails;
+}
+
+// Mock Data Fallback
+const mockBankData: BankDetails = {
+    bankName: 'HDFC Bank Ltd.',
+    accountName: 'Alice Johnson',
+    accountNumber: '5010023498761234',
+    ifscCode: 'HDFC0001234',
+    branch: 'Tech City, San Francisco',
+    status: 'Verified',
+};
+
+const mockStatutoryData: StatutoryDetails = {
+    panNumber: 'ABCDE1234F',
+    aadhaarNumber: '123456789012',
+    uanNumber: '100987654321',
+    pfNumber: 'MH/BAN/12345/000/76543',
+    status: 'Pending',
+};
+
+// Dynamic UI Helpers
+const getStatusBadgeVariant = (status: VerificationStatus) => {
+    switch (status) {
+        case 'Verified': return 'success';
+        case 'Pending': return 'warning';
+        case 'Rejected': return 'error';
+        default: return 'default';
+    }
+};
+
+// Helper to mask sensitive numbers (e.g., turns "1234567890" into "•••• •••• 7890")
+const maskNumber = (num: string, visibleDigits: number = 4) => {
+    if (!num || num.length <= visibleDigits) return num;
+    const maskedLength = num.length - visibleDigits;
+    const maskedSection = '•'.repeat(maskedLength).replace(/(.{4})/g, '$1 ').trim();
+    const visibleSection = num.slice(-visibleDigits);
+    return `${maskedSection} ${visibleSection}`;
+};
+
+// Reusable Detail Item Component
+const DetailItem = ({
+    label,
+    value,
+    icon: Icon,
+    isSensitive = false,
+    showSensitive = false
+}: {
+    label: string,
+    value: string,
+    icon: any,
+    isSensitive?: boolean,
+    showSensitive?: boolean
+}) => (
+    <div className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors">
+        <div className="p-2 bg-gray-100/80 text-gray-500 rounded-md shrink-0">
+            <Icon size={18} />
+        </div>
+        <div>
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-0.5">{label}</p>
+            <p className="text-sm font-bold text-gray-900 font-mono tracking-tight">
+                {isSensitive && !showSensitive ? maskNumber(value) : value}
+            </p>
+        </div>
+    </div>
+);
+
+export default function BankComplianceTab({
+    bankData = mockBankData,
+    statutoryData = mockStatutoryData
+}: BankComplianceTabProps) {
+
+    // State to toggle the visibility of masked numbers
+    const [showSensitiveInfo, setShowSensitiveInfo] = useState(false);
+
     return (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in fade-in duration-300">
-            
-            {/* Main Details - Takes up 2 columns on large screens */}
-            <div className="lg:col-span-2 space-y-6">
-                {/* Basic Details */}
-                <div className="bg-gray-50 rounded-xl p-6 border border-gray-100">
-                    <h2 className="text-lg font-bold text-gray-900 mb-4">Basic Details</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Full Name</p>
-                            <div className="flex items-center gap-2 text-gray-900 font-medium">
-                                <User size={16} className="text-gray-400" />
-                                Alice Johnson
-                            </div>
-                        </div>
-                        <div>
-                            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Date of Birth</p>
-                            <div className="flex items-center gap-2 text-gray-900 font-medium">
-                                <Calendar size={16} className="text-gray-400" />
-                                Oct 24, 1995
-                            </div>
-                        </div>
-                        <div>
-                            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Father's Name</p>
-                            <div className="flex items-center gap-2 text-gray-900 font-medium">
-                                <User size={16} className="text-gray-400" />
-                                Robert Johnson
-                            </div>
-                        </div>
-                        <div>
-                            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Registration No</p>
-                            <div className="flex items-center gap-2 text-gray-900 font-medium">
-                                <Hash size={16} className="text-gray-400" />
-                                REG-2023-89
-                            </div>
-                        </div>
-                    </div>
-                </div>
+        <div className="space-y-6 animate-in fade-in duration-300">
 
-                {/* Contact Info */}
-                <div className="bg-gray-50 rounded-xl p-6 border border-gray-100">
-                    <h2 className="text-lg font-bold text-gray-900 mb-4">Contact Info</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Email ID</p>
-                            <div className="flex items-center gap-2 text-gray-900 font-medium">
-                                <Mail size={16} className="text-[#4F7CF3]" />
-                                alice@macenza.com
-                            </div>
-                        </div>
-                        <div>
-                            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Phone Number</p>
-                            <div className="flex items-center gap-2 text-gray-900 font-medium">
-                                <Phone size={16} className="text-green-500" />
-                                +1 234 567 890
-                            </div>
-                        </div>
-                        <div className="md:col-span-2">
-                            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Current Address</p>
-                            <div className="flex items-start gap-2 text-gray-900 font-medium">
-                                <MapPin size={16} className="text-red-400 mt-0.5" />
-                                123 Business Park, Tech City, San Francisco, CA 94105
-                            </div>
-                        </div>
-                    </div>
+            {/* Top Action Bar */}
+            <div className="flex items-center justify-between bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <ShieldCheck size={18} className="text-emerald-500" />
+                    <span>This information is securely encrypted.</span>
                 </div>
+                <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowSensitiveInfo(!showSensitiveInfo)}
+                    className="gap-2 text-gray-600"
+                >
+                    {showSensitiveInfo ? <EyeOff size={16} /> : <Eye size={16} />}
+                    {showSensitiveInfo ? 'Hide Details' : 'Reveal Details'}
+                </Button>
             </div>
 
-            {/* Right Sidebar - Birthday Reminder */}
-            <div className="space-y-6">
-                <div className="bg-gradient-to-br from-[#4F7CF3]/10 to-purple-500/10 rounded-xl p-6 border border-[#4F7CF3]/20 relative overflow-hidden">
-                    <div className="absolute -right-4 -top-4 text-[#4F7CF3]/10 rotate-12">
-                        <Gift size={100} />
-                    </div>
-                    <div className="relative z-10">
-                        <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm text-[#4F7CF3] mb-4">
-                            <Gift size={24} />
-                        </div>
-                        <h3 className="text-lg font-bold text-gray-900 mb-1">Birthday Reminder</h3>
-                        <p className="text-sm text-gray-600 mb-4">Alice's birthday is coming up in <span className="font-bold text-[#4F7CF3]">3 days</span>!</p>
-                        
-                        <div className="bg-white/60 rounded-lg p-3 text-center mb-4">
-                            <p className="text-xs text-gray-500 font-bold uppercase">October 24</p>
-                        </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-                        <button className="w-full py-2.5 bg-[#4F7CF3] text-white rounded-lg text-sm font-semibold hover:bg-[#3A62D7] transition-colors shadow-sm">
-                            Schedule Wish
-                        </button>
-                    </div>
-                </div>
+                {/* Bank Details Card */}
+                <Card className="border-gray-200 shadow-sm">
+                    <CardHeader className="flex flex-row items-center justify-between pb-4 border-b border-gray-100">
+                        <CardTitle className="text-lg flex items-center gap-2">
+                            <Landmark size={20} className="text-blue-600" />
+                            Bank Account Details
+                        </CardTitle>
+                        <Badge variant={getStatusBadgeVariant(bankData.status)}>
+                            {bankData.status}
+                        </Badge>
+                    </CardHeader>
+                    <CardContent className="pt-4 space-y-2">
+                        <DetailItem label="Bank Name" value={bankData.bankName} icon={Building2} />
+                        <DetailItem label="Account Holder Name" value={bankData.accountName} icon={CreditCard} />
+                        <DetailItem
+                            label="Account Number"
+                            value={bankData.accountNumber}
+                            icon={Hash}
+                            isSensitive
+                            showSensitive={showSensitiveInfo}
+                        />
+                        <DetailItem label="IFSC / Routing Code" value={bankData.ifscCode} icon={Hash} />
+                    </CardContent>
+                </Card>
+
+                {/* Statutory & Tax Details Card */}
+                <Card className="border-gray-200 shadow-sm">
+                    <CardHeader className="flex flex-row items-center justify-between pb-4 border-b border-gray-100">
+                        <CardTitle className="text-lg flex items-center gap-2">
+                            <FileText size={20} className="text-purple-600" />
+                            Statutory & Tax Info
+                        </CardTitle>
+                        <Badge variant={getStatusBadgeVariant(statutoryData.status)}>
+                            {statutoryData.status}
+                        </Badge>
+                    </CardHeader>
+                    <CardContent className="pt-4 space-y-2">
+                        <DetailItem
+                            label="PAN / Tax ID"
+                            value={statutoryData.panNumber}
+                            icon={CreditCard}
+                            isSensitive
+                            showSensitive={showSensitiveInfo}
+                        />
+                        <DetailItem
+                            label="Aadhaar / National ID"
+                            value={statutoryData.aadhaarNumber}
+                            icon={CreditCard}
+                            isSensitive
+                            showSensitive={showSensitiveInfo}
+                        />
+                        <DetailItem
+                            label="UAN (Provident Fund)"
+                            value={statutoryData.uanNumber}
+                            icon={Hash}
+                        />
+                        <DetailItem
+                            label="PF Account Number"
+                            value={statutoryData.pfNumber}
+                            icon={Hash}
+                        />
+                    </CardContent>
+                </Card>
+
             </div>
         </div>
     );
