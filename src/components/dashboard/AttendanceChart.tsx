@@ -16,7 +16,7 @@ import { ATTENDANCE_DATA } from "@/lib/data";
 const LEGEND = [
     { label: "On Time", color: "#60A5FA" }, // blue-400
     { label: "Late Arrival", color: "#A78BFA" }, // violet-400
-    { label: "Absent", color: "#E2E8F0" }, // slate-200
+    { label: "Absent", color: "#94A3B8" }, // slate-200  old: #E2E8F0
 ];
 
 interface AttendanceChartProps {
@@ -116,7 +116,7 @@ const AttendanceChart = ({ isDark = false }: AttendanceChartProps) => {
                     />
                     <Bar dataKey="onTime" name="On Time" fill="#60A5FA" radius={[4, 4, 0, 0]} maxBarSize={12} />
                     <Bar dataKey="lateArrival" name="Late Arrival" fill="#A78BFA" radius={[4, 4, 0, 0]} maxBarSize={12} />
-                    <Bar dataKey="absent" name="Absent" fill={isDark ? "#4B5563" : "#E2E8F0"} radius={[4, 4, 0, 0]} maxBarSize={12} />
+                    <Bar dataKey="absent" name="Absent" fill={isDark ? "#4B5563" : "#94A3B8"} radius={[4, 4, 0, 0]} maxBarSize={12} />
                 </BarChart>
             </ResponsiveContainer>
         </div>

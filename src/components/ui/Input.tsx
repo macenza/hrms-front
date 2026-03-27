@@ -10,7 +10,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
     ({ className, type = "text", label, error, ...props }, ref) => {
         return (
             <div className="w-full flex flex-col gap-1.5">
-                {label && <label className="text-sm font-medium text-gray-700">{label}</label>}
+                {label && <label className="text-sm font-medium text-gray-900">{label}</label>}
                 <input
                     type={type}
                     className={cn(
