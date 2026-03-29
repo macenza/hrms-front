@@ -1,15 +1,16 @@
 import { configureStore } from '@reduxjs/toolkit';
+import authReducer from './authSlice';
 import dashboardReducer from './dashboardSlice';
 
-export const makeStore = () => {
-  return configureStore({
-    reducer: {
-      dashboard: dashboardReducer,
-    },
-  });
-};
+export const store = configureStore({
+  reducer: {
+    auth: authReducer,
+    dashboard: dashboardReducer,
+  },
+  // Disable devTools in production
+  devTools: process.env.NODE_ENV !== 'production',
+});
 
-// Infer the types for TypeScript
-export type AppStore = ReturnType<typeof makeStore>;
-export type RootState = ReturnType<AppStore['getState']>;
-export type AppDispatch = AppStore['dispatch'];
+// Infer the `RootState` and `AppDispatch` types from the store itself
+export type RootState = ReturnType<typeof store.getState>;
+export type AppDispatch = typeof store.dispatch;

@@ -11,26 +11,36 @@
   "dependencies": {
     "@hello-pangea/dnd": "^18.0.1",
     "@reduxjs/toolkit": "^2.11.2",
+    "axios": "^1.13.6",
     "clsx": "^2.1.1",
+<<<<<<< HEAD
     "dav": "^1.8.0",
+=======
+    "js-cookie": "^3.0.5",
+>>>>>>> e48fd77fc1d6ad037118478c12ec8bbaa87f2faa
     "lucide-react": "^1.0.1",
     "next": "16.2.1",
     "npm": "^11.12.1",
     "react": "19.2.4",
     "react-dom": "^19.2.4",
     "react-redux": "^9.2.0",
+<<<<<<< HEAD
     "recharts": "^3.8.0",
     "run": "^1.5.0",
+=======
+    "recharts": "^3.8.1",
+>>>>>>> e48fd77fc1d6ad037118478c12ec8bbaa87f2faa
     "tailwind-merge": "^3.5.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/js-cookie": "^3.0.6",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "babel-plugin-react-compiler": "1.0.0",
-    "eslint": "^9",
-    "eslint-config-next": "16.2.1",
+    "eslint": "^10.1.0",
+    "eslint-config-next": "^0.2.4",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

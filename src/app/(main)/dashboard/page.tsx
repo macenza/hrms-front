@@ -3,12 +3,31 @@
 import React from "react";
 import { CalendarDays, Upload } from "lucide-react";
 import StatCard from "@/components/dashboard/StatCard";
-import AttendanceChart from "@/components/dashboard/AttendanceChart";
+// import AttendanceChart from "@/components/dashboard/AttendanceChart";
 import EmployeeSummary from "@/components/dashboard/EmployeeSummary";
 import AttendanceList from "@/components/dashboard/AttendanceList";
-import WorkingFormat from "@/components/dashboard/WorkingFormat";
+// import WorkingFormat from "@/components/dashboard/WorkingFormat";
 import { STAT_CARDS } from "@/lib/data";
+import dynamic from 'next/dynamic';
 
+// 1. DYNAMICALLY IMPORT ALL CHARTS
+// This forces Next.js to skip Turbopack SSR for these specific components.
+const AttendanceChart = dynamic(
+    () => import('@/components/dashboard/AttendanceChart'),
+    { 
+        ssr: false, 
+        // Optional: Show a loading skeleton while the client fetches the chart
+        loading: () => <div className="h-[320px] w-full bg-gray-100 animate-pulse rounded-2xl" /> 
+    }
+);
+
+const WorkingFormat = dynamic(
+    () => import('@/components/dashboard/WorkingFormat'),
+    { 
+        ssr: false,
+        loading: () => <div className="h-full w-full bg-gray-100 animate-pulse rounded-2xl" /> 
+    }
+);
 
 
 export default function DashboardPage() {
