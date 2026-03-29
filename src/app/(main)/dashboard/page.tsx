@@ -10,7 +10,7 @@ import AttendanceList from "@/components/dashboard/AttendanceList";
 import { STAT_CARDS } from "@/lib/data";
 import dynamic from 'next/dynamic';
 
-// 1. DYNAMICALLY IMPORT ALL CHARTS
+
 // This forces Next.js to skip Turbopack SSR for these specific components.
 const AttendanceChart = dynamic(
     () => import('@/components/dashboard/AttendanceChart'),
