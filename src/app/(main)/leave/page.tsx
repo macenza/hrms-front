@@ -1,82 +1,52 @@
 'use client';
 
 import React, { useState } from 'react';
-import { CalendarPlus, Download } from 'lucide-react';
-
-// UI Components
-import { Button } from '@/components/ui/Button';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
-
-// Feature Components
 import LeaveStats from '@/components/leave/LeaveStats';
 import LeaveTable from '@/components/leave/LeaveTable';
-import ApplyLeaveModal, { LeaveApplicationPayload } from '@/components/leave/ApplyLeaveModal';
+import ApplyLeaveModal from '@/components/leave/ApplyLeaveModal';
+import { Plus } from 'lucide-react';
 
 export default function LeavePage() {
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [refreshTrigger, setRefreshTrigger] = useState(0);
 
-    // In the future, this is where you will fetch your data hooks:
-    // const { data: stats, isLoading: statsLoading } = useLeaveStats();
-    // const { data: leaveHistory, isLoading: historyLoading } = useLeaveHistory();
-
-    const handleApplyLeave = (payload: LeaveApplicationPayload) => {
-        // When backend is ready:
-        // await apiClient.post('/leaves', payload);
-        console.log('Submitting leave application:', payload);
-        
-        setIsModalOpen(false);
+    const handleLeaveSuccess = () => {
+        setRefreshTrigger(prev => prev + 1);
     };
 
     return (
-        <div className="space-y-6 animate-in fade-in duration-300">
-            {/* Header Section */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-300">
+
+            {/* Page Header */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Leave Management</h1>
-                    <p className="text-sm text-gray-500 mt-1">
-                        Track leave balances, history, and apply for time off
-                    </p>
+                    <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Leave Management</h1>
+                    <p className="text-sm text-gray-500 mt-1">Track, manage, and request time off.</p>
                 </div>
-                
-                <div className="flex items-center gap-3">
-                    <Button variant="outline" className="gap-2 shadow-sm">
-                        <Download size={16} />
-                        <span className="hidden sm:inline">Export History</span>
-                    </Button>
-                    
-                    <Button 
-                        variant="primary" 
-                        onClick={() => setIsModalOpen(true)}
-                        className="gap-2 shadow-sm shadow-blue-500/30"
-                    >
-                        <CalendarPlus size={18} strokeWidth={2.5} />
-                        Apply Leave
-                    </Button>
-                </div>
+
+                {/* Modal Toggle Button */}
+                <button
+                    onClick={() => setIsModalOpen(true)}
+                    className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-semibold text-sm transition-all shadow-sm shadow-blue-200"
+                >
+                    <Plus size={18} />
+                    Apply Leave
+                </button>
             </div>
 
-            {/* Statistics Cards */}
-            {/* When API is ready, pass the data: <LeaveStats data={stats} /> */}
+            {/* Top Stats Section */}
             <LeaveStats />
 
             {/* Main Data Table */}
-            <Card className="border-gray-200">
-                <CardHeader className="pb-4">
-                    <CardTitle className="text-lg">Leave History</CardTitle>
-                </CardHeader>
-                {/* We remove the internal padding from CardContent so the table sits flush against the card edges */}
-                <CardContent className="p-0 sm:p-0">
-                    {/* When API is ready, pass the data: <LeaveTable data={leaveHistory} /> */}
-                    <LeaveTable />
-                </CardContent>
-            </Card>
+            <LeaveTable refreshTrigger={refreshTrigger} />
 
-            {/* Application Modal */}
+            {/* The Modal */}
             <ApplyLeaveModal 
                 isOpen={isModalOpen} 
                 onClose={() => setIsModalOpen(false)} 
-                onSubmit={handleApplyLeave}
+                onSuccess={handleLeaveSuccess} 
             />
+
         </div>
     );
 }

@@ -1,5 +1,17 @@
 @import "tailwindcss";
 
+/* Class-based dark mode (used by next-themes on <html class="dark">) */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@layer base {
+  body {
+    @apply bg-gray-50 text-gray-900 antialiased dark:bg-gray-950 dark:text-gray-100;
+  }
+  .dark {
+    color-scheme: dark;
+  }
+}
+
 .input {
   width: 100%;
   padding: 8px;

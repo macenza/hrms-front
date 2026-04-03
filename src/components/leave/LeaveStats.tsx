@@ -1,8 +1,12 @@
-import React from 'react';
-import { Calendar, Thermometer, Clock, CheckCircle2 } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/Card';
+'use client';
 
-// Data Contract for Backend Integration
+import React, { useEffect, useState } from 'react';
+import { Calendar, Thermometer, Clock, CheckCircle2, Loader2 } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/Card';
+import { useAppSelector } from '@/store/hooks';
+import { getLeaveStats, getAllLeaveStats } from '@/services/leaveService';
+
+// Data Contract
 export interface LeaveBalance {
     used: number;
     total: number;
@@ -15,49 +19,101 @@ export interface LeaveStatsData {
     approvedYTD: number;
 }
 
-interface LeaveStatsProps {
-    data?: LeaveStatsData;
-}
+export default function LeaveStats() {
+    const { user } = useAppSelector((state) => state.auth);
+    const [stats, setStats] = useState<LeaveStatsData | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState('');
 
-// Mock Data Fallback
-const mockLeaveStats: LeaveStatsData = {
-    annual: { used: 12, total: 20 },
-    sick: { used: 5, total: 10 },
-    pendingRequests: 1,
-    approvedYTD: 8,
-};
+    useEffect(() => {
+        const fetchStats = async () => {
+            if (!user) return;
+            try {
+                let rawData: any;
+                if (user.role === 'HR' || user.role === 'Admin') {
+                    rawData = await getAllLeaveStats();
+                } else {
+                    rawData = await getLeaveStats();
+                }
 
-export default function LeaveStats({ data = mockLeaveStats }: LeaveStatsProps) {
+                console.log("Raw Leave Stats Response:", rawData);
+
+                // --- Safe Data Mapping ---
+                // We extract the data, providing safe fallbacks (0) just in case 
+                // the backend hasn't populated a specific field yet.
+                const dataObj = rawData?.data || rawData || {};
+                
+                const mappedStats: LeaveStatsData = {
+                    annual: {
+                        used: dataObj.annual?.used || 0,
+                        total: dataObj.annual?.total || 20, // Defaulting to 20 if backend doesn't provide
+                    },
+                    sick: {
+                        used: dataObj.sick?.used || 0,
+                        total: dataObj.sick?.total || 10,
+                    },
+                    pendingRequests: dataObj.pendingRequests || 0,
+                    approvedYTD: dataObj.approvedYTD || 0,
+                };
+
+                setStats(mappedStats);
+
+            } catch (err: any) {
+                setError(err.message);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchStats();
+    }, [user]);
+
+    if (isLoading) {
+        return (
+            <div className="flex justify-center items-center h-32 bg-gray-50 rounded-xl border border-gray-100">
+                <Loader2 className="animate-spin text-blue-500 mr-2" size={24} />
+                <span className="text-gray-500 font-medium">Loading statistics...</span>
+            </div>
+        );
+    }
+
+    if (error || !stats) {
+        return (
+            <div className="p-4 bg-red-50 text-red-600 rounded-xl text-sm font-medium border border-red-100">
+                {error || "Failed to load statistics."}
+            </div>
+        );
+    }
 
     // Structure the data for easy rendering
     const statCards = [
         {
-            title: "Annual Leave",
-            value: data.annual.used,
-            suffix: `/ ${data.annual.total} days`,
+            title: user?.role === 'HR' || user?.role === 'Admin' ? "Org Annual Leaves Used" : "My Annual Leave",
+            value: stats.annual.used,
+            suffix: `/ ${stats.annual.total} days`,
             icon: <Calendar size={20} />,
             iconBg: "bg-blue-50",
             iconColor: "text-blue-600",
         },
         {
-            title: "Sick Leave",
-            value: data.sick.used,
-            suffix: `/ ${data.sick.total} days`,
+            title: user?.role === 'HR' || user?.role === 'Admin' ? "Org Sick Leaves Used" : "My Sick Leave",
+            value: stats.sick.used,
+            suffix: `/ ${stats.sick.total} days`,
             icon: <Thermometer size={20} />,
             iconBg: "bg-red-50",
             iconColor: "text-red-500",
         },
         {
-            title: "Pending Requests",
-            value: data.pendingRequests,
+            title: user?.role === 'HR' || user?.role === 'Admin' ? "Org Pending Requests" : "My Pending Requests",
+            value: stats.pendingRequests,
             suffix: null,
             icon: <Clock size={20} />,
             iconBg: "bg-yellow-50",
             iconColor: "text-yellow-600",
         },
         {
-            title: "Approved (YTD)",
-            value: data.approvedYTD,
+            title: user?.role === 'HR' || user?.role === 'Admin' ? "Org Approved (YTD)" : "My Approved (YTD)",
+            value: stats.approvedYTD,
             suffix: null,
             icon: <CheckCircle2 size={20} />,
             iconBg: "bg-green-50",
@@ -67,7 +123,6 @@ export default function LeaveStats({ data = mockLeaveStats }: LeaveStatsProps) {
 
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 animate-in fade-in duration-300">
-            {/* Map over the array using our consistent Card component */}
             {statCards.map((stat, index) => (
                 <Card key={index} className="border-gray-100 hover:shadow-md transition-shadow duration-200">
                     <CardContent className="p-5 flex items-start justify-between">

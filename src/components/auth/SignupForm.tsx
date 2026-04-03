@@ -41,10 +41,10 @@ export default function SignupForm() {
     };
 
     return (
-        <div className="bg-white p-8 rounded-2xl shadow-xl border border-gray-100 animate-in fade-in zoom-in-95 duration-300">
+        <div className="bg-white dark:bg-gray-900 dark:border-gray-800 p-8 rounded-2xl shadow-xl border border-gray-100 animate-in fade-in zoom-in-95 duration-300">
             <div className="mb-8 text-center">
-                <h1 className="text-2xl font-bold text-gray-900">Get Started</h1>
-                <p className="text-sm text-gray-500 mt-2">Create your HRMS account</p>
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Get Started</h1>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">Create your HRMS account</p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">

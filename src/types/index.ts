@@ -53,3 +53,41 @@ export interface WorkingFormatSegment {
 }
 
 export type Theme = "light" | "dark";
+
+
+export type Role = 'Employee' | 'Manager' | 'HR' | 'Admin';
+export type LeaveType = 'Sick' | 'Vacation' | 'Personal' | 'Emergency' | 'Other';
+export type LeaveStatus = 'Pending' | 'Approved' | 'Rejected' | 'Cancelled';
+
+export interface User {
+    _id: string;
+    name: string;
+    email: string;
+    role: Role;
+    team?: string;
+    isActive: boolean;
+    joinedAt: string;
+    profile?: {
+        phone?: string;
+        address?: string;
+    };
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface Leave {
+    _id: string;
+    userId: string | User; // Depending on if backend populates the user
+    leaveType: LeaveType;
+    startDate: string;
+    endDate: string;
+    numberOfDays: number;
+    reason: string;
+    status: LeaveStatus;
+    reviewedBy?: string | User;
+    reviewedAt?: string;
+    rejectionReason?: string;
+    requestedAt: string;
+    createdAt: string;
+    updatedAt: string;
+}

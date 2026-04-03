@@ -1,11 +1,16 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
-// Define the shape of our User
+// Aligns with auth API user payload (register/login); `id` is normalized from `_id` when storing.
 export interface User {
     id: string;
+    _id?: string;
     name: string;
     email: string;
     role: 'Admin' | 'HR' | 'Employee';
+    isActive?: boolean;
+    joinedAt?: string;
+    createdAt?: string;
+    updatedAt?: string;
 }
 
 // Define the shape of our Auth State

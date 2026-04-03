@@ -14,18 +14,18 @@ import dynamic from 'next/dynamic';
 // This forces Next.js to skip Turbopack SSR for these specific components.
 const AttendanceChart = dynamic(
     () => import('@/components/dashboard/AttendanceChart'),
-    { 
-        ssr: false, 
-        // Optional: Show a loading skeleton while the client fetches the chart
-        loading: () => <div className="h-[320px] w-full bg-gray-100 animate-pulse rounded-2xl" /> 
+    {
+        ssr: false,
+        // Show a loading skeleton while the client fetches the chart
+        loading: () => <div className="h-[320px] w-full bg-gray-100 animate-pulse rounded-2xl" />
     }
 );
 
 const WorkingFormat = dynamic(
     () => import('@/components/dashboard/WorkingFormat'),
-    { 
+    {
         ssr: false,
-        loading: () => <div className="h-full w-full bg-gray-100 animate-pulse rounded-2xl" /> 
+        loading: () => <div className="h-full w-full bg-gray-100 animate-pulse rounded-2xl" />
     }
 );
 
@@ -79,7 +79,7 @@ export default function DashboardPage() {
                     <StatCard key={card.id} card={card} isDark={isDark} />
                 ))}
             </div>
-
+            
             {/* ── Charts Row ── */}
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
                 {/* Attendance Chart – wider */}
