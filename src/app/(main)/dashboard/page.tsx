@@ -1,23 +1,25 @@
 "use client";
 
-import React from "react";
-import { CalendarDays, Upload } from "lucide-react";
-import StatCard from "@/components/dashboard/StatCard";
-// import AttendanceChart from "@/components/dashboard/AttendanceChart";
-import EmployeeSummary from "@/components/dashboard/EmployeeSummary";
-import AttendanceList from "@/components/dashboard/AttendanceList";
-// import WorkingFormat from "@/components/dashboard/WorkingFormat";
-import { STAT_CARDS } from "@/lib/data";
+import React, { useEffect } from "react";
+import { CalendarDays, Upload, Loader2 } from "lucide-react";
 import dynamic from 'next/dynamic';
 
+// Components
+import StatCard from "@/components/dashboard/StatCard";
+import EmployeeSummary from "@/components/dashboard/EmployeeSummary";
+import AttendanceList from "@/components/dashboard/AttendanceList";
+import { STAT_CARDS } from "@/lib/data";
 
-// This forces Next.js to skip Turbopack SSR for these specific components.
+// Redux
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { fetchDashboardStats, fetchDashboardAttendance } from "@/store/dashboardSlice";
+
+// Skip SSR for Recharts components
 const AttendanceChart = dynamic(
     () => import('@/components/dashboard/AttendanceChart'),
     {
         ssr: false,
-        // Show a loading skeleton while the client fetches the chart
-        loading: () => <div className="h-[320px] w-full bg-gray-100 animate-pulse rounded-2xl" />
+        loading: () => <div className="h-[320px] w-full bg-gray-100 dark:bg-gray-800 animate-pulse rounded-2xl" />
     }
 );
 
@@ -25,50 +27,89 @@ const WorkingFormat = dynamic(
     () => import('@/components/dashboard/WorkingFormat'),
     {
         ssr: false,
-        loading: () => <div className="h-full w-full bg-gray-100 animate-pulse rounded-2xl" />
+        loading: () => <div className="h-full w-full bg-gray-100 dark:bg-gray-800 animate-pulse rounded-2xl" />
     }
 );
 
-
 export default function DashboardPage() {
-    const isDark = false;
+    const isDark = false; // You can hook this up to your ThemeProvider later
+    const dispatch = useAppDispatch();
+    
+    // Pull global state
+    const { stats, attendanceTimeframe, isLoading } = useAppSelector((state) => state.dashboard);
+
+    // Trigger initial data fetch when the dashboard mounts
+    useEffect(() => {
+        dispatch(fetchDashboardStats());
+        dispatch(fetchDashboardAttendance(attendanceTimeframe));
+    }, [dispatch, attendanceTimeframe]);
+
+    // Handle Client-Side CSV Export
+    const handleExport = () => {
+        if (!stats) return;
+
+        // Create CSV content from the Redux stats
+        const csvContent = [
+            ["Metric", "Count"],
+            ["Total Employees", stats.totalUsers],
+            ["Active Employees", stats.activeUsers],
+            ["Inactive Employees", stats.inactiveUsers],
+            ...Object.entries(stats.usersByTeam).map(([team, count]) => [`Team: ${team}`, count])
+        ].map(e => e.join(",")).join("\n");
+
+        // Trigger browser download
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a");
+        const url = URL.createObjectURL(blob);
+        link.setAttribute("href", url);
+        link.setAttribute("download", `HRMS_Report_${new Date().toLocaleDateString()}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
     return (
         <div className="flex flex-col gap-6">
             {/* ── Page Heading ── */}
-            <div className="flex items-center justify-between">
-                <h1 className={`text-2xl font-bold tracking-tight ${isDark ? "text-white" : "text-gray-800"}`}>
+            <div className="flex items-center justify-between flex-wrap gap-4">
+                <h1 className={`text-2xl font-bold tracking-tight flex items-center gap-3 ${isDark ? "text-white" : "text-gray-800"}`}>
                     Dashboard Overview
+                    {isLoading && <Loader2 className="w-5 h-5 animate-spin text-blue-500" />}
                 </h1>
 
                 <div className="flex items-center gap-3">
-                    {/* Period selector */}
+                    {/* Period selector (Reflects Redux State) */}
                     <button
                         className={`
-                flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium
-                transition-colors duration-200
-                ${isDark
-                                ? "bg-gray-800 text-gray-300 border border-gray-700 hover:bg-gray-700"
-                                : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
+                            flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium capitalize
+                            transition-colors duration-200 cursor-default
+                            ${isDark
+                                ? "bg-gray-800 text-gray-300 border border-gray-700"
+                                : "bg-white text-gray-600 border border-gray-200"
                             }
-            `}
+                        `}
                     >
                         <CalendarDays className="w-4 h-4 text-blue-500" />
-                        This Month
+                        This {attendanceTimeframe}
                     </button>
 
-                    {/* Export */}
+                    {/* Export Button */}
                     <button
+                        onClick={handleExport}
+                        disabled={!stats}
                         className={`
-              flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium
-              transition-colors duration-200
-              ${isDark
+                            flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium
+                            transition-colors duration-200
+                            ${isDark
                                 ? "bg-gray-800 text-gray-300 border border-gray-700 hover:bg-gray-700"
                                 : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
                             }
-            `}
+                            disabled:opacity-50 disabled:cursor-not-allowed
+                        `}
                     >
                         <Upload className="w-4 h-4 text-gray-400" />
-                        Export
+                        Export CSV
                     </button>
                 </div>
             </div>

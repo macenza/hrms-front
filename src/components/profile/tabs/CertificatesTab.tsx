@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Award, Download, Eye, Plus, FileBadge } from 'lucide-react';
+import { Award, Download, Eye, Plus, FileBadge, Loader2 } from 'lucide-react';
 import { cn } from '@/utils/cn';
 
 // UI Components
@@ -13,39 +13,41 @@ export interface CertificateRecord {
     id: string;
     title: string;
     description: string;
-    issueDate: string; // e.g., 'Oct 2023' or ISO string
-    fileUrl?: string; // URL provided by the backend to fetch the PDF
+    issueDate: string; 
+    fileUrl?: string; 
 }
 
 interface CertificatesTabProps {
     certificates?: CertificateRecord[];
+    isLoading?: boolean;
     onGenerate?: () => void;
     onPreview?: (certId: string) => void;
     onDownload?: (certId: string) => void;
 }
 
-// Mock Data Fallback
-const mockCertificates: CertificateRecord[] = [
-    { id: 'CERT-001', title: 'Appreciation Certificate', description: 'For outstanding performance in Q3 2023.', issueDate: 'Oct 2023' },
-    { id: 'CERT-002', title: 'Promotion Letter', description: 'Promoted to Senior UX Designer.', issueDate: 'Jan 2023' },
-    { id: 'CERT-003', title: 'Internship Completion', description: 'Successfully completed UX Internship.', issueDate: 'Aug 2022' },
-];
-
 export default function CertificatesTab({
-    certificates = mockCertificates,
+    certificates = [],
+    isLoading = false,
     onGenerate,
     onPreview,
     onDownload
 }: CertificatesTabProps) {
+    
+    if (isLoading) {
+        return (
+            <div className="flex flex-col items-center justify-center py-20 animate-in fade-in duration-300">
+                <Loader2 className="w-8 h-8 animate-spin text-blue-500 mb-4" />
+                <p className="text-sm text-gray-500 font-medium">Loading certificates...</p>
+            </div>
+        );
+    }
 
     return (
         <div className="animate-in fade-in duration-300">
-
             {/* Header Actions */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                 <h2 className="text-lg font-bold text-gray-900">Issued Certificates</h2>
 
-                {/* Customized Button to maintain your original tinted design */}
                 <Button
                     variant="ghost"
                     onClick={onGenerate}
@@ -58,7 +60,7 @@ export default function CertificatesTab({
 
             {/* Certificates List */}
             <div className="space-y-4">
-                {certificates.length === 0 ? (
+                {!certificates || certificates.length === 0 ? (
                     <div className="flex flex-col items-center justify-center p-12 bg-gray-50 border border-gray-200 border-dashed rounded-xl">
                         <div className="p-4 bg-white rounded-full text-gray-400 mb-3 shadow-sm">
                             <FileBadge size={32} />
@@ -70,7 +72,7 @@ export default function CertificatesTab({
                     certificates.map((cert) => (
                         <Card key={cert.id} className="border-gray-100 shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden">
                             <CardContent className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-5">
-
+                                
                                 {/* Certificate Details */}
                                 <div className="flex items-start gap-4">
                                     <div className="p-3 bg-purple-50 text-purple-600 rounded-lg shrink-0">
@@ -95,8 +97,6 @@ export default function CertificatesTab({
                                     >
                                         <Eye size={16} /> Preview
                                     </Button>
-
-                                    {/* Customizing standard button to maintain the dark gray styling */}
                                     <Button
                                         variant="primary"
                                         size="sm"
@@ -106,13 +106,11 @@ export default function CertificatesTab({
                                         <Download size={16} /> Download PDF
                                     </Button>
                                 </div>
-
                             </CardContent>
                         </Card>
                     ))
                 )}
             </div>
-
         </div>
     );
 }

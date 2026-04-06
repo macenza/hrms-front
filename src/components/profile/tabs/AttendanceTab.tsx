@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { CheckCircle2, XCircle, CalendarRange, Clock } from 'lucide-react';
+import { CheckCircle2, XCircle, CalendarRange, Clock, Loader2 } from 'lucide-react';
 
 // UI Components
 import { Card, CardContent } from '@/components/ui/Card';
@@ -29,22 +29,8 @@ export interface AttendanceLogRecord {
 interface AttendanceTabProps {
     stats?: EmployeeAttendanceStats;
     logs?: AttendanceLogRecord[];
+    isLoading?: boolean; // <-- Added loading state
 }
-
-// Mock Data Fallbacks
-const mockStats: EmployeeAttendanceStats = {
-    present: 18,
-    absent: 1,
-    onLeave: 2,
-    lateCheckIns: 0,
-};
-
-const mockLogs: AttendanceLogRecord[] = [
-    { id: 'LOG-001', date: 'Oct 24, 2023', checkIn: '09:00 AM', checkOut: '05:00 PM', totalHours: '8h 00m', status: 'Present' },
-    { id: 'LOG-002', date: 'Oct 23, 2023', checkIn: '09:15 AM', checkOut: '05:00 PM', totalHours: '7h 45m', status: 'Late' },
-    { id: 'LOG-003', date: 'Oct 22, 2023', checkIn: '09:00 AM', checkOut: '01:00 PM', totalHours: '4h 00m', status: 'Half Day' },
-    { id: 'LOG-004', date: 'Oct 21, 2023', checkIn: '-', checkOut: '-', totalHours: '-', status: 'Absent' },
-];
 
 // Dynamic UI Helper for Badges
 const getStatusBadgeVariant = (status: AttendanceLogStatus) => {
@@ -58,9 +44,20 @@ const getStatusBadgeVariant = (status: AttendanceLogStatus) => {
 };
 
 export default function AttendanceTab({
-    stats = mockStats,
-    logs = mockLogs
+    stats,
+    logs = [],
+    isLoading = false // Default to false
 }: AttendanceTabProps) {
+    
+    // Show a loading spinner while the parent component fetches the data
+    if (isLoading || !stats) {
+        return (
+            <div className="flex flex-col items-center justify-center py-20 animate-in fade-in duration-300">
+                <Loader2 className="w-8 h-8 animate-spin text-blue-500 mb-4" />
+                <p className="text-sm text-gray-500 font-medium">Loading attendance records...</p>
+            </div>
+        );
+    }
 
     // Structure stats for clean mapping
     const statCards = [
@@ -88,7 +85,6 @@ export default function AttendanceTab({
 
     return (
         <div className="space-y-8 animate-in fade-in duration-300">
-
             {/* Overview Stats */}
             <div>
                 <h2 className="text-lg font-bold text-gray-900 mb-4">Attendance Overview (This Month)</h2>
@@ -125,7 +121,7 @@ export default function AttendanceTab({
                             <tbody className="divide-y divide-gray-100 bg-white">
                                 {logs.length === 0 ? (
                                     <tr>
-                                        <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
+                                        <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
                                             No attendance logs found for this period.
                                         </td>
                                     </tr>
@@ -149,7 +145,6 @@ export default function AttendanceTab({
                     </div>
                 </Card>
             </div>
-
         </div>
     );
 }

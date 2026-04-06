@@ -20,23 +20,11 @@ export interface EmploymentDetailsData {
 }
 
 interface EmploymentDetailsTabProps {
-    data?: EmploymentDetailsData;
+    data: EmploymentDetailsData;
     onAddSkill?: () => void;
 }
 
-// Mock Data Fallback
-const mockEmploymentData: EmploymentDetailsData = {
-    employeeId: 'EMP-001',
-    designation: 'Senior UX Designer',
-    reportingManager: 'Sarah Connor',
-    dateOfJoining: 'Jan 12, 2023',
-    department: 'Design',
-    employmentType: 'Permanent',
-    workLocation: 'HQ - San Francisco',
-    skills: ['Figma', 'Adobe XD', 'User Research', 'Prototyping', 'HTML/CSS', 'Agile']
-};
-
-// Reusable Detail Item Helper (Matches PersonalInfoTab for consistency)
+// Reusable Detail Item Helper with safety fallbacks
 const DetailItem = ({
     label,
     value,
@@ -44,7 +32,7 @@ const DetailItem = ({
     iconColor = "text-gray-400"
 }: {
     label: string,
-    value: string,
+    value?: string,
     icon?: any,
     iconColor?: string
 }) => (
@@ -52,19 +40,23 @@ const DetailItem = ({
         <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">{label}</p>
         <div className="flex items-start gap-2 text-gray-900 font-medium">
             {Icon && <Icon size={16} className={`${iconColor} mt-0.5 shrink-0`} />}
-            <span>{value}</span>
+            <span className={!value || value === 'N/A' ? 'text-gray-400 italic font-normal' : ''}>
+                {value || 'Not provided'}
+            </span>
         </div>
     </div>
 );
 
 export default function EmploymentDetailsTab({
-    data = mockEmploymentData,
+    data,
     onAddSkill
 }: EmploymentDetailsTabProps) {
+    
+    // Safety check
+    if (!data) return null;
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in fade-in duration-300">
-
             {/* Employment Information - Takes up 2 columns */}
             <div className="lg:col-span-2 space-y-6">
                 <Card className="border-gray-200 shadow-sm bg-gray-50/50">
@@ -80,11 +72,8 @@ export default function EmploymentDetailsTab({
                             <DetailItem label="Designation" value={data.designation} icon={Tag} />
                             <DetailItem label="Reporting Manager" value={data.reportingManager} icon={User} />
                             <DetailItem label="Date of Joining" value={data.dateOfJoining} icon={Calendar} />
-
-                            {/* Optional: You can omit the icon if you prefer, the helper handles it safely */}
                             <DetailItem label="Department" value={data.department} icon={Building} />
                             <DetailItem label="Employment Type" value={data.employmentType} />
-
                             <div className="sm:col-span-2 pt-2">
                                 <DetailItem
                                     label="Work Location"
@@ -114,7 +103,7 @@ export default function EmploymentDetailsTab({
                         </Button>
                     </CardHeader>
                     <CardContent className="pt-6">
-                        {data.skills.length === 0 ? (
+                        {!data.skills || data.skills.length === 0 ? (
                             <p className="text-sm text-gray-500 italic text-center py-4">No skills added yet.</p>
                         ) : (
                             <div className="flex flex-wrap gap-2">
@@ -131,7 +120,6 @@ export default function EmploymentDetailsTab({
                     </CardContent>
                 </Card>
             </div>
-
         </div>
     );
 }
