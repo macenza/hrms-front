@@ -3,85 +3,82 @@
 import React from 'react';
 import { Pin, Calendar, User, MoreHorizontal, FileText } from 'lucide-react';
 import { cn } from '@/utils/cn';
+import { Button } from '@/components/ui/Button'; // Adjusted to match your dir structure (src/components/ui/vui/Button.tsx)
+import { useAppSelector } from '@/store/hooks';
 
-// UI Components
-import { Button } from '@/components/ui/Button';
-
-// Data Contracts for Backend Integration
+// Data Contract synced strictly with Express Backend
 export interface Notice {
-    id: string;
+    _id: string; 
     title: string;
     content: string;
     category: string;
-    author: string;
-    date: string;
+    author: {
+        _id: string;
+        firstName: string; 
+        lastName: string;
+    };
+    createdAt: string; 
     isPinned: boolean;
-    attachment: string | null;
+    attachmentUrl?: string | null;
 }
 
 interface NoticeFeedProps {
-    notices?: Notice[];
+    notices: Notice[];
+    isLoading: boolean;
     onActionClick?: (noticeId: string) => void;
-    onAttachmentClick?: (attachmentUrl: string) => void;
 }
 
-// Mock Data Fallback
-const mockNotices: Notice[] = [
-    {
-        id: 'NOT-001',
-        title: 'Q4 Townhall Meeting & Annual Review',
-        content: 'Please join us for the Q4 Townhall where we will discuss our yearly performance, announce the employee of the year, and share the roadmap for Q1 2024. Attendance is mandatory for all full-time employees.',
-        category: 'Event',
-        author: 'Thomas Anree (HR)',
-        date: 'Oct 24, 2023',
-        isPinned: true,
-        attachment: 'Townhall_Agenda.pdf'
-    },
-    {
-        id: 'NOT-002',
-        title: 'Scheduled IT Maintenance - VPN Downtime',
-        content: 'The IT department will be upgrading the primary VPN servers this weekend. Expect intermittent connectivity drops between Saturday 10 PM and Sunday 2 AM EST. Please save all work locally during this window.',
-        category: 'IT Update',
-        author: 'IT Support Team',
-        date: 'Oct 22, 2023',
-        isPinned: false,
-        attachment: null
-    },
-    {
-        id: 'NOT-003',
-        title: 'Updates to the Remote Work Policy',
-        content: 'Starting next month, the updated remote work policy will take effect. Employees are now eligible for 3 days of remote work per week, subject to manager approval. Please review the attached document for full guidelines.',
-        category: 'HR & Policy',
-        author: 'Sarah Connor',
-        date: 'Oct 18, 2023',
-        isPinned: false,
-        attachment: 'Remote_Policy_2024.pdf'
-    }
-];
-
 export default function NoticeFeed({
-    notices = mockNotices,
+    notices,
+    isLoading,
     onActionClick,
-    onAttachmentClick
 }: NoticeFeedProps) {
+    // 1. Global State & RBAC
+    const { user } = useAppSelector((state) => state.auth);
+    
+    // Safely check roles regardless of case formatting in the JWT/Redux store
+    const userRole = user?.role?.toLowerCase() || '';
+    const canManageNotices = ['admin', 'hr'].includes(userRole);
 
-    if (notices.length === 0) {
+    // 2. Handle Loading State
+    if (isLoading) {
         return (
-            <div className="p-12 text-center bg-white border border-gray-200 rounded-xl shadow-sm">
-                <p className="text-gray-500 font-medium">No notices have been published yet.</p>
+            <div className="space-y-4">
+                {[1, 2, 3].map((n) => (
+                    <div key={n} className="p-5 rounded-xl border border-gray-100 bg-white animate-pulse">
+                        <div className="h-4 bg-gray-200 rounded w-1/4 mb-4"></div>
+                        <div className="h-6 bg-gray-200 rounded w-3/4 mb-4"></div>
+                        <div className="h-16 bg-gray-100 rounded w-full mb-4"></div>
+                        <div className="h-8 bg-gray-50 rounded w-48"></div>
+                    </div>
+                ))}
             </div>
         );
     }
 
+    // 3. Handle Empty State
+    if (!notices || notices.length === 0) {
+        return (
+            <div className="p-12 text-center bg-white border border-gray-200 rounded-xl shadow-sm flex flex-col items-center justify-center min-h-[300px]">
+                <div className="p-4 bg-gray-50 rounded-full mb-3 text-gray-400">
+                    <FileText size={32} />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900">No notices found</h3>
+                <p className="text-gray-500 font-medium mt-1">There are currently no announcements to display.</p>
+            </div>
+        );
+    }
+
+    // 4. Render Data
     return (
         <div className="space-y-4">
             {notices.map((notice) => (
                 <div
-                    key={notice.id}
+                    key={notice._id}
                     className={cn(
                         "p-5 rounded-xl border transition-all hover:shadow-md",
                         notice.isPinned
-                            ? "bg-blue-50/50 border-blue-200"
+                            ? "bg-blue-50/40 border-blue-200"
                             : "bg-white border-gray-200"
                     )}
                 >
@@ -89,24 +86,27 @@ export default function NoticeFeed({
                     <div className="flex justify-between items-start mb-3">
                         <div className="flex flex-wrap items-center gap-2">
                             {notice.isPinned && (
-                                <span className="flex items-center gap-1 px-2.5 py-1 bg-red-100 text-red-700 rounded text-xs font-bold uppercase tracking-wider">
+                                <span className="flex items-center gap-1 px-2.5 py-1 bg-red-100 text-red-700 rounded text-[10px] font-bold uppercase tracking-wider">
                                     <Pin size={12} className="fill-current" /> Pinned
                                 </span>
                             )}
-                            <span className="px-2.5 py-1 bg-gray-100 text-gray-700 rounded text-xs font-bold uppercase tracking-wider">
+                            <span className="px-2.5 py-1 bg-gray-100 text-gray-700 rounded text-[10px] font-bold uppercase tracking-wider">
                                 {notice.category}
                             </span>
                         </div>
 
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            className="p-1.5 h-8 w-8 rounded-full text-gray-400 hover:text-gray-700"
-                            onClick={() => onActionClick && onActionClick(notice.id)}
-                            aria-label="Notice options"
-                        >
-                            <MoreHorizontal size={20} />
-                        </Button>
+                        {/* RBAC Applied: Only render action menu for HR/Admin */}
+                        {canManageNotices && onActionClick && (
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                className="p-1.5 h-8 w-8 rounded-full text-gray-400 hover:text-gray-700 hover:bg-gray-100"
+                                onClick={() => onActionClick(notice._id)}
+                                aria-label="Notice options"
+                            >
+                                <MoreHorizontal size={20} />
+                            </Button>
+                        )}
                     </div>
 
                     {/* Content */}
@@ -116,29 +116,38 @@ export default function NoticeFeed({
                     </p>
 
                     {/* Attachment Box */}
-                    {notice.attachment && (
-                        <button
-                            onClick={() => onAttachmentClick && onAttachmentClick(notice.attachment as string)}
-                            className="flex items-center gap-3 mb-4 p-3 bg-white border border-gray-200 rounded-lg w-fit cursor-pointer hover:border-blue-600 hover:shadow-sm transition-all text-left outline-none focus-visible:ring-2 focus-visible:ring-blue-600 group"
+                    {notice.attachmentUrl && (
+                        <a
+                            href={notice.attachmentUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-3 mb-4 p-3 bg-white border border-gray-200 rounded-lg w-fit hover:border-blue-600 hover:shadow-sm transition-all text-left outline-none focus-visible:ring-2 focus-visible:ring-blue-600 group"
                         >
                             <div className="p-2 bg-red-50 text-red-500 rounded-md group-hover:scale-105 transition-transform">
                                 <FileText size={18} />
                             </div>
-                            <span className="text-sm font-semibold text-gray-700 group-hover:text-blue-600 transition-colors">
-                                {notice.attachment}
-                            </span>
-                        </button>
+                            <div className="flex flex-col">
+                                <span className="text-sm font-semibold text-gray-700 group-hover:text-blue-600 transition-colors">
+                                    View Attachment
+                                </span>
+                            </div>
+                        </a>
                     )}
 
                     {/* Footer Metadata */}
                     <div className="flex flex-wrap items-center gap-4 text-xs font-medium text-gray-500 pt-4 border-t border-gray-200/60 mt-auto">
                         <div className="flex items-center gap-1.5">
                             <User size={14} className="text-gray-400" />
-                            {notice.author}
+                            {/* Updated to use populated firstName/lastName */}
+                            {notice.author ? `${notice.author.firstName} ${notice.author.lastName}` : 'Unknown User'}
                         </div>
                         <div className="flex items-center gap-1.5">
                             <Calendar size={14} className="text-gray-400" />
-                            {notice.date}
+                            {new Date(notice.createdAt).toLocaleDateString('en-US', {
+                                year: 'numeric',
+                                month: 'short',
+                                day: 'numeric'
+                            })}
                         </div>
                     </div>
                 </div>

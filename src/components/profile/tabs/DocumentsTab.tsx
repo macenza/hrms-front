@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { FileText, Image as ImageIcon, UploadCloud, MoreVertical, File } from 'lucide-react';
+import { FileText, Image as ImageIcon, UploadCloud, MoreVertical, File, Loader2 } from 'lucide-react';
 import { cn } from '@/utils/cn';
 
 // UI Components
@@ -14,25 +14,18 @@ export interface DocumentRecord {
     id: string;
     name: string;
     type: DocumentExtension;
-    sizeInBytes: number; // Backend sends raw bytes
+    sizeInBytes: number; 
     uploadDate: string;
-    fileUrl?: string; // S3 or Blob URL for downloading
+    fileUrl?: string; 
 }
 
 interface DocumentsTabProps {
     documents?: DocumentRecord[];
+    isLoading?: boolean;
+    isUploading?: boolean; // New state for file upload
     onUpload?: (file: File) => void;
     onActionClick?: (documentId: string) => void;
 }
-
-// Mock Data Fallback
-const mockDocuments: DocumentRecord[] = [
-    { id: 'DOC-001', name: 'Resume_Alice_Johnson.pdf', type: 'PDF', sizeInBytes: 2516582, uploadDate: 'Oct 10, 2023' },
-    { id: 'DOC-002', name: 'NDA_Agreement_Signed.pdf', type: 'PDF', sizeInBytes: 1153433, uploadDate: 'Jan 12, 2023' },
-    { id: 'DOC-003', name: 'Offer_Letter_Official.pdf', type: 'PDF', sizeInBytes: 865280, uploadDate: 'Jan 05, 2023' },
-    { id: 'DOC-004', name: 'Passport_Copy.jpg', type: 'JPG', sizeInBytes: 1887436, uploadDate: 'Jan 10, 2023' },
-    { id: 'DOC-005', name: 'Degree_Certificate.pdf', type: 'PDF', sizeInBytes: 3355443, uploadDate: 'Jan 10, 2023' },
-];
 
 // Dynamic UI Helpers
 const formatBytes = (bytes: number, decimals = 1) => {
@@ -44,14 +37,16 @@ const formatBytes = (bytes: number, decimals = 1) => {
     return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`;
 };
 
-const getDocumentStyle = (type: DocumentExtension) => {
-    switch (type) {
+const getDocumentStyle = (type: string) => {
+    switch (type.toUpperCase()) {
         case 'PDF':
             return { icon: FileText, colorClass: 'text-red-500 bg-red-50 border-red-100' };
         case 'JPG':
+        case 'JPEG':
         case 'PNG':
             return { icon: ImageIcon, colorClass: 'text-blue-500 bg-blue-50 border-blue-100' };
         case 'DOCX':
+        case 'DOC':
             return { icon: FileText, colorClass: 'text-indigo-500 bg-indigo-50 border-indigo-100' };
         default:
             return { icon: File, colorClass: 'text-gray-500 bg-gray-50 border-gray-200' };
@@ -59,25 +54,24 @@ const getDocumentStyle = (type: DocumentExtension) => {
 };
 
 export default function DocumentsTab({
-    documents = mockDocuments,
+    documents = [],
+    isLoading = false,
+    isUploading = false,
     onUpload,
     onActionClick
 }: DocumentsTabProps) {
-
-    // State for drag-and-drop visual feedback
     const [isDragging, setIsDragging] = useState(false);
 
     // File Handlers
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files.length > 0) {
-            if (onUpload) onUpload(e.target.files[0]);
-            console.log('File selected for upload:', e.target.files[0].name);
+        if (e.target.files && e.target.files.length > 0 && onUpload) {
+            onUpload(e.target.files[0]);
         }
     };
 
     const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
         e.preventDefault();
-        setIsDragging(true);
+        if (!isUploading) setIsDragging(true);
     };
 
     const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
@@ -88,20 +82,28 @@ export default function DocumentsTab({
     const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
         e.preventDefault();
         setIsDragging(false);
-        if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-            if (onUpload) onUpload(e.dataTransfer.files[0]);
-            console.log('File dropped for upload:', e.dataTransfer.files[0].name);
+        if (isUploading) return;
+        
+        if (e.dataTransfer.files && e.dataTransfer.files.length > 0 && onUpload) {
+            onUpload(e.dataTransfer.files[0]);
         }
     };
 
+    if (isLoading) {
+        return (
+            <div className="flex flex-col items-center justify-center py-20 animate-in fade-in duration-300">
+                <Loader2 className="w-8 h-8 animate-spin text-blue-500 mb-4" />
+                <p className="text-sm text-gray-500 font-medium">Loading documents...</p>
+            </div>
+        );
+    }
+
     return (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-in fade-in duration-300">
-
             {/* Uploaded List */}
             <div className="lg:col-span-2">
                 <h2 className="text-lg font-bold text-gray-900 mb-4">Uploaded Documents</h2>
-
-                {documents.length === 0 ? (
+                {!documents || documents.length === 0 ? (
                     <div className="p-8 text-center bg-gray-50 border border-gray-200 border-dashed rounded-xl">
                         <p className="text-sm font-semibold text-gray-500">No documents uploaded yet.</p>
                     </div>
@@ -109,7 +111,6 @@ export default function DocumentsTab({
                     <div className="space-y-3">
                         {documents.map((doc) => {
                             const { icon: Icon, colorClass } = getDocumentStyle(doc.type);
-
                             return (
                                 <div
                                     key={doc.id}
@@ -128,7 +129,6 @@ export default function DocumentsTab({
                                             </p>
                                         </div>
                                     </div>
-
                                     <Button
                                         variant="ghost"
                                         size="sm"
@@ -148,41 +148,49 @@ export default function DocumentsTab({
             {/* Upload Zone */}
             <div>
                 <h2 className="text-lg font-bold text-gray-900 mb-4">Upload New</h2>
-
                 <div
                     onDragOver={handleDragOver}
                     onDragLeave={handleDragLeave}
                     onDrop={handleDrop}
                     className={cn(
-                        "relative border-2 border-dashed rounded-2xl p-8 flex flex-col items-center justify-center text-center transition-all cursor-pointer group h-64 overflow-hidden",
-                        isDragging
-                            ? "border-blue-600 bg-blue-50/50 scale-[1.02]"
-                            : "border-gray-300 hover:border-blue-600 hover:bg-gray-50"
+                        "relative border-2 border-dashed rounded-2xl p-8 flex flex-col items-center justify-center text-center transition-all h-64 overflow-hidden",
+                        isUploading ? "border-gray-200 bg-gray-50 opacity-70 cursor-not-allowed" : "cursor-pointer group",
+                        isDragging && !isUploading ? "border-blue-600 bg-blue-50/50 scale-[1.02]" : "border-gray-300 hover:border-blue-600 hover:bg-gray-50"
                     )}
                 >
-                    {/* Hidden File Input covering the entire dropzone */}
-                    <input
-                        type="file"
-                        onChange={handleFileChange}
-                        accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                        title=""
-                    />
+                    {!isUploading && (
+                        <input
+                            type="file"
+                            onChange={handleFileChange}
+                            accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                            title=""
+                            disabled={isUploading}
+                        />
+                    )}
 
-                    <div className={cn(
-                        "p-4 rounded-full mb-4 transition-transform",
-                        isDragging ? "bg-blue-600 text-white scale-110" : "bg-blue-50 text-blue-600 group-hover:scale-110"
-                    )}>
-                        <UploadCloud size={32} />
-                    </div>
-
-                    <p className="text-sm font-bold text-gray-900">
-                        {isDragging ? "Drop file here!" : "Drag & Drop or Click to Upload"}
-                    </p>
-                    <p className="text-xs text-gray-500 mt-2 font-medium">Supports PDF, JPG, PNG (Max 10MB)</p>
+                    {isUploading ? (
+                        <div className="flex flex-col items-center">
+                            <Loader2 className="w-10 h-10 animate-spin text-blue-600 mb-4" />
+                            <p className="text-sm font-bold text-gray-900">Uploading...</p>
+                            <p className="text-xs text-gray-500 mt-1">Please wait</p>
+                        </div>
+                    ) : (
+                        <>
+                            <div className={cn(
+                                "p-4 rounded-full mb-4 transition-transform",
+                                isDragging ? "bg-blue-600 text-white scale-110" : "bg-blue-50 text-blue-600 group-hover:scale-110"
+                            )}>
+                                <UploadCloud size={32} />
+                            </div>
+                            <p className="text-sm font-bold text-gray-900">
+                                {isDragging ? "Drop file here!" : "Drag & Drop or Click"}
+                            </p>
+                            <p className="text-xs text-gray-500 mt-2 font-medium">Supports PDF, JPG, PNG (Max 10MB)</p>
+                        </>
+                    )}
                 </div>
             </div>
-
         </div>
     );
 }

@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { MoreHorizontal, Calendar, CheckSquare } from 'lucide-react';
+import { MoreHorizontal, Calendar, CheckSquare, Plus, Loader2 } from 'lucide-react';
 import { cn } from '@/utils/cn';
 
 // UI Components
@@ -26,17 +26,11 @@ export interface TaskRecord {
 
 interface TaskListTabProps {
     tasks?: TaskRecord[];
+    isLoading?: boolean;
     onTaskClick?: (taskId: string) => void;
     onActionClick?: (taskId: string) => void;
+    onAddTask?: () => void; // Added for the creation modal
 }
-
-// Mock Data Fallback
-const mockTasks: TaskRecord[] = [
-    { id: 'TSK-101', title: 'Research Competitor Analysis', status: 'To Do', priority: 'High', tag: 'Research', dueDate: 'Oct 24, 2023', assigneeName: 'Alice Johnson', assigneeAvatar: 'https://i.pravatar.cc/150?u=1' },
-    { id: 'TSK-102', title: 'Draft Wireframes for Home', status: 'To Do', priority: 'Medium', tag: 'Design', dueDate: 'Oct 25, 2023', assigneeName: 'Bob Smith', assigneeAvatar: 'https://i.pravatar.cc/150?u=2' },
-    { id: 'TSK-103', title: 'Setup React Project Repo', status: 'In Progress', priority: 'High', tag: 'Development', dueDate: 'Oct 20, 2023', assigneeName: 'Alice Johnson', assigneeAvatar: 'https://i.pravatar.cc/150?u=1' },
-    { id: 'TSK-104', title: 'Kickoff Meeting', status: 'Completed', priority: 'Low', tag: 'Meeting', dueDate: 'Oct 18, 2023', assigneeName: 'Sarah Lee', assigneeAvatar: 'https://i.pravatar.cc/150?u=6' },
-];
 
 // Dynamic UI Helpers
 const getStatusBadgeVariant = (status: TaskStatus) => {
@@ -59,24 +53,44 @@ const getPriorityColor = (priority: TaskPriority) => {
     }
 };
 
-const getInitials = (name: string) => name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+const getInitials = (name: string) => {
+    if (!name) return '??';
+    return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+};
 
 export default function TaskListTab({
-    tasks = mockTasks,
+    tasks = [],
+    isLoading = false,
     onTaskClick,
-    onActionClick
+    onActionClick,
+    onAddTask
 }: TaskListTabProps) {
+
+    if (isLoading) {
+        return (
+            <div className="flex flex-col items-center justify-center py-20 animate-in fade-in duration-300">
+                <Loader2 className="w-8 h-8 animate-spin text-blue-600 mb-4" />
+                <p className="text-sm text-gray-500 font-medium">Loading project tasks...</p>
+            </div>
+        );
+    }
 
     return (
         <div className="animate-in fade-in duration-300">
-
             {/* Header Actions */}
-            <div className="flex justify-between items-center mb-6">
-                <h2 className="text-lg font-bold text-gray-900">All Tasks</h2>
-                <Button variant="outline" size="sm" className="gap-2 shadow-sm">
-                    <CheckSquare size={16} className="text-gray-400" />
-                    <span className="hidden sm:inline">Mark Multiple</span>
-                </Button>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                <h2 className="text-lg font-bold text-gray-900">All Tasks <span className="text-gray-400 text-sm ml-2">({tasks.length})</span></h2>
+                
+                <div className="flex items-center gap-3">
+                    <Button variant="outline" size="sm" className="gap-2 shadow-sm bg-white">
+                        <CheckSquare size={16} className="text-gray-400" />
+                        <span className="hidden sm:inline">Mark Multiple</span>
+                    </Button>
+                    <Button variant="primary" size="sm" onClick={onAddTask} className="gap-2 shadow-sm shadow-blue-500/20">
+                        <Plus size={16} strokeWidth={2.5} />
+                        New Task
+                    </Button>
+                </div>
             </div>
 
             {/* Main Task Table */}
@@ -96,8 +110,12 @@ export default function TaskListTab({
                         <tbody className="divide-y divide-gray-100 bg-white">
                             {tasks.length === 0 ? (
                                 <tr>
-                                    <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
-                                        No tasks assigned to this project yet.
+                                    <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
+                                        <div className="flex flex-col items-center justify-center">
+                                            <CheckSquare size={32} className="text-gray-300 mb-3" />
+                                            <p className="text-sm font-semibold text-gray-900">No tasks found.</p>
+                                            <p className="text-xs text-gray-500 mt-1">Get started by creating a new task for this project.</p>
+                                        </div>
                                     </td>
                                 </tr>
                             ) : (
@@ -107,17 +125,14 @@ export default function TaskListTab({
                                         className="hover:bg-gray-50 transition-colors group cursor-pointer"
                                         onClick={() => onTaskClick && onTaskClick(task.id)}
                                     >
-
                                         {/* Task Title & Metadata */}
                                         <td className="px-6 py-4">
                                             <div className="font-bold text-gray-900 group-hover:text-blue-600 transition-colors">
                                                 {task.title}
                                             </div>
                                             <div className="flex items-center gap-2 mt-1.5">
-                                                <span className="text-xs font-semibold text-gray-500">{task.id}</span>
-                                                <span className="w-1 h-1 bg-gray-300 rounded-full"></span>
                                                 <span className="text-[10px] font-bold uppercase tracking-wider text-gray-600 bg-gray-100 border border-gray-200 px-2 py-0.5 rounded">
-                                                    {task.tag}
+                                                    {task.tag || 'General'}
                                                 </span>
                                             </div>
                                         </td>
@@ -128,7 +143,7 @@ export default function TaskListTab({
                                                 {task.assigneeAvatar ? (
                                                     <img src={task.assigneeAvatar} alt={task.assigneeName} className="w-7 h-7 rounded-full border border-gray-200 object-cover" />
                                                 ) : (
-                                                    <div className="w-7 h-7 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center text-[10px] font-bold text-gray-600">
+                                                    <div className="w-7 h-7 rounded-full bg-blue-50 border border-blue-100 text-blue-600 flex items-center justify-center text-[10px] font-bold">
                                                         {getInitials(task.assigneeName)}
                                                     </div>
                                                 )}
@@ -146,7 +161,7 @@ export default function TaskListTab({
                                         {/* Priority */}
                                         <td className="px-6 py-4">
                                             <span className={cn("px-2.5 py-1 rounded text-xs font-bold", getPriorityColor(task.priority))}>
-                                                {task.priority}
+                                                {task.priority || 'Medium'}
                                             </span>
                                         </td>
 
@@ -154,7 +169,7 @@ export default function TaskListTab({
                                         <td className="px-6 py-4 text-gray-600 font-medium">
                                             <div className="flex items-center gap-2">
                                                 <Calendar size={14} className="text-gray-400" />
-                                                {task.dueDate}
+                                                {task.dueDate || 'No Date'}
                                             </div>
                                         </td>
 
@@ -167,13 +182,12 @@ export default function TaskListTab({
                                                     e.stopPropagation(); // Prevent row click from firing
                                                     if (onActionClick) onActionClick(task.id);
                                                 }}
-                                                className="p-1.5 h-8 w-8 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-full"
+                                                className="p-1.5 h-8 w-8 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-full opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-all"
                                                 aria-label="Task options"
                                             >
                                                 <MoreHorizontal size={18} />
                                             </Button>
                                         </td>
-
                                     </tr>
                                 ))
                             )}
@@ -181,7 +195,6 @@ export default function TaskListTab({
                     </table>
                 </div>
             </Card>
-
         </div>
     );
 }

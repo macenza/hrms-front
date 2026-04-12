@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Save, AlertTriangle, Trash2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Save, AlertTriangle, Trash2, Loader2 } from 'lucide-react';
 
 // UI Components
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
@@ -13,49 +13,51 @@ export type ProjectStatus = 'In Progress' | 'Completed' | 'On Hold';
 export interface ProjectSettingsPayload {
     id: string;
     projectName: string;
-    managerId: string;
+    managerName: string; // Updated to match your schema (managerName instead of managerId)
     description: string;
     status: ProjectStatus;
     dueDate: string;
 }
 
 export interface ManagerOption {
-    id: string;
     name: string;
 }
 
 interface ProjectSettingsTabProps {
     data?: ProjectSettingsPayload;
     managers?: ManagerOption[];
-    onSave?: (data: ProjectSettingsPayload) => void;
-    onDelete?: (projectId: string) => void;
+    isLoading?: boolean;
+    onSave?: (data: ProjectSettingsPayload) => Promise<void>; // Make it async
+    onDelete?: (projectId: string) => Promise<void>; // Make it async
 }
 
-// Mock Data Fallbacks
-const mockProjectData: ProjectSettingsPayload = {
-    id: 'PRJ-1042',
-    projectName: 'Website Redesign',
-    managerId: 'EMP-001',
-    description: 'Revamp the corporate website with new branding and improved accessibility.',
-    status: 'In Progress',
-    dueDate: '2023-12-15',
-};
-
-const mockManagers: ManagerOption[] = [
-    { id: 'EMP-001', name: 'Alice Johnson' },
-    { id: 'EMP-002', name: 'Bob Smith' },
-    { id: 'EMP-003', name: 'Sarah Lee' },
-];
-
 export default function ProjectSettingsTab({
-    data = mockProjectData,
-    managers = mockManagers,
+    data,
+    managers = [],
+    isLoading = false,
     onSave,
     onDelete
 }: ProjectSettingsTabProps) {
+    
+    // Centralized Form State (Initialize empty, then update when data arrives)
+    const [formData, setFormData] = useState<ProjectSettingsPayload>({
+        id: '',
+        projectName: '',
+        managerName: '',
+        description: '',
+        status: 'In Progress',
+        dueDate: ''
+    });
 
-    // Centralized Form State
-    const [formData, setFormData] = useState<ProjectSettingsPayload>(data);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
+
+    // Sync form data when the parent finishes fetching the live project data
+    useEffect(() => {
+        if (data) {
+            setFormData(data);
+        }
+    }, [data]);
 
     // Universal Change Handler
     const handleChange = (
@@ -65,40 +67,53 @@ export default function ProjectSettingsTab({
         setFormData((prev) => ({ ...prev, [name]: value }));
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-
+        
         if (onSave) {
-            onSave(formData);
-        } else {
-            console.log('Project Settings Payload Ready:', formData);
-            // Example: await apiClient.put(`/projects/${formData.id}`, formData);
-        }
-    };
-
-    const handleDelete = () => {
-        // In a real app, you'd likely trigger a confirmation modal here first
-        if (window.confirm('Are you absolutely sure you want to delete this project?')) {
-            if (onDelete) {
-                onDelete(formData.id);
-            } else {
-                console.log('Deleting project:', formData.id);
+            setIsSubmitting(true);
+            try {
+                await onSave(formData);
+            } catch (error) {
+                console.error("Save failed");
+            } finally {
+                setIsSubmitting(false);
             }
         }
     };
 
+    const handleDelete = async () => {
+        if (window.confirm('Are you absolutely sure you want to delete this project? This action cannot be undone.')) {
+            if (onDelete) {
+                setIsDeleting(true);
+                try {
+                    await onDelete(formData.id);
+                } catch (error) {
+                    console.error("Delete failed");
+                    setIsDeleting(false); // Only reset if it fails (success will redirect away)
+                }
+            }
+        }
+    };
+
+    if (isLoading) {
+        return (
+            <div className="flex flex-col items-center justify-center py-20 animate-in fade-in duration-300">
+                <Loader2 className="w-8 h-8 animate-spin text-blue-500 mb-4" />
+                <p className="text-sm text-gray-500 font-medium">Loading settings...</p>
+            </div>
+        );
+    }
+
     return (
         <div className="max-w-4xl animate-in fade-in duration-300 space-y-8">
-
             {/* General Settings */}
             <Card className="border-gray-200 shadow-sm">
                 <CardHeader className="border-b border-gray-100 pb-4 mb-6">
                     <CardTitle className="text-lg">General Details</CardTitle>
                 </CardHeader>
-
                 <CardContent>
                     <form onSubmit={handleSubmit} className="space-y-6">
-
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-1.5">
                                 <label className="text-sm font-semibold text-gray-700">Project Name</label>
@@ -115,15 +130,19 @@ export default function ProjectSettingsTab({
                             <div className="space-y-1.5">
                                 <label className="text-sm font-semibold text-gray-700">Project Manager</label>
                                 <select
-                                    name="managerId"
-                                    value={formData.managerId}
+                                    name="managerName"
+                                    value={formData.managerName}
                                     onChange={handleChange}
                                     required
                                     className="w-full h-10 px-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent text-sm bg-white font-medium"
                                 >
                                     <option value="" disabled>Select Manager...</option>
-                                    {managers.map(manager => (
-                                        <option key={manager.id} value={manager.id}>{manager.name}</option>
+                                    {/* Include current manager even if they aren't in the list to prevent empty selects */}
+                                    {formData.managerName && !managers.find(m => m.name === formData.managerName) && (
+                                        <option value={formData.managerName}>{formData.managerName}</option>
+                                    )}
+                                    {managers.map((manager, idx) => (
+                                        <option key={idx} value={manager.name}>{manager.name}</option>
                                     ))}
                                 </select>
                             </div>
@@ -169,12 +188,15 @@ export default function ProjectSettingsTab({
                         </div>
 
                         <div className="pt-4 border-t border-gray-100 flex justify-end">
-                            <Button type="submit" variant="primary" className="gap-2 shadow-sm">
-                                <Save size={16} />
-                                Save Changes
+                            <Button type="submit" variant="primary" disabled={isSubmitting} className="gap-2 shadow-sm min-w-[140px]">
+                                {isSubmitting ? (
+                                    <Loader2 size={16} className="animate-spin" />
+                                ) : (
+                                    <Save size={16} />
+                                )}
+                                {isSubmitting ? 'Saving...' : 'Save Changes'}
                             </Button>
                         </div>
-
                     </form>
                 </CardContent>
             </Card>
@@ -197,19 +219,22 @@ export default function ProjectSettingsTab({
                                 Once deleted, it will be gone forever. Please be certain.
                             </p>
                         </div>
-
                         <Button
                             type="button"
                             onClick={handleDelete}
-                            className="shrink-0 gap-2 bg-white border-2 border-red-100 text-red-600 hover:bg-red-50 hover:border-red-200"
+                            disabled={isDeleting}
+                            className="shrink-0 gap-2 bg-white border-2 border-red-100 text-red-600 hover:bg-red-50 hover:border-red-200 min-w-[140px]"
                         >
-                            <Trash2 size={16} />
-                            Delete Project
+                            {isDeleting ? (
+                                <Loader2 size={16} className="animate-spin" />
+                            ) : (
+                                <Trash2 size={16} />
+                            )}
+                            {isDeleting ? 'Deleting...' : 'Delete Project'}
                         </Button>
                     </div>
                 </CardContent>
             </Card>
-
         </div>
     );
 }

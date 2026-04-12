@@ -51,6 +51,8 @@ export default function EmployeeProfilePage() {
     const [attendanceData, setAttendanceData] = useState<{ stats: any, logs: any[] }>({ stats: null, logs: [] });
     const [isAttendanceLoading, setIsAttendanceLoading] = useState(false);
 
+    const [isUploadingDocument, setIsUploadingDocument] = useState(false);
+
     // Fetch core profile data on mount
     useEffect(() => {
         const fetchProfile = async () => {
@@ -105,6 +107,36 @@ export default function EmployeeProfilePage() {
             console.error("Failed to refresh profile");
         }
     }
+
+    // Upload Document handler
+    const handleUploadDocument = async (file: File) => {
+        setIsUploadingDocument(true);
+        try {
+            // Prepare file for backend using FormData
+            const formData = new FormData();
+            formData.append('document', file);
+
+            // This requires a new method in your employeeService to handle multipart/form-data
+            await employeeService.uploadDocument(employee.id, formData);
+
+            // Refresh the profile data to show the new document in the list
+            await refreshProfile();
+        } catch (error) {
+            console.error("Failed to upload document", error);
+            alert("Failed to upload document. Please try again.");
+        } finally {
+            setIsUploadingDocument(false);
+        }
+    };
+    const handleAddNote = async (text: string) => {
+        try {
+            await employeeService.addNote(employee.id, text);
+            await refreshProfile(); // Pull fresh data to show the new note
+        } catch (error) {
+            console.error("Failed to add note", error);
+            alert("Failed to add note. Please try again.");
+        }
+    };
 
     return (
         <div className="space-y-6 animate-in fade-in duration-300">
@@ -256,6 +288,40 @@ export default function EmployeeProfilePage() {
                             onGenerate={() => alert("Generate certificate modal opening...")}
                             onPreview={(id) => alert(`Previewing certificate ${id}`)}
                             onDownload={(id) => alert(`Downloading certificate ${id}`)}
+                        />
+                    )}
+                    {activeTab === 'documents' && (
+                        <DocumentsTab
+                            documents={employee.profile?.documents?.map((doc: any) => ({
+                                id: doc._id,
+                                name: doc.name,
+                                type: doc.type,
+                                sizeInBytes: doc.sizeInBytes,
+                                // Format MongoDB date for UI
+                                uploadDate: new Date(doc.uploadDate || doc.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+                                fileUrl: doc.fileUrl
+                            })) || []}
+                            isLoading={isProfileLoading}
+                            isUploading={isUploadingDocument}
+                            onUpload={handleUploadDocument}
+                            onActionClick={(id) => console.log(`Open menu for document ${id}`)}
+                        />
+                    )}
+                    {activeTab === 'notes' && (
+                        <NotesTab
+                            notes={employee.profile?.notes?.map((note: any) => ({
+                                id: note._id,
+                                text: note.text,
+                                authorName: note.authorName,
+                                authorRole: note.authorRole,
+                                // Format to match your UI mockup: "Oct 15, 2023 - 10:00 AM"
+                                createdAt: new Date(note.createdAt).toLocaleString('en-US', {
+                                    month: 'short', day: 'numeric', year: 'numeric',
+                                    hour: '2-digit', minute: '2-digit'
+                                })
+                            })) || []}
+                            isLoading={isProfileLoading}
+                            onAddNote={handleAddNote}
                         />
                     )}
                 </div>

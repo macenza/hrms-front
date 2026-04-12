@@ -1,17 +1,18 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { Search, ChevronDown, MoreVertical } from 'lucide-react';
+import { Search, ChevronDown, MoreVertical, Loader2, Calendar } from 'lucide-react';
+
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/utils/cn';
 
-// 1. Strict API Data Contracts
-export type AttendanceStatus = 'Present' | 'Late' | 'Absent';
+// Strict API Data Contracts
+export type AttendanceStatus = 'Present' | 'Late' | 'Absent' | 'Half Day';
 
 export interface AttendanceRecord {
-    id: string;
+    id: string; // Employee ID
     name: string;
     dept: string;
     date: string;
@@ -20,25 +21,21 @@ export interface AttendanceRecord {
     hours: string;
     late: string | null;
     status: AttendanceStatus;
+    dbId: string; // MongoDB _id
 }
 
 interface AttendanceTableProps {
     data?: AttendanceRecord[];
+    isLoading?: boolean;
+    selectedDate: string; // YYYY-MM-DD
+    onDateChange: (date: string) => void;
 }
 
-// 2. Mock Data (No UI styling classes included)
-const mockData: AttendanceRecord[] = [
-    { id: 'EMP001', name: 'Alice Johnson', dept: 'Design', date: 'Oct 24, 2023', checkIn: '09:00 AM', checkOut: '05:00 PM', hours: '8h 00m', late: null, status: 'Present' },
-    { id: 'EMP002', name: 'Bob Smith', dept: 'Engineering', date: 'Oct 24, 2023', checkIn: '09:45 AM', checkOut: '06:15 PM', hours: '8h 30m', late: '45m', status: 'Late' },
-    { id: 'EMP003', name: 'Charlie Brown', dept: 'Product', date: 'Oct 24, 2023', checkIn: null, checkOut: null, hours: '0h 00m', late: null, status: 'Absent' },
-    { id: 'EMP004', name: 'Diana Ross', dept: 'Engineering', date: 'Oct 24, 2023', checkIn: '09:00 AM', checkOut: '05:00 PM', hours: '8h 00m', late: null, status: 'Present' },
-];
+// UI Helpers
+const getInitials = (name: string) => name ? name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : '??';
 
-// 3. UI Helpers
-const getInitials = (name: string) => name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
-
-// Deterministic color assignment based on name length or first letter char code
 const getAvatarColor = (name: string) => {
+    if (!name) return 'bg-gray-100 text-gray-600';
     const colors = [
         'bg-blue-100 text-blue-600',
         'bg-green-100 text-green-600',
@@ -54,18 +51,24 @@ const getStatusBadgeVariant = (status: AttendanceStatus) => {
     switch (status) {
         case 'Present': return 'success';
         case 'Late': return 'warning';
+        case 'Half Day': return 'info';
         case 'Absent': return 'error';
         default: return 'default';
     }
 };
 
-export default function AttendanceTable({ data = mockData }: AttendanceTableProps) {
-    // 4. Local state for filters
+export default function AttendanceTable({ 
+    data = [], 
+    isLoading = false,
+    selectedDate,
+    onDateChange
+}: AttendanceTableProps) {
+    // Local state for filters
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedDept, setSelectedDept] = useState('All');
     const [selectedStatus, setSelectedStatus] = useState('All');
 
-    // 5. Client-side filtering logic (can be swapped for API refetching later)
+    // Client-side filtering logic
     const filteredData = useMemo(() => {
         return data.filter((record) => {
             const matchesSearch = record.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -77,37 +80,50 @@ export default function AttendanceTable({ data = mockData }: AttendanceTableProp
         });
     }, [data, searchTerm, selectedDept, selectedStatus]);
 
-    // Extract unique departments for the dropdown
-    const departments = ['All', ...Array.from(new Set(data.map(d => d.dept)))];
+    // Extract unique departments for the dropdown dynamically from the data
+    const departments = ['All', ...Array.from(new Set(data.map(d => d.dept).filter(Boolean)))];
 
     return (
-        <Card className="overflow-hidden border-gray-200">
-            {/* Table Filters */}
-            <div className="p-4 border-b border-gray-200 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <Card className="overflow-hidden border-gray-200 relative min-h-[400px]">
+            
+            {/* Loading Overlay */}
+            {isLoading && (
+                <div className="absolute inset-0 bg-white/70 z-10 flex flex-col items-center justify-center backdrop-blur-[1px]">
+                    <Loader2 className="w-8 h-8 animate-spin text-blue-600 mb-2" />
+                    <p className="text-sm font-medium text-gray-600">Loading attendance...</p>
+                </div>
+            )}
 
+            {/* Table Filters */}
+            <div className="p-4 border-b border-gray-200 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-white">
                 {/* Search Input */}
                 <div className="relative w-full md:w-72">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 focus-within:text-blue-600" size={18} />
                     <input
                         type="text"
                         placeholder="Search employee by name or ID"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full h-10 pl-10 pr-4 rounded-md border border-gray-300 bg-transparent text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent"
+                        className="w-full h-10 pl-10 pr-4 rounded-lg border border-gray-200 bg-gray-50 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 focus:bg-white transition-all shadow-sm"
                     />
                 </div>
 
                 {/* Filter Buttons / Selects */}
                 <div className="flex flex-wrap gap-3 w-full md:w-auto">
-                    <Button variant="outline" size="sm" className="gap-2 text-gray-600 whitespace-nowrap">
-                        Today (Oct 24) <ChevronDown size={14} />
-                    </Button>
+                <div className="relative">
+                <input
+                    type="date"
+                    value={selectedDate}
+                    onChange={(e) => onDateChange(e.target.value)}
+                    className="h-9 px-3 appearance-none bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 shadow-sm transition-all cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-50 [&::-webkit-calendar-picker-indicator]:cursor-pointer"
+                />
+            </div>
 
                     <div className="relative">
                         <select
                             value={selectedDept}
                             onChange={(e) => setSelectedDept(e.target.value)}
-                            className="h-8 pl-3 pr-8 appearance-none bg-transparent border border-gray-300 rounded-md text-sm font-medium text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                            className="h-9 pl-3 pr-8 appearance-none bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 shadow-sm transition-all cursor-pointer"
                         >
                             {departments.map(dept => (
                                 <option key={dept} value={dept}>{dept === 'All' ? 'All Departments' : dept}</option>
@@ -115,16 +131,17 @@ export default function AttendanceTable({ data = mockData }: AttendanceTableProp
                         </select>
                         <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                     </div>
-
+                    
                     <div className="relative">
                         <select
                             value={selectedStatus}
                             onChange={(e) => setSelectedStatus(e.target.value)}
-                            className="h-8 pl-3 pr-8 appearance-none bg-transparent border border-gray-300 rounded-md text-sm font-medium text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                            className="h-9 pl-3 pr-8 appearance-none bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 shadow-sm transition-all cursor-pointer"
                         >
                             <option value="All">All Status</option>
                             <option value="Present">Present</option>
                             <option value="Late">Late</option>
+                            <option value="Half Day">Half Day</option>
                             <option value="Absent">Absent</option>
                         </select>
                         <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
@@ -146,19 +163,19 @@ export default function AttendanceTable({ data = mockData }: AttendanceTableProp
                             <th className="px-6 py-4 text-center">ACTIONS</th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-100">
-                        {filteredData.length === 0 ? (
+                    <tbody className="divide-y divide-gray-100 bg-white">
+                        {!isLoading && filteredData.length === 0 ? (
                             <tr>
-                                <td colSpan={8} className="px-6 py-8 text-center text-gray-500">
+                                <td colSpan={8} className="px-6 py-12 text-center text-gray-500">
                                     No attendance records found matching your filters.
                                 </td>
                             </tr>
                         ) : (
                             filteredData.map((record) => (
-                                <tr key={record.id} className="hover:bg-gray-50 transition-colors">
+                                <tr key={record.dbId} className="hover:bg-gray-50 transition-colors group">
                                     <td className="px-6 py-4 flex items-center gap-3">
                                         <div className={cn(
-                                            "w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs",
+                                            "w-9 h-9 rounded-full flex items-center justify-center font-bold text-xs shrink-0",
                                             getAvatarColor(record.name)
                                         )}>
                                             {getInitials(record.name)}
@@ -168,19 +185,14 @@ export default function AttendanceTable({ data = mockData }: AttendanceTableProp
                                             <p className="text-xs text-gray-500">{record.id}</p>
                                         </div>
                                     </td>
-
                                     <td className="px-6 py-4 text-gray-600">{record.dept}</td>
-
                                     <td className="px-6 py-4 font-medium text-gray-900">
                                         {record.checkIn || '-'}
                                     </td>
-
                                     <td className="px-6 py-4 text-gray-600">
                                         {record.checkOut || '-'}
                                     </td>
-
                                     <td className="px-6 py-4 text-gray-600">{record.hours}</td>
-
                                     <td className="px-6 py-4">
                                         <span className={cn(
                                             "font-medium",
@@ -189,15 +201,13 @@ export default function AttendanceTable({ data = mockData }: AttendanceTableProp
                                             {record.late || '-'}
                                         </span>
                                     </td>
-
                                     <td className="px-6 py-4">
                                         <Badge variant={getStatusBadgeVariant(record.status)}>
                                             {record.status}
                                         </Badge>
                                     </td>
-
                                     <td className="px-6 py-4 text-center">
-                                        <Button variant="ghost" size="sm" className="p-2 rounded-full h-8 w-8 text-gray-400 hover:text-gray-700">
+                                        <Button variant="ghost" size="sm" className="p-2 rounded-full h-8 w-8 text-gray-400 hover:text-gray-900 hover:bg-gray-100 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all">
                                             <MoreVertical size={18} />
                                         </Button>
                                     </td>

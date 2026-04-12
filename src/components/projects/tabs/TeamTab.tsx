@@ -1,153 +1,108 @@
 'use client';
 
-import React from 'react';
-import { Mail, MessageCircle, MoreVertical, Plus, Users } from 'lucide-react';
-import { cn } from '@/utils/cn';
-
-// UI Components
-import { Card } from '@/components/ui/Card';
+import React, { useState } from 'react';
+import { Users, UserPlus, X, Loader2 } from 'lucide-react';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-
-// Data Contracts for Backend Integration
-export interface TeamMember {
-    id: string;
-    name: string;
-    role: string;
-    department: string;
-    avatar?: string | null;
-    email?: string;
-}
+import { Input } from '@/components/ui/Input';
 
 interface TeamTabProps {
-    team?: TeamMember[];
-    onAddMember?: () => void;
-    onChat?: (memberId: string) => void;
-    onEmail?: (email: string) => void;
-    onActionClick?: (memberId: string) => void;
+    projectId: string;
+    teamAvatars: string[];
+    onUpdateTeam: (newTeam: string[]) => Promise<void>;
 }
 
-// Mock Data Fallback
-const mockTeam: TeamMember[] = [
-    { id: 'EMP001', name: 'Alice Johnson', role: 'UX Designer', department: 'Design', avatar: 'https://i.pravatar.cc/150?u=1', email: 'alice@macenza.com' },
-    { id: 'EMP002', name: 'Bob Smith', role: 'Frontend Developer', department: 'Engineering', avatar: 'https://i.pravatar.cc/150?u=2', email: 'bob@macenza.com' },
-    { id: 'EMP003', name: 'Charlie Brown', role: 'Product Manager', department: 'Product', avatar: 'https://i.pravatar.cc/150?u=3', email: 'charlie@macenza.com' },
-    { id: 'EMP006', name: 'Sarah Lee', role: 'Marketing Lead', department: 'Marketing', avatar: 'https://i.pravatar.cc/150?u=6', email: 'sarah@macenza.com' },
-];
+export default function TeamTab({ projectId, teamAvatars = [], onUpdateTeam }: TeamTabProps) {
+    const [newAvatarUrl, setNewAvatarUrl] = useState('');
+    const [isSaving, setIsSaving] = useState(false);
 
-// Dynamic UI Helpers
-const getInitials = (name: string) => name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+    const handleAddMember = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!newAvatarUrl.trim()) return;
 
-const getAvatarColor = (name: string) => {
-    const colors = [
-        'bg-blue-100 text-blue-700',
-        'bg-green-100 text-green-700',
-        'bg-purple-100 text-purple-700',
-        'bg-orange-100 text-orange-700',
-        'bg-pink-100 text-pink-700'
-    ];
-    const charCode = name.charCodeAt(0) || 0;
-    return colors[charCode % colors.length];
-};
+        setIsSaving(true);
+        try {
+            // Push the new avatar to the existing array
+            const updatedTeam = [...teamAvatars, newAvatarUrl];
+            await onUpdateTeam(updatedTeam);
+            setNewAvatarUrl(''); // Clear input on success
+        } catch (error) {
+            alert('Failed to add team member.');
+        } finally {
+            setIsSaving(false);
+        }
+    };
 
-export default function TeamTab({
-    team = mockTeam,
-    onAddMember,
-    onChat,
-    onEmail,
-    onActionClick
-}: TeamTabProps) {
+    const handleRemoveMember = async (indexToRemove: number) => {
+        if (!window.confirm("Remove this team member?")) return;
+
+        setIsSaving(true);
+        try {
+            const updatedTeam = teamAvatars.filter((_, index) => index !== indexToRemove);
+            await onUpdateTeam(updatedTeam);
+        } catch (error) {
+            alert('Failed to remove team member.');
+        } finally {
+            setIsSaving(false);
+        }
+    };
 
     return (
-        <div className="animate-in fade-in duration-300">
+        <div className="max-w-4xl animate-in fade-in duration-300 space-y-6">
+            <Card className="border-gray-200 shadow-sm">
+                <CardHeader className="border-b border-gray-100 pb-4">
+                    <CardTitle className="text-lg flex items-center gap-2">
+                        <Users size={20} className="text-blue-600" />
+                        Project Team ({teamAvatars.length})
+                    </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-6">
+                    {/* Add Member Form */}
+                    <form onSubmit={handleAddMember} className="flex items-end gap-3 mb-8 bg-gray-50 p-4 rounded-xl border border-gray-100">
+                        <div className="flex-1">
+                            <Input
+                                label="Add Team Member (Avatar URL)"
+                                placeholder="https://i.pravatar.cc/150?u=new_user"
+                                value={newAvatarUrl}
+                                onChange={(e) => setNewAvatarUrl(e.target.value)}
+                            />
+                        </div>
+                        <Button type="submit" variant="primary" disabled={isSaving || !newAvatarUrl.trim()} className="gap-2">
+                            {isSaving ? <Loader2 size={16} className="animate-spin" /> : <UserPlus size={16} />}
+                            Add Member
+                        </Button>
+                    </form>
 
-            {/* Header & Actions */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-                <div>
-                    <h2 className="text-lg font-bold text-gray-900">Project Team</h2>
-                    <p className="text-sm text-gray-500 mt-1">People actively collaborating on this project.</p>
-                </div>
-                <Button
-                    variant="primary"
-                    onClick={onAddMember}
-                    className="gap-2 shadow-sm shadow-blue-500/30 w-full sm:w-auto"
-                >
-                    <Plus size={18} strokeWidth={2.5} />
-                    Add Member
-                </Button>
-            </div>
-
-            {/* Team Grid */}
-            {team.length === 0 ? (
-                <div className="p-12 flex flex-col items-center justify-center text-center bg-gray-50 border border-gray-200 border-dashed rounded-xl">
-                    <div className="p-4 bg-white rounded-full text-gray-400 mb-4 shadow-sm">
-                        <Users size={32} />
-                    </div>
-                    <p className="text-base font-bold text-gray-900">No team members yet</p>
-                    <p className="text-sm text-gray-500 mt-1 max-w-sm">
-                        Click the "Add Member" button above to start assigning people to this project.
-                    </p>
-                </div>
-            ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {team.map((member) => (
-                        <Card key={member.id} className="relative flex flex-col items-center text-center p-6 shadow-sm hover:shadow-md transition-all group border-gray-200">
-
-                            {/* Context Menu Action */}
-                            <div className="absolute top-4 right-4">
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => onActionClick && onActionClick(member.id)}
-                                    className="p-1.5 h-8 w-8 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-full"
-                                    aria-label="Member options"
-                                >
-                                    <MoreVertical size={18} />
-                                </Button>
-                            </div>
-
-                            {/* Avatar Section */}
-                            <div className="mb-4">
-                                {member.avatar ? (
+                    {/* Team Grid */}
+                    {teamAvatars.length === 0 ? (
+                        <div className="text-center py-12 text-gray-500 border-2 border-dashed border-gray-200 rounded-xl">
+                            <Users size={32} className="mx-auto text-gray-300 mb-3" />
+                            <p>No team members assigned yet.</p>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                            {teamAvatars.map((avatar, index) => (
+                                <div key={index} className="relative group bg-white border border-gray-200 rounded-xl p-4 flex flex-col items-center justify-center shadow-sm hover:border-blue-300 transition-all">
                                     <img
-                                        src={member.avatar}
-                                        alt={member.name}
-                                        className="w-20 h-20 rounded-full border-4 border-gray-50 object-cover shadow-sm group-hover:border-blue-50 transition-colors"
+                                        src={avatar}
+                                        alt={`Team member ${index + 1}`}
+                                        className="w-16 h-16 rounded-full object-cover shadow-sm mb-3"
+                                        onError={(e) => (e.currentTarget.src = 'https://i.pravatar.cc/150?u=fallback')} // Fallback if image breaks
                                     />
-                                ) : (
-                                    <div className={cn(
-                                        "w-20 h-20 rounded-full border-4 border-gray-50 shadow-sm flex items-center justify-center text-2xl font-bold group-hover:border-blue-50 transition-colors",
-                                        getAvatarColor(member.name)
-                                    )}>
-                                        {getInitials(member.name)}
-                                    </div>
-                                )}
-                            </div>
+                                    <p className="text-xs font-medium text-gray-500">Member {index + 1}</p>
 
-                            {/* Employee Details */}
-                            <h3 className="font-bold text-gray-900 text-lg">{member.name}</h3>
-                            <p className="text-sm text-blue-600 font-semibold mb-1">{member.role}</p>
-                            <p className="text-xs text-gray-500 mb-6">{member.department}</p>
-
-                            {/* Quick Actions Footer */}
-                            <div className="flex items-center gap-3 w-full border-t border-gray-100 pt-4 mt-auto">
-                                <button
-                                    onClick={() => onChat && onChat(member.id)}
-                                    className="flex-1 flex items-center justify-center gap-2 py-2 bg-gray-50 text-gray-600 rounded-lg text-sm font-bold hover:bg-gray-100 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
-                                >
-                                    <MessageCircle size={16} /> Chat
-                                </button>
-                                <button
-                                    onClick={() => onEmail && member.email && onEmail(member.email)}
-                                    className="flex-1 flex items-center justify-center gap-2 py-2 bg-gray-50 text-gray-600 rounded-lg text-sm font-bold hover:bg-gray-100 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
-                                >
-                                    <Mail size={16} /> Email
-                                </button>
-                            </div>
-
-                        </Card>
-                    ))}
-                </div>
-            )}
+                                    <button
+                                        onClick={() => handleRemoveMember(index)}
+                                        className="absolute top-2 right-2 p-1.5 bg-red-50 text-red-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-100"
+                                    >
+                                        <X size={14} />
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
         </div>
     );
 }

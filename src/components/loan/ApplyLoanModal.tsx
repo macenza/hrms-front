@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
-import { AlignLeft, IndianRupee, Calendar } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { AlignLeft, IndianRupee, Calendar, Loader2 } from 'lucide-react';
 
 // UI Components
 import { Modal } from '@/components/ui/Modal';
@@ -26,8 +26,8 @@ export interface LoanApplicationPayload {
 interface ApplyLoanModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onSubmit?: (data: LoanApplicationPayload) => void;
-    employees?: SelectOption[]; // Passed down so it can be dynamically populated from an API later
+    onSubmit: (data: LoanApplicationPayload) => Promise<void>; // Updated to expect a Promise
+    employees?: SelectOption[];
 }
 
 const initialFormState: LoanApplicationPayload = {
@@ -39,23 +39,23 @@ const initialFormState: LoanApplicationPayload = {
     reason: ''
 };
 
-// Mock data fallback for employees
-const mockEmployees: SelectOption[] = [
-    { id: 'EMP001', label: 'Alice Johnson (EMP001)' },
-    { id: 'EMP002', label: 'Bob Smith (EMP002)' },
-];
-
 export default function ApplyLoanModal({
     isOpen,
     onClose,
     onSubmit,
-    employees = mockEmployees
+    employees = []
 }: ApplyLoanModalProps) {
 
-    // Centralized Form State
     const [formData, setFormData] = useState<LoanApplicationPayload>(initialFormState);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // Universal Change Handler
+    // Auto-select employee if there is only 1 (Role-Based: Standard Employees applying for themselves)
+    useEffect(() => {
+        if (isOpen && employees.length === 1) {
+            setFormData(prev => ({ ...prev, employeeId: employees[0].id }));
+        }
+    }, [isOpen, employees]);
+
     const handleChange = (
         e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
     ) => {
@@ -64,27 +64,28 @@ export default function ApplyLoanModal({
     };
 
     const handleClose = () => {
-        setFormData(initialFormState); // Clear form on close
+        setFormData(initialFormState);
+        setIsSubmitting(false);
         onClose();
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-
-        // When backend is ready: await apiClient.post('/loans/request', formData);
-        if (onSubmit) {
-            onSubmit(formData);
-        } else {
-            console.log('Loan Application Payload Ready:', formData);
+        setIsSubmitting(true);
+        try {
+            await onSubmit(formData);
+            handleClose(); // Close and reset only on success
+        } catch (error) {
+            console.error('Submission failed:', error);
+            // Modal stays open so the user can fix errors
+        } finally {
+            setIsSubmitting(false);
         }
-
-        handleClose();
     };
 
     return (
         <Modal isOpen={isOpen} onClose={handleClose} title="New Loan Request" className="max-w-lg">
-            <form onSubmit={handleSubmit} className="flex flex-col h-full">
-
+            <form id="loan-form" onSubmit={handleSubmit} className="flex flex-col h-full">
                 <div className="flex-1 space-y-5 p-2">
 
                     {/* Employee Selection */}
@@ -95,11 +96,12 @@ export default function ApplyLoanModal({
                             value={formData.employeeId}
                             onChange={handleChange}
                             required
-                            className="w-full h-10 px-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent text-sm bg-white"
+                            disabled={employees.length === 1 || isSubmitting}
+                            className="w-full h-10 px-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent text-sm bg-white disabled:bg-gray-100 disabled:text-gray-500"
                         >
                             <option value="" disabled>Search employee...</option>
-                            {employees.map(emp => (
-                                <option key={emp.id} value={emp.id}>{emp.label}</option>
+                            {employees.map((emp, index) => (
+                                <option key={emp.id || `fallback-${index}`} value={emp.id}>{emp.label}</option>
                             ))}
                         </select>
                     </div>
@@ -113,6 +115,7 @@ export default function ApplyLoanModal({
                                 value={formData.loanType}
                                 onChange={handleChange}
                                 required
+                                disabled={isSubmitting}
                                 className="w-full h-10 px-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent text-sm bg-white"
                             >
                                 <option value="" disabled>Select type...</option>
@@ -122,7 +125,7 @@ export default function ApplyLoanModal({
                             </select>
                         </div>
 
-                        {/* Amount with custom Rupee Icon */}
+                        {/* Amount */}
                         <div className="space-y-1.5">
                             <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
                                 <IndianRupee size={16} className="text-gray-400" /> Amount
@@ -135,9 +138,10 @@ export default function ApplyLoanModal({
                                     value={formData.amount}
                                     onChange={handleChange}
                                     required
+                                    disabled={isSubmitting}
                                     placeholder="50000"
-                                    min="0"
-                                    className="w-full h-10 pl-7 pr-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent text-sm"
+                                    min="1000"
+                                    className="w-full h-10 pl-7 pr-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent text-sm disabled:bg-gray-50"
                                 />
                             </div>
                         </div>
@@ -154,6 +158,7 @@ export default function ApplyLoanModal({
                                 value={formData.tenure}
                                 onChange={handleChange}
                                 required
+                                disabled={isSubmitting}
                                 className="w-full h-10 px-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent text-sm bg-white"
                             >
                                 <option value="" disabled>Select tenure...</option>
@@ -172,6 +177,7 @@ export default function ApplyLoanModal({
                                 name="deductionStart"
                                 value={formData.deductionStart}
                                 onChange={handleChange}
+                                disabled={isSubmitting}
                                 required
                             />
                         </div>
@@ -186,22 +192,28 @@ export default function ApplyLoanModal({
                             name="reason"
                             value={formData.reason}
                             onChange={handleChange}
+                            disabled={isSubmitting}
                             placeholder="Add any specific details regarding this request..."
-                            className="w-full px-3 py-2 text-sm rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent min-h-[100px] resize-y bg-white"
+                            className="w-full px-3 py-2 text-sm rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent min-h-[100px] resize-y bg-white disabled:bg-gray-50"
                         />
                     </div>
                 </div>
 
                 {/* Footer Controls */}
-                <div className="pt-6 mt-6 border-t border-gray-100 flex justify-end gap-3">
-                    <Button type="button" variant="ghost" onClick={handleClose}>
+                <div className="pt-6 mt-2 border-t border-gray-100 flex justify-end gap-3 px-2 pb-2 shrink-0">
+                    <Button type="button" variant="ghost" onClick={handleClose} disabled={isSubmitting}>
                         Cancel
                     </Button>
-                    <Button type="submit" variant="primary">
-                        Submit Request
+                    <Button
+                        type="submit"
+                        variant="primary"
+                        disabled={isSubmitting || !formData.employeeId || !formData.amount}
+                        className="min-w-[140px] gap-2"
+                    >
+                        {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : null}
+                        {isSubmitting ? 'Submitting...' : 'Submit Request'}
                     </Button>
                 </div>
-
             </form>
         </Modal>
     );

@@ -126,4 +126,28 @@ export const employeeService = {
             throw error;
         }
     },
+
+    uploadDocument: async (id: string, formData: FormData) => {
+        try {
+            const response = await apiClient.post(`/employees/${id}/documents`, formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data' // Required for file uploads
+                }
+            });
+            return response.data;
+        } catch (error) {
+            console.error(`Error uploading document for employee ${id}:`, error);
+            throw error;
+        }
+    },
+
+    addNote: async (id: string, text: string) => {
+        try {
+            const response = await apiClient.post(`/employees/${id}/notes`, { text });
+            return response.data;
+        } catch (error) {
+            console.error(`Error adding note for employee ${id}:`, error);
+            throw error;
+        }
+    },
 };

@@ -1,39 +1,67 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Megaphone, Filter } from 'lucide-react';
+import toast from 'react-hot-toast';
 
-// UI Components
 import { Button } from '@/components/ui/Button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 
-// Feature Components
-import NoticeStats from '@/components/notice/NoticeStats';
-import NoticeFeed from '@/components/notice/NoticeFeed';
-import CreateNoticeModal, { NoticePayload } from '@/components/notice/CreateNoticeModal';
+import NoticeStats, { NoticeStatsData } from '@/components/notice/NoticeStats';
+import NoticeFeed, { Notice } from '@/components/notice/NoticeFeed';
+import CreateNoticeModal from '@/components/notice/CreateNoticeModal';
+
+import { noticeService } from '@/services/noticeService';
 
 export default function NoticePage() {
     const [isModalOpen, setIsModalOpen] = useState(false);
-
-    // Controlled Filter State
     const [categoryFilter, setCategoryFilter] = useState('all');
+    
+    const [notices, setNotices] = useState<Notice[]>([]);
+    const [stats, setStats] = useState<NoticeStatsData | null>(null);
+    
+    const [isLoadingNotices, setIsLoadingNotices] = useState(true);
+    const [isLoadingStats, setIsLoadingStats] = useState(true);
 
-    // In the future, this is where you will fetch your data hooks:
-    // const { data: stats } = useNoticeStats();
-    // const { data: notices, isLoading } = useNotices({ category: categoryFilter });
+    const fetchNotices = useCallback(async () => {
+        setIsLoadingNotices(true);
+        try {
+            const payload = await noticeService.getNotices({ category: categoryFilter });
+            
+            setNotices(payload.data || []); 
+        } catch (error) {
+            console.error('Failed to fetch notices:', error);
+            toast.error('Failed to load announcements.');
+        } finally {
+            setIsLoadingNotices(false);
+        }
+    }, [categoryFilter]);
 
-    const handleCreateNotice = (payload: NoticePayload) => {
-        // When backend is ready (handling potential file uploads via FormData):
-        // const data = new FormData();
-        // data.append('title', payload.title); ... etc.
-        // await apiClient.post('/notices', data);
+    const fetchStats = useCallback(async () => {
+        setIsLoadingStats(true);
+        try {
+            const payload = await noticeService.getNoticeStats();
 
-        console.log('Submitting new notice:', payload);
+            setStats(payload.data || null);
+        } catch (error) {
+            console.error('Failed to fetch notice stats:', error);
+        } finally {
+            setIsLoadingStats(false);
+        }
+    }, []);
 
-        // Trigger a re-fetch of your notices here
-        // mutate('/api/notices');
+    useEffect(() => {
+        fetchNotices();
+    }, [fetchNotices]);
 
+    useEffect(() => {
+        fetchStats();
+    }, [fetchStats]);
+
+    const handleNoticeSuccess = () => {
         setIsModalOpen(false);
+        fetchNotices();
+        fetchStats();
     };
 
     return (
@@ -46,7 +74,6 @@ export default function NoticePage() {
                         Company-wide announcements, updates, and events
                     </p>
                 </div>
-
                 <div className="flex items-center gap-3">
                     <Button
                         variant="primary"
@@ -60,35 +87,33 @@ export default function NoticePage() {
             </div>
 
             {/* Statistics Cards */}
-            {/* <NoticeStats data={stats} /> */}
-            <NoticeStats />
+            <NoticeStats data={stats} isLoading={isLoadingStats} />
 
             {/* Main Feed */}
             <Card className="border-gray-200">
                 <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-gray-100">
                     <CardTitle className="text-lg">Recent Announcements</CardTitle>
-
-                    {/* Controlled Category Filter */}
                     <div className="relative flex items-center">
                         <Filter className="absolute left-3 text-gray-400 pointer-events-none" size={16} />
                         <select
                             value={categoryFilter}
                             onChange={(e) => setCategoryFilter(e.target.value)}
-                            className="h-9 pl-9 pr-8 py-1.5 border border-gray-200 rounded-md text-sm text-gray-700 font-medium outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent bg-white cursor-pointer appearance-none transition-all"
+                            disabled={isLoadingNotices}
+                            className="h-9 pl-9 pr-8 py-1.5 border border-gray-200 rounded-md text-sm text-gray-700 font-medium outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent bg-white cursor-pointer appearance-none transition-all disabled:opacity-50"
                         >
                             <option value="all">All Categories</option>
                             <option value="hr">HR & Policy</option>
                             <option value="events">Events</option>
                             <option value="it">IT Updates</option>
+                            <option value="general">General</option>
                         </select>
                     </div>
                 </CardHeader>
-
                 <CardContent className="pt-6">
-                    {/* <NoticeFeed notices={notices} /> */}
-                    <NoticeFeed
+                    <NoticeFeed 
+                        notices={notices} 
+                        isLoading={isLoadingNotices}
                         onActionClick={(id) => console.log('Action menu for:', id)}
-                        onAttachmentClick={(file) => console.log('Downloading:', file)}
                     />
                 </CardContent>
             </Card>
@@ -97,7 +122,7 @@ export default function NoticePage() {
             <CreateNoticeModal
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
-                onSubmit={handleCreateNotice}
+                onSuccess={handleNoticeSuccess} 
             />
         </div>
     );

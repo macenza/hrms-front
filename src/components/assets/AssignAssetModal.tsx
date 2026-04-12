@@ -1,12 +1,12 @@
 'use client';
 
-import React, { useState } from 'react';
-import { User, Laptop, Calendar, AlignLeft } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { User, Laptop, Calendar, AlignLeft, Loader2 } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 
-// 1. Data contracts for dropdowns and API submission
+// Data contracts for dropdowns and API submission
 export interface SelectOption {
     id: string;
     label: string;
@@ -22,62 +22,67 @@ export interface AssignAssetPayload {
 interface AssignAssetModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onSubmit?: (payload: AssignAssetPayload) => void;
-    // Passing these as props makes the component reusable and ready for live API data
+    onSubmit?: (payload: AssignAssetPayload) => Promise<void>; // Upgraded to expect a Promise for loading states
     employees?: SelectOption[];
     availableAssets?: SelectOption[];
 }
 
-// Mock data fallbacks for development
-const mockEmployees = [
-    { id: 'EMP001', label: 'Alice Johnson (EMP001)' },
-    { id: 'EMP002', label: 'Bob Smith (EMP002)' },
-];
-
-const mockAssets = [
-    { id: 'AST-1088', label: 'iPhone 13 Pro (AST-1088)' },
-    { id: 'AST-1090', label: 'Logitech MX Master 3 (AST-1090)' },
-];
+const initialFormState: AssignAssetPayload = {
+    employeeId: '',
+    assetId: '',
+    assignmentDate: '',
+    notes: ''
+};
 
 export default function AssignAssetModal({
     isOpen,
     onClose,
     onSubmit,
-    employees = mockEmployees,
-    availableAssets = mockAssets
+    employees = [],
+    availableAssets = []
 }: AssignAssetModalProps) {
 
-    // 2. Track form state for backend submission
-    const [formData, setFormData] = useState<AssignAssetPayload>({
-        employeeId: '',
-        assetId: '',
-        assignmentDate: '',
-        notes: ''
-    });
+    // Track form state for backend submission
+    const [formData, setFormData] = useState<AssignAssetPayload>(initialFormState);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // Auto-select employee if there is only 1 option
+    useEffect(() => {
+        if (isOpen && employees.length === 1) {
+            setFormData(prev => ({ ...prev, employeeId: employees[0].id }));
+        }
+    }, [isOpen, employees]);
 
     const handleChange = (e: React.ChangeEvent<HTMLSelectElement | HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-
-        // In the future, this is where API service call goes:
-        // await apiClient.post('/assets/assign', formData);
-
-        if (onSubmit) {
-            onSubmit(formData);
-        } else {
-            console.log('API Payload Ready:', formData);
-        }
-
+    const handleClose = () => {
+        setFormData(initialFormState); // Clear form on close
+        setIsSubmitting(false);
         onClose();
-        // Optional: Reset form state here if desired
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsSubmitting(true);
+
+        try {
+            if (onSubmit) {
+                await onSubmit(formData);
+            }
+            handleClose(); // Close and reset only on success
+        } catch (error) {
+            console.error('Submission failed:', error);
+            // Modal stays open so the user can fix any errors
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     return (
-        <Modal isOpen={isOpen} onClose={onClose} title="Assign Asset">
+        <Modal isOpen={isOpen} onClose={handleClose} title="Assign Asset" className="max-w-lg">
             <form onSubmit={handleSubmit} className="flex flex-col h-full">
                 <div className="flex-1 space-y-5 p-2">
 
@@ -91,11 +96,12 @@ export default function AssignAssetModal({
                             value={formData.employeeId}
                             onChange={handleChange}
                             required
-                            className="w-full h-10 px-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent text-sm bg-white"
+                            disabled={employees.length === 1 || isSubmitting}
+                            className="w-full h-10 px-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent text-sm bg-white disabled:bg-gray-100 disabled:text-gray-500"
                         >
                             <option value="" disabled>Search employee...</option>
-                            {employees.map(emp => (
-                                <option key={emp.id} value={emp.id}>{emp.label}</option>
+                            {employees.map((emp, index) => (
+                                <option key={emp.id || `emp-${index}`} value={emp.id || ""}>{emp.label}</option>
                             ))}
                         </select>
                     </div>
@@ -110,11 +116,18 @@ export default function AssignAssetModal({
                             value={formData.assetId}
                             onChange={handleChange}
                             required
-                            className="w-full h-10 px-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent text-sm bg-white"
+                            disabled={isSubmitting}
+                            className="w-full h-10 px-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent text-sm bg-white disabled:bg-gray-100 disabled:text-gray-500"
                         >
                             <option value="" disabled>Select available asset...</option>
-                            {availableAssets.map(asset => (
-                                <option key={asset.id} value={asset.id}>{asset.label}</option>
+                            {availableAssets.length === 0 && (
+                                <option value="" disabled>No assets currently available</option>
+                            )}
+                            {availableAssets.map((asset, index) => (
+                                // FIX: Add || "" to the value prop to prevent HTML text fallback
+                                <option key={asset.id || `asset-${index}`} value={asset.id || ""}>
+                                    {asset.label}
+                                </option>
                             ))}
                         </select>
                     </div>
@@ -129,6 +142,7 @@ export default function AssignAssetModal({
                             name="assignmentDate"
                             value={formData.assignmentDate}
                             onChange={handleChange}
+                            disabled={isSubmitting}
                             required
                         />
                     </div>
@@ -142,19 +156,26 @@ export default function AssignAssetModal({
                             name="notes"
                             value={formData.notes}
                             onChange={handleChange}
+                            disabled={isSubmitting}
                             placeholder="Add any notes about the asset's condition before handover..."
-                            className="w-full px-3 py-2 text-sm rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent min-h-[100px] resize-y bg-white"
+                            className="w-full px-3 py-2 text-sm rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent min-h-[100px] resize-y bg-white disabled:bg-gray-50 disabled:text-gray-500"
                         />
                     </div>
                 </div>
 
                 {/* Footer Controls */}
-                <div className="pt-6 mt-6 border-t border-gray-100 flex justify-end gap-3">
-                    <Button type="button" variant="ghost" onClick={onClose}>
+                <div className="pt-6 mt-6 border-t border-gray-100 flex justify-end gap-3 px-2 pb-2 shrink-0">
+                    <Button type="button" variant="ghost" onClick={handleClose} disabled={isSubmitting}>
                         Cancel
                     </Button>
-                    <Button type="submit" variant="primary">
-                        Assign Asset
+                    <Button
+                        type="submit"
+                        variant="primary"
+                        disabled={isSubmitting || !formData.employeeId || !formData.assetId}
+                        className="min-w-[140px] gap-2"
+                    >
+                        {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : null}
+                        {isSubmitting ? 'Assigning...' : 'Assign Asset'}
                     </Button>
                 </div>
             </form>
