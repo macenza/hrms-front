@@ -91,3 +91,16 @@ export interface Leave {
     createdAt: string;
     updatedAt: string;
 }
+
+// Signup payload
+export interface SignupPayload {
+    name: string;
+    email: string;
+    password: string;
+    role: string;
+    team: string;
+    profile: {
+        phone: string;
+        address: string;
+    };
+}

@@ -1,71 +1,75 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
+// Architect Note: Centralized configuration for route access
+// Maps roles to an array of route prefixes they are NOT allowed to access
+const RESTRICTED_ROUTES: Record<string, string[]> = {
+    employee: ['/employees', '/payroll', '/assets'],
+    // HR and Admin have no restricted frontend routes in this array, but you could add them here if needed
+};
+
 export function middleware(request: NextRequest) {
-    // Extract the tokens from the cookies we set during login
+    // Extract tokens
     const token = request.cookies.get('token')?.value;
-    const role = request.cookies.get('role')?.value;
+    const rawRole = request.cookies.get('role')?.value;
     const { pathname } = request.nextUrl;
 
-    // Define our route categories
+    // Normalize the role to prevent case-sensitivity bugs (e.g., 'Admin' vs 'admin')
+    const role = rawRole ? rawRole.toLowerCase() : 'unauthenticated';
+
     const isAuthRoute = pathname.startsWith('/login') || pathname.startsWith('/signup');
     
-    // These are protected app routes
+    // Protect all main app routes
     const protectedPrefixes = [
-        '/dashboard', '/employees', '/leave', '/loan',
-        '/notice', '/payroll', '/projects', '/settings', '/profile'
+        '/dashboard', '/employees', '/leave', '/loan', '/assets',
+        '/notice', '/payroll', '/projects', '/settings', '/profile', '/attendance'
     ];
     const isProtectedRoute = protectedPrefixes.some(prefix => pathname.startsWith(prefix));
 
     // --- SECURITY CHECKS ---
 
-    // Check A: If they are logged in, DO NOT let them see the login/signup pages.
-    // Send them straight to the dashboard.
+    // Check A: Prevent logged-in users from seeing Auth pages
     if (isAuthRoute) {
         if (token) {
             return NextResponse.redirect(new URL('/dashboard', request.url));
         }
-        // If no token, let them proceed to login/signup
         return NextResponse.next(); 
     }
 
-    // Check B: If they are trying to access the app but ARE NOT logged in.
-    // Kick them back to the login page.
+    // Check B: Prevent unauthenticated users from seeing Protected pages
     if (isProtectedRoute && !token) {
-        return NextResponse.redirect(new URL('/login', request.url));
+        // Optional UX Enhancement: Pass a 'next' parameter so they can return to their intended page after logging in
+        const loginUrl = new URL('/login', request.url);
+        loginUrl.searchParams.set('redirect_to', pathname);
+        return NextResponse.redirect(loginUrl);
     }
 
-    // Check C: Role-Based Access Control (RBAC)
-    // Now that we know they are logged in, check if they have the right rank.
-    
-    // Example: Let's assume you have (or will have) an /admin route group
-    if (pathname.startsWith('/admin')) {
-        if (role !== 'Admin') {
-            // If an Employee or HR tries to enter, send them back to the dashboard
-            return NextResponse.redirect(new URL('/dashboard', request.url));
+    // Check C: Strict Role-Based Access Control (RBAC)
+    if (isProtectedRoute && token) {
+        // Look up the restricted routes for this specific user's role
+        const restrictedForUser = RESTRICTED_ROUTES[role] || [];
+
+        // Check if the current pathname starts with any of the restricted routes
+        const isTryingToAccessRestricted = restrictedForUser.some(route => pathname.startsWith(route));
+
+        if (isTryingToAccessRestricted) {
+            // UX Enhancement: Redirect with an error flag so the Dashboard can show a Toast notification
+            const dashboardUrl = new URL('/dashboard', request.url);
+            dashboardUrl.searchParams.set('error', 'unauthorized');
+            return NextResponse.redirect(dashboardUrl);
         }
     }
 
-    // Example: Let's assume you have an /hr route group
-    if (pathname.startsWith('/hr')) {
-        // Both HR and Admin can usually access HR routes, but Employees cannot
-        if (role !== 'HR' && role !== 'Admin') {
-            return NextResponse.redirect(new URL('/dashboard', request.url));
-        }
-    }
-
-    // If they pass all checks, let them render the page!
+    // If they pass all checks, let the request proceed to the page
     return NextResponse.next();
 }
 
-//  Configure the Matcher
-// This tells Next.js which paths the middleware should run on.
-// We exclude API routes, static files, and Next.js internal files to save performance.
+// Configure the Matcher
 export const config = {
     matcher: [
         /*
          * Match all request paths except for the ones starting with:
-         * - api (API routes)
+         * - api (Next.js API routes)
          * - _next/static (static files)
          * - _next/image (image optimization files)
          * - favicon.ico, sitemap.xml, robots.txt (metadata files)

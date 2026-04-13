@@ -1,44 +1,39 @@
-// src/components/dashboard/WorkingFormat.tsx
 "use client";
-
 import React from "react";
 import { PieChart, Pie, Cell, Tooltip } from "recharts";
 import { useAppSelector } from "@/store/hooks";
 import { Loader2 } from "lucide-react";
 
-// Fallback color mapping based on your schema enums
-const FORMAT_COLORS: Record<string, string> = {
-    "Office": "#3B82F6", // blue-500
-    "Remote": "#10B981", // emerald-500
-    "Field": "#F59E0B",  // amber-500
+// Color mapping to reflect Roles instead of formats
+const ROLE_COLORS: Record<string, string> = {
+    "Admin": "#8B5CF6",    // purple-500
+    "HR": "#EC4899",       // pink-500
+    "Employee": "#3B82F6", // blue-500
     "Unspecified": "#9CA3AF" // gray-400
 };
 
 interface WorkingFormatProps {
     isDark?: boolean;
+    disableAnimations?: boolean; // Accept animation flag
 }
 
-export default function WorkingFormat({ isDark = false }: WorkingFormatProps) {
-    // Pull the live attendance state from Redux
+export default function WorkingFormat({ isDark = false, disableAnimations = false }: WorkingFormatProps) {
     const { attendance, isLoading } = useAppSelector((state) => state.dashboard);
 
-    // Format the Redux Record<string, number> into the array format Recharts needs
     const chartData = React.useMemo(() => {
         if (!attendance?.workingFormat) return [];
-
         return Object.entries(attendance.workingFormat).map(([label, count]) => ({
             label,
             count,
-            color: FORMAT_COLORS[label] || FORMAT_COLORS["Unspecified"]
+            color: ROLE_COLORS[label] || ROLE_COLORS["Unspecified"]
         }));
     }, [attendance?.workingFormat]);
 
     const total = chartData.reduce((acc, s) => acc + s.count, 0);
 
-    // Loading skeleton
     if (isLoading && !attendance) {
         return (
-            <div className={`rounded-2xl p-5 flex items-center justify-center h-full min-h-[220px] transition-colors duration-300 ${isDark ? "bg-gray-800 border border-gray-700" : "bg-white border border-gray-100"}`}>
+            <div className={`rounded-2xl p-5 flex items-center justify-center h-full min-h-[220px] transition-colors duration-300 ${isDark ? "bg-gray-800 border-gray-700" : "bg-white border-gray-100"} border`}>
                 <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
             </div>
         );
@@ -48,38 +43,31 @@ export default function WorkingFormat({ isDark = false }: WorkingFormatProps) {
         <div
             className={`
                 rounded-2xl p-5 flex flex-col gap-4 h-full min-w-0 relative
-                transition-colors duration-300 shadow-sm
-                ${isDark ? "bg-gray-800 border border-gray-700" : "bg-white border border-gray-100"}
+                transition-colors duration-300 shadow-sm border
+                ${isDark ? "bg-gray-800 border-gray-700" : "bg-white border-gray-100"}
             `}
         >
-            {/* Soft loading overlay during timeframe toggles */}
             {isLoading && attendance && (
                 <div className="absolute inset-0 bg-white/50 dark:bg-gray-800/50 flex items-center justify-center z-10 rounded-2xl">
                     <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
                 </div>
             )}
-
-            {/* Header */}
+            
             <div className="flex items-center justify-between">
                 <h3 className={`text-base font-semibold ${isDark ? "text-white" : "text-gray-900"}`}>
-                    Working Format
+                    Role Distribution
                 </h3>
-                {/* Note: In a real app, this might open a modal or route to a specific report */}
                 <button className="text-xs font-bold text-blue-600 hover:text-blue-700 transition-colors bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-md">
                     See All
                 </button>
             </div>
-
+            
             {chartData.length === 0 ? (
                 <div className="flex-1 flex items-center justify-center text-sm text-gray-400">
-                    No format data available.
+                    No role data available.
                 </div>
             ) : (
-                <>
-                    {/* Chart + Legend */}
-                    <div className="flex items-center gap-6 mt-2">
-                    
-                    {/* Donut Chart */}
+                <div className="flex items-center gap-6 mt-2">             
                     <div className="relative w-36 h-36 shrink-0">
                         <PieChart width={144} height={144}>
                             <Pie
@@ -94,6 +82,7 @@ export default function WorkingFormat({ isDark = false }: WorkingFormatProps) {
                                 startAngle={90}
                                 endAngle={-270}
                                 stroke="none"
+                                isAnimationActive={!disableAnimations} // CHANGE 4: Conditional animation
                             >
                                 {chartData.map((segment) => (
                                     <Cell 
@@ -114,13 +103,10 @@ export default function WorkingFormat({ isDark = false }: WorkingFormatProps) {
                                     color: isDark ? "#E5E7EB" : "#111827",
                                     boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
                                 }}
-                                formatter={(value: any) => [
-                                    `${value ?? 0} employees`,
-                                ]}
+                                formatter={(value: any) => [`${value ?? 0} employees`]}
                             />
                         </PieChart>
-
-                        {/* Center Total Label */}
+                        
                         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                             <span className={`text-xl font-black leading-none mb-1 ${isDark ? "text-white" : "text-gray-900"}`}>
                                 {total}
@@ -130,8 +116,7 @@ export default function WorkingFormat({ isDark = false }: WorkingFormatProps) {
                             </span>
                         </div>
                     </div>
-
-                    {/* Legend List */}
+                    
                     <div className="flex flex-col gap-3 flex-1">
                         {chartData.map((segment) => (
                             <div key={segment.label} className="flex items-center gap-2.5">
@@ -139,9 +124,7 @@ export default function WorkingFormat({ isDark = false }: WorkingFormatProps) {
                                     className="w-3 h-3 rounded-full shrink-0 shadow-sm"
                                     style={{ backgroundColor: segment.color }}
                                 />
-                                <span
-                                    className={`text-sm flex items-center gap-1.5 ${isDark ? "text-gray-300" : "text-gray-600"}`}
-                                >
+                                <span className={`text-sm flex items-center gap-1.5 ${isDark ? "text-gray-300" : "text-gray-600"}`}>
                                     <span className={`font-bold ${isDark ? "text-white" : "text-gray-900"}`}>
                                         {segment.count}
                                     </span>{" "}
@@ -150,9 +133,7 @@ export default function WorkingFormat({ isDark = false }: WorkingFormatProps) {
                             </div>
                         ))}
                     </div>
-                    
-                    </div>
-                </>
+                </div>
             )}
         </div>
     );
