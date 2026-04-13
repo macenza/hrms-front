@@ -178,7 +178,7 @@ export default function GeneralSettings({
                                 <label className="text-sm font-bold text-gray-700">Company Name</label>
                                 <Input
                                     name="name"
-                                    value={formData.name}
+                                    value={formData.name || ''}
                                     onChange={handleChange}
                                     placeholder="e.g. Acme Corp"
                                     required

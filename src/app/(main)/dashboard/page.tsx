@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useMemo } from "react";
 import { CalendarDays, Upload, Loader2 } from "lucide-react";
 import dynamic from 'next/dynamic';
 
@@ -14,7 +14,7 @@ import { STAT_CARDS } from "@/lib/data";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { fetchDashboardStats, fetchDashboardAttendance } from "@/store/dashboardSlice";
 
-// Skip SSR for Recharts components
+// Skip SSR for Recharts components - significantly improves initial load time
 const AttendanceChart = dynamic(
     () => import('@/components/dashboard/AttendanceChart'),
     {
@@ -32,32 +32,48 @@ const WorkingFormat = dynamic(
 );
 
 export default function DashboardPage() {
-    const isDark = false; // You can hook this up to your ThemeProvider later
+    const isDark = false; // Hook this up to ThemeProvider later
     const dispatch = useAppDispatch();
     
     // Pull global state
     const { stats, attendanceTimeframe, isLoading } = useAppSelector((state) => state.dashboard);
+    
+    // Architect Note: Assuming auth state exists. Adjust the path if your slice is named differently.
+    const { user } = useAppSelector((state) => state.auth);
 
-    // Trigger initial data fetch when the dashboard mounts
+    // RBAC Flags
+    const role = user?.role?.toLowerCase() || 'employee'; // Fallback to lowest privilege
+    const isAdminOrHR = role === 'admin' || role === 'hr';
+    const isEmployee = role === 'employee';
+
+    // Override timeframe for employees (Change 3)
+    const activeTimeframe = isEmployee ? 'month' : attendanceTimeframe;
+
     useEffect(() => {
-        dispatch(fetchDashboardStats());
-        dispatch(fetchDashboardAttendance(attendanceTimeframe));
-    }, [dispatch, attendanceTimeframe]);
+        // Only fetch global stats if the user has permission
+        if (isAdminOrHR) {
+            dispatch(fetchDashboardStats());
+        }
+        
+        // Fetch attendance. The backend should automatically scope this to "self" if role is Employee
+        dispatch(fetchDashboardAttendance(activeTimeframe));
+    }, [dispatch, activeTimeframe, isAdminOrHR]);
 
-    // Handle Client-Side CSV Export
-    const handleExport = () => {
-        if (!stats) return;
-
-        // Create CSV content from the Redux stats
-        const csvContent = [
+    // Performance Optimization: Memoize CSV generation so it doesn't recalculate on every re-render
+    const csvContent = useMemo(() => {
+        if (!stats) return null;
+        return [
             ["Metric", "Count"],
             ["Total Employees", stats.totalUsers],
             ["Active Employees", stats.activeUsers],
             ["Inactive Employees", stats.inactiveUsers],
-            ...Object.entries(stats.usersByTeam).map(([team, count]) => [`Team: ${team}`, count])
+            ...Object.entries(stats.usersByTeam || {}).map(([team, count]) => [`Team: ${team}`, count])
         ].map(e => e.join(",")).join("\n");
+    }, [stats]);
 
-        // Trigger browser download
+    const handleExport = () => {
+        if (!csvContent) return;
+
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement("a");
         const url = URL.createObjectURL(blob);
@@ -74,77 +90,84 @@ export default function DashboardPage() {
             {/* ── Page Heading ── */}
             <div className="flex items-center justify-between flex-wrap gap-4">
                 <h1 className={`text-2xl font-bold tracking-tight flex items-center gap-3 ${isDark ? "text-white" : "text-gray-800"}`}>
-                    Dashboard Overview
+                    {isEmployee ? "My Dashboard" : "Dashboard Overview"}
                     {isLoading && <Loader2 className="w-5 h-5 animate-spin text-blue-500" />}
                 </h1>
 
                 <div className="flex items-center gap-3">
-                    {/* Period selector (Reflects Redux State) */}
+                    {/* Period selector */}
                     <button
                         className={`
                             flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium capitalize
                             transition-colors duration-200 cursor-default
-                            ${isDark
-                                ? "bg-gray-800 text-gray-300 border border-gray-700"
-                                : "bg-white text-gray-600 border border-gray-200"
-                            }
+                            ${isDark ? "bg-gray-800 text-gray-300 border-gray-700" : "bg-white text-gray-600 border-gray-200"} border
                         `}
                     >
                         <CalendarDays className="w-4 h-4 text-blue-500" />
-                        This {attendanceTimeframe}
+                        This {activeTimeframe}
                     </button>
 
-                    {/* Export Button */}
-                    <button
-                        onClick={handleExport}
-                        disabled={!stats}
-                        className={`
-                            flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium
-                            transition-colors duration-200
-                            ${isDark
-                                ? "bg-gray-800 text-gray-300 border border-gray-700 hover:bg-gray-700"
-                                : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
-                            }
-                            disabled:opacity-50 disabled:cursor-not-allowed
-                        `}
-                    >
-                        <Upload className="w-4 h-4 text-gray-400" />
-                        Export CSV
-                    </button>
+                    {/* Export Button - Only Admin/HR usually need this, but leaving it if Employees export their own attendance */}
+                    {isAdminOrHR && (
+                        <button
+                            onClick={handleExport}
+                            disabled={!stats}
+                            className={`
+                                flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium
+                                transition-colors duration-200
+                                ${isDark ? "bg-gray-800 text-gray-300 border-gray-700 hover:bg-gray-700" : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"} border
+                                disabled:opacity-50 disabled:cursor-not-allowed
+                            `}
+                        >
+                            <Upload className="w-4 h-4 text-gray-400" />
+                            Export CSV
+                        </button>
+                    )}
                 </div>
             </div>
 
-            {/* ── Stat Cards Row ── */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                {STAT_CARDS.map((card) => (
-                    <StatCard key={card.id} card={card} isDark={isDark} />
-                ))}
-            </div>
+            {/* ── Stat Cards Row (Admin/HR Only) ── */}
+            {isAdminOrHR && (
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                    {STAT_CARDS.map((card) => (
+                        <StatCard key={card.id} card={card} isDark={isDark} disableAnimations={true} />
+                    ))}
+                </div>
+            )}
             
             {/* ── Charts Row ── */}
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
-                {/* Attendance Chart – wider */}
-                <div className="lg:col-span-3">
-                    <AttendanceChart isDark={isDark} />
+                {/* Attendance Chart – Spans full width if Employee */}
+                <div className={isAdminOrHR ? "lg:col-span-3" : "lg:col-span-5"}>
+                    <AttendanceChart 
+                        isDark={isDark} 
+                        timeframe={activeTimeframe} 
+                        isEmployee={isEmployee} 
+                        disableAnimations={true} 
+                    />
                 </div>
 
-                {/* Employee Summary – narrower */}
-                <div className="lg:col-span-2">
-                    <EmployeeSummary isDark={isDark} />
-                </div>
+                {/* Employee Summary – Admin/HR Only */}
+                {isAdminOrHR && (
+                    <div className="lg:col-span-2">
+                        <EmployeeSummary isDark={isDark} disableAnimations={true} />
+                    </div>
+                )}
             </div>
 
             {/* ── Bottom Row ── */}
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
-                {/* Attendance List – wider */}
-                <div className="lg:col-span-3">
-                    <AttendanceList isDark={isDark} />
+                {/* Attendance List – Spans full width if Employee */}
+                <div className={isAdminOrHR ? "lg:col-span-3" : "lg:col-span-5"}>
+                    <AttendanceList isDark={isDark} isEmployee={isEmployee} />
                 </div>
 
-                {/* Working Format Donut – narrower */}
-                <div className="lg:col-span-2">
-                    <WorkingFormat isDark={isDark} />
-                </div>
+                {/* Working Format Donut – Admin/HR Only */}
+                {isAdminOrHR && (
+                    <div className="lg:col-span-2">
+                        <WorkingFormat isDark={isDark} disableAnimations={true} />
+                    </div>
+                )}
             </div>
         </div>
     );

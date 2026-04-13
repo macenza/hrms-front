@@ -1,7 +1,7 @@
 "use client";
 
-import React from "react";
-import { TrendingUp, TrendingDown, Users, UserPlus, CalendarCheck, UserSearch, Loader2 } from "lucide-react";
+import React, { useMemo } from "react";
+import { TrendingUp, TrendingDown, Users, UserPlus, CalendarCheck, UserSearch, Loader2, Lock } from "lucide-react";
 import type { StatCard as StatCardType } from "@/types";
 import { useAppSelector } from "@/store/hooks";
 
@@ -23,78 +23,102 @@ const COLOR_MAP: Record<string, { pill: string; icon: string; text: string }> = 
 interface StatCardProps {
     card: StatCardType;
     isDark?: boolean;
+    disableAnimations?: boolean;
 }
 
-export default function StatCard({ card, isDark = false }: StatCardProps) {
-    // Pull both state objects from Redux
+export default function StatCard({
+    card,
+    isDark = false,
+    disableAnimations = false,
+}: StatCardProps) {
+    // Pull global state
     const { stats, attendance, isLoading } = useAppSelector((state) => state.dashboard);
+    const { user } = useAppSelector((state) => state.auth);
+
+    // Component-level RBAC check
+    const role = user?.role?.toLowerCase() || 'employee';
+    const isAuthorized = role === 'admin' || role === 'hr';
 
     const Icon = ICON_MAP[card.id] ?? Users;
-    const colors = COLOR_MAP[card.id];
+    const colors = COLOR_MAP[card.id] || COLOR_MAP["total-employee"]; // Added fallback
     const isUp = card.changeType === "up";
 
-    // Dynamically assign the value based on the card's ID
-    let displayValue: string | number = card.value; // Fallback to static data
+    // Performance: Memoize the derived display value to prevent switch statement execution on every render
+    const displayValue = useMemo<string | number>(() => {
+        // If unauthorized, don't even calculate
+        if (!isAuthorized) return "---";
 
-    if (stats || attendance) {
+        if (!stats && !attendance) return card.value; // Fallback to static props
+
         switch (card.id) {
             case "total-employee":
-                displayValue = stats?.totalUsers ?? 0;
-                break;
+                return stats?.totalUsers ?? 0;
             case "new-employee":
-                // Using active users as a placeholder until a "New Hire" filter is built
-                displayValue = stats?.activeUsers ?? 0; 
-                break;
+                // Architect Note: Replace with actual new hire data when backend supports it
+                return stats?.activeUsers ?? 0;
             case "today-attendance":
-                displayValue = attendance?.todayPresent ?? 0;
-                break;
+                return attendance?.todayPresent ?? 0;
             case "total-applicant":
-                // Hardcoded fallback since we haven't built an Applicant model yet
-                displayValue = 24; 
-                break;
+                // Architect Note: Hardcoded fallback until Applicant model is built
+                return 24;
+            default:
+                return card.value;
         }
+    }, [stats, attendance, card.id, card.value, isAuthorized]);
+
+    // Failsafe UX: If an employee somehow views this component, show a locked state
+    if (!isAuthorized) {
+        return (
+            <div className={`flex-1 min-w-0 rounded-2xl p-5 flex flex-col items-center justify-center gap-2 border ${isDark ? "bg-gray-800 border-gray-700" : "bg-gray-50 border-gray-200 text-gray-400"}`}>
+                <Lock className="w-5 h-5 opacity-50" />
+                <span className="text-xs font-medium uppercase tracking-wider opacity-70">Restricted</span>
+            </div>
+        );
     }
 
     return (
         <div
             className={`
                 flex-1 min-w-0 rounded-2xl p-5 flex flex-col gap-3 relative overflow-hidden
-                transition-all duration-200 hover:shadow-md cursor-pointer
-                ${isDark ? "bg-gray-800 border border-gray-700" : `${colors.pill} border border-transparent`}
+                ${disableAnimations ? "hover:shadow-md" : "transition-all duration-200 hover:shadow-md"}
+                cursor-pointer border
+                ${isDark ? "bg-gray-800 border-gray-700" : `${colors.pill} border-transparent`}
             `}
         >
             {/* Soft loading overlay for when data is fetching */}
             {isLoading && (!stats || !attendance) && (
                 <div className={`absolute inset-0 z-10 flex items-center justify-center ${isDark ? 'bg-gray-800/80' : 'bg-white/60'}`}>
-                    <Loader2 className="w-5 h-5 animate-spin text-blue-500" />
+                    <Loader2
+                        className={`w-5 h-5 text-blue-500 ${disableAnimations ? "" : "animate-spin"}`}
+                    />
                 </div>
             )}
-
+            
             {/* Icon + Label */}
             <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${colors.icon}`}>
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${colors.icon}`}>
                     <Icon className="w-5 h-5" />
                 </div>
                 <span
-                    className={`text-sm font-medium ${isDark ? "text-gray-300" : "text-gray-500"}`}
+                    className={`text-sm font-medium truncate ${isDark ? "text-gray-300" : "text-gray-600"}`}
                 >
                     {card.title}
                 </span>
             </div>
-
+            
             {/* Value + Change */}
             <div className="flex items-end justify-between mt-1">
                 <span className={`text-3xl font-bold tabular-nums ${isDark ? "text-white" : "text-gray-800"}`}>
                     {displayValue}
                 </span>
-                <div className="flex items-center gap-1">
-                    {/* Note: We keep the static 'change' percentage here until you track historical data on the backend */}
-                    <span className={`text-sm font-semibold ${isDark ? "text-gray-200" : colors.text}`}>
+                
+                <div className="flex items-center gap-1 bg-white/50 dark:bg-gray-900/50 px-2 py-1 rounded-lg">
+                    <span className={`text-xs font-bold ${isDark ? "text-gray-200" : colors.text}`}>
                         {card.change}
                     </span>
                     {isUp
-                        ? <TrendingUp className={`w-4 h-4 ${isDark ? "text-green-400" : colors.text}`} />
-                        : <TrendingDown className={`w-4 h-4 ${isDark ? "text-red-400" : "text-red-500"}`} />
+                        ? <TrendingUp className={`w-3.5 h-3.5 ${isDark ? "text-green-400" : colors.text}`} />
+                        : <TrendingDown className={`w-3.5 h-3.5 ${isDark ? "text-red-400" : "text-red-500"}`} />
                     }
                 </div>
             </div>

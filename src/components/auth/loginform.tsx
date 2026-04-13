@@ -1,6 +1,6 @@
 'use client';
 import React, { useState } from 'react';
-import { Eye, EyeOff, Loader2 } from 'lucide-react';
+import { Eye, EyeOff, Loader2, AlertCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Cookies from 'js-cookie';
 import { useAppDispatch } from '@/store/hooks';
@@ -13,45 +13,42 @@ import Link from 'next/link';
 export default function LoginForm() {
     const router = useRouter();
     const dispatch = useAppDispatch();
-
+    const [user_name, setUserName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [error, setError] = useState('');
+    const [error, setError] = useState<string | null>(null);
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setError('');
+        setError(null);
         setIsLoading(true);
 
         try {
-            // ✅ Updated: removed name field
-            const data = await loginUser({ email, password });
-
+            const data = await loginUser({ name: user_name, email, password });
             const token = data.accessToken ?? data.token;
             const raw = data.user;
-
             const user = {
                 ...raw,
-                id: String(raw._id ?? raw.id ?? ''),
+                id: String(raw._id || raw.id || ''),
             };
 
-            // Save token in cookies
+            // 1. Save token securely for Next.js Middleware
             Cookies.set('token', token, { expires: 7 });
             Cookies.set('role', user.role, { expires: 7 });
 
-            // Persist user
-            localStorage.setItem('user', JSON.stringify(user));
+            // Save the user object to localStorage so it survives refreshes
+            localStorage.setItem('user', JSON.stringify(data.user));
 
-            // Update Redux state
-            dispatch(setCredentials({ user, token }));
+            // 2. Update Global State
+            dispatch(setCredentials({ user: data.user, token: data.token }));
 
-            // Redirect
+            // 3. Redirect to Dashboard
             router.push('/dashboard');
-
+            
         } catch (err: any) {
-            setError(err.message || 'Login failed');
+            setError(err.message);
         } finally {
             setIsLoading(false);
         }
@@ -67,14 +64,24 @@ export default function LoginForm() {
             </div>
 
             {error && (
-                <div className="mb-6 p-3 bg-red-50 border border-red-200 text-red-600 text-sm rounded-lg text-center font-medium">
-                    {error}
+                <div className="mb-6 p-3 bg-red-50 border border-red-200 text-red-600 text-sm rounded-lg flex items-center justify-center gap-2 font-medium">
+                    <AlertCircle size={18} />
+                    <span>{error}</span>
                 </div>
             )}
 
             <form onSubmit={handleSubmit} className="space-y-5">
-
-                {/* Email */}
+                <div className="space-y-1.5">
+                    <label className="text-sm font-bold text-gray-700">Name</label>
+                    <Input
+                        type="text"
+                        placeholder="John Doe"
+                        required
+                        value={user_name}
+                        onChange={(e) => setUserName(e.target.value)}
+                        className="text-gray-900" // Dark text fix
+                    />
+                </div>
                 <div className="space-y-1.5">
                     <label className="text-sm font-bold text-gray-700">Email Address</label>
                     <Input
@@ -91,9 +98,7 @@ export default function LoginForm() {
                 <div className="space-y-1.5">
                     <div className="flex justify-between items-center">
                         <label className="text-sm font-bold text-gray-700">Password</label>
-                        <Link href="#" className="text-xs font-bold text-blue-600 hover:underline">
-                            Forgot?
-                        </Link>
+                        <Link href="#" className="text-xs font-bold text-blue-600 hover:underline">Forgot?</Link>
                     </div>
 
                     <div className="relative">
@@ -110,6 +115,7 @@ export default function LoginForm() {
                             type="button"
                             onClick={() => setShowPassword(!showPassword)}
                             className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                            aria-label={showPassword ? "Hide password" : "Show password"}
                         >
                             {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                         </button>
@@ -123,7 +129,7 @@ export default function LoginForm() {
                     className="w-full py-6 text-base font-bold shadow-lg shadow-blue-200"
                     disabled={isLoading}
                 >
-                    {isLoading ? <Loader2 className="animate-spin mr-2" /> : 'Sign In'}
+                    {isLoading ? <Loader2 className="animate-spin mx-auto" /> : 'Sign In'}
                 </Button>
             </form>
 
