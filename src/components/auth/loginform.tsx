@@ -1,5 +1,4 @@
 'use client';
-
 import React, { useState } from 'react';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -14,7 +13,7 @@ import Link from 'next/link';
 export default function LoginForm() {
     const router = useRouter();
     const dispatch = useAppDispatch();
-    const [user_name, setUserName] = useState('');
+
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
@@ -27,29 +26,32 @@ export default function LoginForm() {
         setIsLoading(true);
 
         try {
-            const data = await loginUser({ name: user_name, email, password });
+            // ✅ Updated: removed name field
+            const data = await loginUser({ email, password });
+
             const token = data.accessToken ?? data.token;
             const raw = data.user;
+
             const user = {
                 ...raw,
                 id: String(raw._id ?? raw.id ?? ''),
             };
 
-            // 1. Save token securely for Next.js Middleware
+            // Save token in cookies
             Cookies.set('token', token, { expires: 7 });
             Cookies.set('role', user.role, { expires: 7 });
 
-            // Save the user object to localStorage so it survives refreshes
-            localStorage.setItem('user', JSON.stringify(data.user));
+            // Persist user
+            localStorage.setItem('user', JSON.stringify(user));
 
-            // 2. Update Global State
-            dispatch(setCredentials({ user: data.user, token: data.token }));
+            // Update Redux state
+            dispatch(setCredentials({ user, token }));
 
-            // 3. Redirect to Dashboard
+            // Redirect
             router.push('/dashboard');
 
         } catch (err: any) {
-            setError(err.message);
+            setError(err.message || 'Login failed');
         } finally {
             setIsLoading(false);
         }
@@ -59,7 +61,9 @@ export default function LoginForm() {
         <div className="bg-white dark:bg-gray-900 dark:border-gray-800 p-8 rounded-2xl shadow-xl border border-gray-100 animate-in fade-in zoom-in-95 duration-300">
             <div className="mb-8 text-center">
                 <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Welcome Back</h1>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">Enter your credentials to access your account</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                    Enter your credentials to access your account
+                </p>
             </div>
 
             {error && (
@@ -69,17 +73,8 @@ export default function LoginForm() {
             )}
 
             <form onSubmit={handleSubmit} className="space-y-5">
-                <div className="space-y-1.5">
-                    <label className="text-sm font-bold text-gray-700">Name</label>
-                    <Input
-                        type="text"
-                        placeholder="John Doe"
-                        required
-                        value={user_name}
-                        onChange={(e) => setUserName(e.target.value)}
-                        className="text-gray-900" // Dark text fix
-                    />
-                </div>
+
+                {/* Email */}
                 <div className="space-y-1.5">
                     <label className="text-sm font-bold text-gray-700">Email Address</label>
                     <Input
@@ -88,15 +83,19 @@ export default function LoginForm() {
                         required
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        className="text-gray-900" // Dark text fix
+                        className="text-gray-900"
                     />
                 </div>
 
+                {/* Password */}
                 <div className="space-y-1.5">
                     <div className="flex justify-between items-center">
                         <label className="text-sm font-bold text-gray-700">Password</label>
-                        <Link href="#" className="text-xs font-bold text-blue-600 hover:underline">Forgot?</Link>
+                        <Link href="#" className="text-xs font-bold text-blue-600 hover:underline">
+                            Forgot?
+                        </Link>
                     </div>
+
                     <div className="relative">
                         <Input
                             type={showPassword ? "text" : "password"}
@@ -106,6 +105,7 @@ export default function LoginForm() {
                             onChange={(e) => setPassword(e.target.value)}
                             className="pr-10 text-gray-900"
                         />
+
                         <button
                             type="button"
                             onClick={() => setShowPassword(!showPassword)}
@@ -116,6 +116,7 @@ export default function LoginForm() {
                     </div>
                 </div>
 
+                {/* Submit */}
                 <Button
                     type="submit"
                     variant="primary"
@@ -128,7 +129,9 @@ export default function LoginForm() {
 
             <p className="text-center text-sm text-gray-500 mt-8">
                 Don&apos;t have an account?{' '}
-                <Link href="/signup" className="text-blue-600 font-bold hover:underline">Create one</Link>
+                <Link href="/signup" className="text-blue-600 font-bold hover:underline">
+                    Create one
+                </Link>
             </p>
         </div>
     );

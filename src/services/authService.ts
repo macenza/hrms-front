@@ -3,7 +3,6 @@ import apiClient from './apiClient';
 import { ENDPOINTS } from '../constants/endpoints';
 
 export const loginUser = async (credentials: {
-    name: string;
     email: string;
     password: string;
 }) => {
@@ -31,12 +30,16 @@ export const loginUser = async (credentials: {
 };
 
 export const registerUser = async (userData: any) => {
-    try {
-        const response = await apiClient.post(ENDPOINTS.AUTH.REGISTER, userData);
-        return response.data; 
-    } catch (error: any) {
-        throw new Error(error.response?.data?.message || 'Failed to register');
-    }
+  try {
+    const response = await apiClient.post("/auth/register", userData);
+      
+
+    return response.data;
+  } catch (error: any) {
+    throw new Error(
+      error.response?.data?.message || "Failed to register"
+    );
+  }
 };
 
 export const logoutUser = async () => {

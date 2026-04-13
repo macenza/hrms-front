@@ -1,22 +1,24 @@
-import axios from 'axios';
-import Cookies from 'js-cookie';
+import axios from "axios";
+import Cookies from "js-cookie"; // ✅ IMPORTANT
 
 const apiClient = axios.create({
-    baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api',
-    headers: {
-        'Content-Type': 'application/json',
-    },
+  baseURL: "http://localhost:4000/api", // ✅ backend URL
 });
 
-// Interceptor to attach the token to every request automatically
-apiClient.interceptors.request.use((config) => {
-    const token = Cookies.get('token'); // Get token from cookies
+// ✅ Interceptor to attach token
+apiClient.interceptors.request.use(
+  (config) => {
+    const token = Cookies.get("token"); // get token
+
     if (token && config.headers) {
-        config.headers.Authorization = `Bearer ${token}`;
+      config.headers.Authorization = `Bearer ${token}`;
     }
+
     return config;
-}, (error) => {
+  },
+  (error) => {
     return Promise.reject(error);
-});
+  }
+);
 
 export default apiClient;
