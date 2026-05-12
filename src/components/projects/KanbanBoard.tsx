@@ -4,12 +4,9 @@ import React, { useState, useEffect } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { Plus, MoreHorizontal, Calendar, Loader2 } from 'lucide-react';
 import { cn } from '@/utils/cn';
-
-// UI Components
 import { Button } from '@/components/ui/Button';
-import TaskModal from './TaskModal'; // Ensure this path is correct based on your folder structure
+import TaskModal from './TaskModal'; 
 
-// Data Contracts (Aligned with TaskListTab & Backend Schema)
 export type TaskStatus = 'To Do' | 'In Progress' | 'Completed' | 'Blocked';
 export type TaskPriority = 'Low' | 'Medium' | 'High' | 'Critical';
 
@@ -40,20 +37,33 @@ interface KanbanBoardProps {
     onTaskAdd?: (task: Partial<TaskRecord>) => Promise<void>;
 }
 
-// Dynamic UI Helpers
 const getTagColor = (tag: string) => {
     switch (tag?.toLowerCase()) {
-        case 'design': return 'bg-purple-50 text-purple-600 border-purple-100';
-        case 'development': return 'bg-blue-50 text-blue-600 border-blue-100';
-        case 'research': return 'bg-orange-50 text-orange-600 border-orange-100';
-        case 'meeting': return 'bg-emerald-50 text-emerald-600 border-emerald-100';
-        default: return 'bg-gray-100 text-gray-600 border-gray-200';
+        case 'design': return 'bg-purple-50 dark:bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-100 dark:border-purple-500/20';
+        case 'development': return 'bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-100 dark:border-blue-500/20';
+        case 'research': return 'bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-100 dark:border-orange-500/20';
+        case 'meeting': return 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-500/20';
+        default: return 'bg-gray-100 dark:bg-gray-800/50 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700';
     }
 };
 
 const getInitials = (name: string) => {
     if (!name) return '??';
     return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+};
+
+// Universal system avatar color generator
+const getAvatarColor = (name: string) => {
+    if (!name) return 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300';
+    const colors = [
+        'bg-blue-100 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400',
+        'bg-green-100 text-green-700 dark:bg-green-500/10 dark:text-green-400',
+        'bg-purple-100 text-purple-700 dark:bg-purple-500/10 dark:text-purple-400',
+        'bg-orange-100 text-orange-700 dark:bg-orange-500/10 dark:text-orange-400',
+        'bg-pink-100 text-pink-700 dark:bg-pink-500/10 dark:text-pink-400'
+    ];
+    const hash = name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    return colors[hash % colors.length];
 };
 
 export default function KanbanBoard({
@@ -68,12 +78,10 @@ export default function KanbanBoard({
     const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
     const [editingTask, setEditingTask] = useState<TaskRecord | null>(null);
 
-    // Prevent hydration mismatch in Next.js
     useEffect(() => {
         setIsMounted(true);
     }, []);
 
-    // Auto-group flat tasks array into Kanban columns whenever tasks change
     useEffect(() => {
         const grouped: KanbanBoardData = {
             'To Do': { id: 'To Do', title: 'To Do', items: [] },
@@ -86,7 +94,6 @@ export default function KanbanBoard({
             if (grouped[task.status]) {
                 grouped[task.status].items.push(task);
             } else {
-                // Fallback for unknown statuses
                 grouped['To Do'].items.push(task);
             }
         });
@@ -96,10 +103,8 @@ export default function KanbanBoard({
 
     const onDragEnd = async (result: DropResult) => {
         if (!result.destination) return;
-
         const { source, destination, draggableId } = result;
 
-        // If dropped in the same place, do nothing
         if (source.droppableId === destination.droppableId && source.index === destination.index) {
             return;
         }
@@ -109,12 +114,13 @@ export default function KanbanBoard({
 
         const sourceColumn = columns[sourceColumnId];
         const destColumn = columns[destColumnId];
+
         const sourceItems = [...sourceColumn.items];
         const destItems = sourceColumnId === destColumnId ? sourceItems : [...destColumn.items];
 
-        // Optimistic UI Update (Move it immediately so it feels snappy)
         const [removed] = sourceItems.splice(source.index, 1);
-        removed.status = destColumnId; // Update the item's internal status
+        removed.status = destColumnId;
+
         destItems.splice(destination.index, 0, removed);
 
         setColumns({
@@ -123,12 +129,10 @@ export default function KanbanBoard({
             [destColumnId]: { ...destColumn, items: destItems }
         });
 
-        // Fire API callback if it moved to a new column
         if (sourceColumnId !== destColumnId && onTaskMove) {
             try {
                 await onTaskMove(draggableId, destColumnId);
             } catch (error) {
-                // If the API fails, you could trigger a re-fetch here to snap it back
                 console.error("Failed to move task on backend");
             }
         }
@@ -141,47 +145,54 @@ export default function KanbanBoard({
         setIsTaskModalOpen(false);
     };
 
-    if (!isMounted) return <div className="animate-pulse h-96 bg-gray-100 rounded-xl w-full"></div>;
+    // Client-side hydration safety + Skeleton
+    if (!isMounted) {
+        return (
+            <div className="flex gap-6 animate-pulse h-[60vh] w-full">
+                {Array.from({ length: 4 }).map((_, i) => (
+                    <div key={i} className="w-[320px] shrink-0 bg-gray-100 dark:bg-gray-800/40 rounded-2xl border border-gray-200/50 dark:border-gray-800/50" />
+                ))}
+            </div>
+        );
+    }
 
     if (isLoading) {
         return (
             <div className="flex flex-col items-center justify-center py-20 animate-in fade-in duration-300">
-                <Loader2 className="w-8 h-8 animate-spin text-blue-600 mb-4" />
-                <p className="text-sm text-gray-500 font-medium">Loading board...</p>
+                <Loader2 className="w-8 h-8 animate-spin text-blue-600 dark:text-blue-500 mb-4" />
+                <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">Loading board...</p>
             </div>
         );
     }
 
     return (
         <div className="h-full flex flex-col animate-in fade-in duration-300">
-            {/* Board Header */}
             <div className="flex justify-between items-center mb-6">
-                <h2 className="text-lg font-bold text-gray-900">Task Board</h2>
+                <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100 transition-colors">Task Board</h2>
                 <Button
                     variant="primary"
                     onClick={() => { setEditingTask(null); setIsTaskModalOpen(true); }}
-                    className="gap-2 shadow-sm shadow-blue-500/30"
+                    className="gap-2 shadow-sm shadow-blue-500/25 dark:shadow-none font-semibold"
                 >
                     <Plus size={16} strokeWidth={2.5} />
                     Add Task
                 </Button>
             </div>
 
-            {/* Board Canvas */}
             <DragDropContext onDragEnd={onDragEnd}>
                 <div className="flex gap-6 overflow-x-auto pb-4 hide-scrollbar flex-1 items-start">
                     {Object.entries(columns).map(([columnId, column]) => (
-                        <div key={columnId} className="w-[320px] shrink-0 bg-gray-100/80 rounded-2xl flex flex-col max-h-[75vh] border border-gray-200/50">
-
+                        <div key={columnId} className="w-[320px] shrink-0 bg-gray-100/80 dark:bg-gray-800/40 rounded-2xl flex flex-col max-h-[75vh] border border-gray-200/50 dark:border-gray-800 transition-colors">
+                            
                             {/* Column Header */}
-                            <div className="p-4 flex items-center justify-between border-b border-gray-200/50">
+                            <div className="p-4 flex items-center justify-between border-b border-gray-200/50 dark:border-gray-800/50 transition-colors">
                                 <div className="flex items-center gap-2">
-                                    <h3 className="font-bold text-gray-800">{column.title}</h3>
-                                    <span className="bg-gray-200 text-gray-600 text-xs font-bold px-2 py-0.5 rounded-md">
+                                    <h3 className="font-bold text-gray-800 dark:text-gray-200 transition-colors">{column.title}</h3>
+                                    <span className="bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-xs font-bold px-2 py-0.5 rounded-md transition-colors">
                                         {column.items.length}
                                     </span>
                                 </div>
-                                <button className="p-1 hover:bg-gray-200 rounded-md text-gray-400 hover:text-gray-700 transition-colors">
+                                <button className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-md text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors">
                                     <MoreHorizontal size={18} />
                                 </button>
                             </div>
@@ -194,49 +205,60 @@ export default function KanbanBoard({
                                         ref={provided.innerRef}
                                         className={cn(
                                             "flex-1 p-3 space-y-3 overflow-y-auto min-h-[150px] transition-colors rounded-b-2xl",
-                                            snapshot.isDraggingOver ? "bg-blue-50/50" : ""
+                                            snapshot.isDraggingOver ? "bg-blue-50/50 dark:bg-blue-900/10" : ""
                                         )}
                                     >
                                         {column.items.map((item, index) => (
                                             <Draggable key={item.id} draggableId={item.id} index={index}>
                                                 {(provided, snapshot) => {
                                                     const isOverdue = new Date(item.dueDate) < new Date() && columnId !== 'Completed';
+                                                    
                                                     return (
                                                         <div
                                                             ref={provided.innerRef}
                                                             {...provided.draggableProps}
                                                             {...provided.dragHandleProps}
                                                             className={cn(
-                                                                "bg-white p-4 rounded-xl shadow-sm border border-gray-100 group hover:shadow-md hover:border-blue-300 transition-all select-none cursor-grab active:cursor-grabbing",
-                                                                snapshot.isDragging ? "rotate-2 shadow-xl ring-2 ring-blue-500/50 cursor-grabbing" : ""
+                                                                "bg-white dark:bg-gray-900 p-4 rounded-xl shadow-sm dark:shadow-none border border-gray-100 dark:border-gray-800 group hover:shadow-md dark:hover:shadow-none hover:border-blue-300 dark:hover:border-blue-900/50 transition-all select-none cursor-grab active:cursor-grabbing",
+                                                                snapshot.isDragging ? "rotate-2 shadow-xl dark:shadow-2xl ring-2 ring-blue-500/50 dark:ring-blue-400/50 cursor-grabbing" : ""
                                                             )}
                                                             onClick={() => {
                                                                 setEditingTask(item);
                                                                 setIsTaskModalOpen(true);
                                                             }}
                                                         >
+                                                            {/* Card Header (Tag) */}
                                                             <div className="flex justify-between items-start mb-3">
                                                                 <span className={cn(
-                                                                    "px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border",
+                                                                    "px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border transition-colors",
                                                                     getTagColor(item.tag)
                                                                 )}>
                                                                     {item.tag}
                                                                 </span>
                                                             </div>
 
-                                                            <h4 className="font-bold text-gray-900 mb-4 leading-snug">{item.title}</h4>
+                                                            {/* Card Body (Title) */}
+                                                            <h4 className="font-bold text-gray-900 dark:text-gray-100 mb-4 leading-snug transition-colors">
+                                                                {item.title}
+                                                            </h4>
 
-                                                            <div className="flex items-center justify-between pt-3 border-t border-gray-50">
+                                                            {/* Card Footer (Date & Avatar) */}
+                                                            <div className="flex items-center justify-between pt-3 border-t border-gray-50 dark:border-gray-800/50 transition-colors">
                                                                 <div className={cn(
-                                                                    "flex items-center gap-1 text-xs font-medium",
-                                                                    isOverdue ? "text-red-500 font-bold" : "text-gray-400"
+                                                                    "flex items-center gap-1 text-xs font-medium transition-colors",
+                                                                    isOverdue ? "text-red-500 dark:text-red-400 font-bold" : "text-gray-400 dark:text-gray-500"
                                                                 )}>
                                                                     <Calendar size={14} /> {item.dueDate || 'No date'}
                                                                 </div>
-
-                                                                {/* Assignee Avatar */}
+                                                                
                                                                 <div className="flex -space-x-2">
-                                                                    <div className="relative w-6 h-6 rounded-full border-2 border-white shadow-sm bg-blue-50 flex items-center justify-center text-[10px] font-bold text-blue-600 overflow-hidden" title={item.assigneeName}>
+                                                                    <div 
+                                                                        className={cn(
+                                                                            "relative w-6 h-6 rounded-full border-2 border-white dark:border-gray-900 flex items-center justify-center text-[10px] font-bold overflow-hidden transition-colors",
+                                                                            getAvatarColor(item.assigneeName)
+                                                                        )} 
+                                                                        title={item.assigneeName}
+                                                                    >
                                                                         {item.assigneeAvatar ? (
                                                                             <img src={item.assigneeAvatar} alt={item.assigneeName} className="w-full h-full object-cover" />
                                                                         ) : (
@@ -259,7 +281,7 @@ export default function KanbanBoard({
                 </div>
             </DragDropContext>
 
-            {/* Task Creation / Edit Modal */}
+            {/* Task Modal */}
             <TaskModal
                 isOpen={isTaskModalOpen}
                 onClose={() => { setIsTaskModalOpen(false); setEditingTask(null); }}

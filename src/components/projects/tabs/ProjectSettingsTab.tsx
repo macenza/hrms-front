@@ -2,18 +2,15 @@
 
 import React, { useState, useEffect } from 'react';
 import { Save, AlertTriangle, Trash2, Loader2 } from 'lucide-react';
-
-// UI Components
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 
-// Data Contracts for Backend Integration
 export type ProjectStatus = 'In Progress' | 'Completed' | 'On Hold';
 
 export interface ProjectSettingsPayload {
     id: string;
     projectName: string;
-    managerName: string; // Updated to match your schema (managerName instead of managerId)
+    managerName: string; 
     description: string;
     status: ProjectStatus;
     dueDate: string;
@@ -27,19 +24,19 @@ interface ProjectSettingsTabProps {
     data?: ProjectSettingsPayload;
     managers?: ManagerOption[];
     isLoading?: boolean;
-    onSave?: (data: ProjectSettingsPayload) => Promise<void>; // Make it async
-    onDelete?: (projectId: string) => Promise<void>; // Make it async
+    isSubmitting?: boolean; // Accept loading state from parent's React Query mutation
+    onSave?: (data: ProjectSettingsPayload) => Promise<void>; 
+    onDelete?: (projectId: string) => Promise<void>; 
 }
 
 export default function ProjectSettingsTab({
     data,
     managers = [],
     isLoading = false,
+    isSubmitting = false,
     onSave,
     onDelete
 }: ProjectSettingsTabProps) {
-    
-    // Centralized Form State (Initialize empty, then update when data arrives)
     const [formData, setFormData] = useState<ProjectSettingsPayload>({
         id: '',
         projectName: '',
@@ -49,17 +46,14 @@ export default function ProjectSettingsTab({
         dueDate: ''
     });
 
-    const [isSubmitting, setIsSubmitting] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
 
-    // Sync form data when the parent finishes fetching the live project data
     useEffect(() => {
         if (data) {
             setFormData(data);
         }
     }, [data]);
 
-    // Universal Change Handler
     const handleChange = (
         e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
     ) => {
@@ -69,15 +63,11 @@ export default function ProjectSettingsTab({
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        
         if (onSave) {
-            setIsSubmitting(true);
             try {
                 await onSave(formData);
             } catch (error) {
                 console.error("Save failed");
-            } finally {
-                setIsSubmitting(false);
             }
         }
     };
@@ -99,45 +89,44 @@ export default function ProjectSettingsTab({
     if (isLoading) {
         return (
             <div className="flex flex-col items-center justify-center py-20 animate-in fade-in duration-300">
-                <Loader2 className="w-8 h-8 animate-spin text-blue-500 mb-4" />
-                <p className="text-sm text-gray-500 font-medium">Loading settings...</p>
+                <Loader2 className="w-8 h-8 animate-spin text-blue-600 dark:text-blue-500 mb-4" />
+                <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">Loading settings...</p>
             </div>
         );
     }
 
     return (
         <div className="max-w-4xl animate-in fade-in duration-300 space-y-8">
-            {/* General Settings */}
-            <Card className="border-gray-200 shadow-sm">
-                <CardHeader className="border-b border-gray-100 pb-4 mb-6">
-                    <CardTitle className="text-lg">General Details</CardTitle>
+            
+            {/* General Settings Card */}
+            <Card className="border-gray-200 dark:border-gray-800 shadow-sm bg-white dark:bg-gray-900 transition-colors">
+                <CardHeader className="border-b border-gray-100 dark:border-gray-800 pb-4 mb-6 transition-colors">
+                    <CardTitle className="text-lg text-gray-900 dark:text-gray-100 transition-colors">General Details</CardTitle>
                 </CardHeader>
                 <CardContent>
                     <form onSubmit={handleSubmit} className="space-y-6">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-1.5">
-                                <label className="text-sm font-semibold text-gray-700">Project Name</label>
+                                <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 transition-colors">Project Name</label>
                                 <input
                                     type="text"
                                     name="projectName"
                                     value={formData.projectName}
                                     onChange={handleChange}
                                     required
-                                    className="w-full h-10 px-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent text-sm font-medium"
+                                    className="w-full h-10 px-3 rounded-md border border-gray-300 dark:border-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-600 dark:focus:ring-blue-500/40 focus:border-transparent text-sm font-medium bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 transition-all shadow-sm dark:shadow-none"
                                 />
                             </div>
-
                             <div className="space-y-1.5">
-                                <label className="text-sm font-semibold text-gray-700">Project Manager</label>
+                                <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 transition-colors">Project Manager</label>
                                 <select
                                     name="managerName"
                                     value={formData.managerName}
                                     onChange={handleChange}
                                     required
-                                    className="w-full h-10 px-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent text-sm bg-white font-medium"
+                                    className="w-full h-10 px-3 rounded-md border border-gray-300 dark:border-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-600 dark:focus:ring-blue-500/40 focus:border-transparent text-sm font-medium bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 transition-all shadow-sm dark:shadow-none cursor-pointer"
                                 >
                                     <option value="" disabled>Select Manager...</option>
-                                    {/* Include current manager even if they aren't in the list to prevent empty selects */}
                                     {formData.managerName && !managers.find(m => m.name === formData.managerName) && (
                                         <option value={formData.managerName}>{formData.managerName}</option>
                                     )}
@@ -149,46 +138,45 @@ export default function ProjectSettingsTab({
                         </div>
 
                         <div className="space-y-1.5">
-                            <label className="text-sm font-semibold text-gray-700">Description</label>
+                            <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 transition-colors">Description</label>
                             <textarea
                                 name="description"
                                 value={formData.description}
                                 onChange={handleChange}
                                 required
-                                className="w-full px-3 py-2 text-sm rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent min-h-[100px] resize-y bg-white"
+                                className="w-full px-3 py-2 text-sm rounded-md border border-gray-300 dark:border-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-600 dark:focus:ring-blue-500/40 focus:border-transparent min-h-[100px] resize-y bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 transition-all shadow-sm dark:shadow-none"
                             />
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-1.5">
-                                <label className="text-sm font-semibold text-gray-700">Status</label>
+                                <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 transition-colors">Status</label>
                                 <select
                                     name="status"
                                     value={formData.status}
                                     onChange={handleChange}
-                                    className="w-full h-10 px-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent text-sm bg-white font-medium"
+                                    className="w-full h-10 px-3 rounded-md border border-gray-300 dark:border-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-600 dark:focus:ring-blue-500/40 focus:border-transparent text-sm font-medium bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 transition-all shadow-sm dark:shadow-none cursor-pointer"
                                 >
                                     <option value="In Progress">In Progress</option>
                                     <option value="Completed">Completed</option>
                                     <option value="On Hold">On Hold</option>
                                 </select>
                             </div>
-
                             <div className="space-y-1.5">
-                                <label className="text-sm font-semibold text-gray-700">Due Date</label>
+                                <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 transition-colors">Due Date</label>
                                 <input
                                     type="date"
                                     name="dueDate"
                                     value={formData.dueDate}
                                     onChange={handleChange}
                                     required
-                                    className="w-full h-10 px-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent text-sm font-medium"
+                                    className="w-full h-10 px-3 rounded-md border border-gray-300 dark:border-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-600 dark:focus:ring-blue-500/40 focus:border-transparent text-sm font-medium bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 transition-all shadow-sm dark:shadow-none [color-scheme:light] dark:[color-scheme:dark]"
                                 />
                             </div>
                         </div>
 
-                        <div className="pt-4 border-t border-gray-100 flex justify-end">
-                            <Button type="submit" variant="primary" disabled={isSubmitting} className="gap-2 shadow-sm min-w-[140px]">
+                        <div className="pt-4 border-t border-gray-100 dark:border-gray-800 flex justify-end transition-colors">
+                            <Button type="submit" variant="primary" disabled={isSubmitting} className="gap-2 shadow-sm shadow-blue-500/25 dark:shadow-none min-w-[140px] font-semibold">
                                 {isSubmitting ? (
                                     <Loader2 size={16} className="animate-spin" />
                                 ) : (
@@ -201,21 +189,20 @@ export default function ProjectSettingsTab({
                 </CardContent>
             </Card>
 
-            {/* Danger Zone */}
-            <Card className="border-red-200 bg-red-50/30 overflow-hidden">
+            {/* Danger Zone Card */}
+            <Card className="border-red-200 dark:border-red-900/50 bg-red-50/30 dark:bg-red-500/10 overflow-hidden shadow-sm dark:shadow-none transition-colors">
                 <CardContent className="p-6">
-                    <h2 className="text-lg font-bold text-red-700 mb-2 flex items-center gap-2">
+                    <h2 className="text-lg font-bold text-red-700 dark:text-red-400 mb-2 flex items-center gap-2 transition-colors">
                         <AlertTriangle size={20} />
                         Danger Zone
                     </h2>
-                    <p className="text-sm text-red-600 mb-6">
+                    <p className="text-sm text-red-600 dark:text-red-300/80 mb-6 transition-colors">
                         Irreversible actions regarding this project.
                     </p>
-
-                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 bg-white border border-red-100 rounded-xl">
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 bg-white dark:bg-gray-900 border border-red-100 dark:border-red-900/30 rounded-xl transition-colors">
                         <div>
-                            <h3 className="font-bold text-gray-900">Delete Project</h3>
-                            <p className="text-sm text-gray-500 mt-1">
+                            <h3 className="font-bold text-gray-900 dark:text-gray-100 transition-colors">Delete Project</h3>
+                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 transition-colors">
                                 Once deleted, it will be gone forever. Please be certain.
                             </p>
                         </div>
@@ -223,7 +210,7 @@ export default function ProjectSettingsTab({
                             type="button"
                             onClick={handleDelete}
                             disabled={isDeleting}
-                            className="shrink-0 gap-2 bg-white border-2 border-red-100 text-red-600 hover:bg-red-50 hover:border-red-200 min-w-[140px]"
+                            className="shrink-0 gap-2 bg-white dark:bg-gray-950 border-2 border-red-100 dark:border-red-900/50 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950 hover:border-red-200 dark:hover:border-red-800 min-w-[140px] transition-colors"
                         >
                             {isDeleting ? (
                                 <Loader2 size={16} className="animate-spin" />
@@ -235,6 +222,7 @@ export default function ProjectSettingsTab({
                     </div>
                 </CardContent>
             </Card>
+
         </div>
     );
 }
