@@ -4,12 +4,10 @@ import apiClient from "./apiClient";
 import { ENDPOINTS } from "../constants/endpoints";
 import type { SignupPayload } from "@/types/index";
 
-<<<<<<< HEAD
-export const loginUser = async (credentials: {
-=======
+
 // Define strict types for credentials and responses
 export interface LoginCredentials {
->>>>>>> e64bfd3b0e110e8a88470131bfbb4a082cc7192e
+
     email: string;
     password: string;
 }
@@ -69,19 +67,7 @@ export const loginUser = async (credentials: LoginCredentials): Promise<AuthResp
     }
 };
 
-<<<<<<< HEAD
-export const registerUser = async (userData: any) => {
-  try {
-    const response = await apiClient.post("/auth/register", userData);
-      
 
-    return response.data;
-  } catch (error: any) {
-    throw new Error(
-      error.response?.data?.message || "Failed to register"
-    );
-  }
-=======
 export const registerUser = async (userData: SignupPayload): Promise<AuthResponse> => {
     try {
         const response = await apiClient.post<AuthResponse>(
@@ -96,19 +82,24 @@ export const registerUser = async (userData: SignupPayload): Promise<AuthRespons
         }
         throw new Error("An unexpected error occurred during registration.");
     }
->>>>>>> e64bfd3b0e110e8a88470131bfbb4a082cc7192e
 };
 
 export const logoutUser = async (): Promise<void> => {
-    try {
+    try 
+    {
         const refreshToken = Cookies.get("refreshToken");
         
-        if (refreshToken) {
+        if (refreshToken) 
+        {
             await apiClient.post(ENDPOINTS.AUTH.LOGOUT, { refreshToken });
         }
-    } catch (error: unknown) {
+    }
+    catch (error: unknown) 
+    {
         console.error("Backend logout failed:", error instanceof AxiosError ? error.message : error);
-    } finally {
+    } 
+    finally 
+    {
         // Always purge local data to ensure the user is logged out on the client
         Cookies.remove("token");
         Cookies.remove("refreshToken");
