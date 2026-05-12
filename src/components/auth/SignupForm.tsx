@@ -1,3 +1,4 @@
+// src/components/auth/SignupForm.tsx
 'use client';
 
 import React, { useState } from 'react';
@@ -7,27 +8,29 @@ import Link from 'next/link';
 import { registerUser } from '@/services/authService';
 import { SignupPayload } from '@/types/index';
 import { useRouter } from 'next/navigation';
-import { Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { Eye, EyeOff, AlertCircle, Loader2 } from 'lucide-react';
+import { useAppDispatch } from '@/store/hooks';
+import { setCredentials } from '@/store/authSlice';
 
 export default function SignupForm() {
     const router = useRouter();
+    const dispatch = useAppDispatch();
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [showPassword, setShowPassword] = useState(false);
-
+    
     const [formData, setFormData] = useState({
         name: '',
         email: '',
         password: '',
-        role: 'Employee',
         team: '',
+        gender: 'Male', // Added missing gender field based on backend
         profile: {
             phone: '',
             address: ''
         }
     });
 
-    // Handlers for top-level and nested state updates
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         setFormData((prev) => ({ ...prev, [name]: value }));
@@ -46,12 +49,19 @@ export default function SignupForm() {
         setIsLoading(true);
         setError(null);
         try {
-            // Ensure payload matches your backend User model exactly
-            await registerUser(formData as SignupPayload);
+            // Role is strictly omitted. Backend proxy rule: "Only Admin can create Admin/HR users"
+            // The backend automatically defaults omitted roles to 'employee'.
+            const data = await registerUser(formData as unknown as SignupPayload);
+            const raw = data.user;
+            const user = {
+                ...raw,
+                id: String((raw as any)._id || raw.id || ''),
+            };
+            
+            dispatch(setCredentials({ user }));
             router.push('/dashboard');
         } catch (err: any) {
-            // Logic to handle 500 errors gracefully in UI
-            setError(err.message || 'Server error. Please check backend logs.');
+            setError(err.message || 'Server error. Please check your details.');
         } finally {
             setIsLoading(false);
         }
@@ -60,35 +70,33 @@ export default function SignupForm() {
     return (
         <div className="bg-white dark:bg-gray-900 dark:border-gray-800 p-8 rounded-2xl shadow-xl border border-gray-100 animate-in fade-in zoom-in-95 duration-300">
             <div className="mb-8 text-center">
-                <h1 className="text-2xl font-bold text-gray-900">Get Started</h1>
-                <p className="text-sm text-gray-500 mt-2">Create your HRMS account</p>
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Get Started</h1>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">Create your HRMS account</p>
             </div>
-
+            
             {error && (
                 <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-red-600 text-sm flex items-center gap-2">
-                    <AlertCircle size={16} />
-                    {error}
+                    <AlertCircle size={16} className="shrink-0" />
+                    <span>{error}</span>
                 </div>
             )}
-
+            
             <form onSubmit={handleSubmit} className="space-y-4">
-                {/* Full Name */}
                 <div className="space-y-1.5">
-                    <label className="text-sm font-bold text-gray-700">Full Name</label>
+                    <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Full Name</label>
                     <Input
                         name="name"
                         value={formData.name}
                         onChange={handleChange}
                         placeholder="John Doe"
                         required
-                        className="text-gray-900"
+                        className="text-gray-900 dark:text-gray-100"
                     />
                 </div>
-
-                {/* Email & Phone */}
+                
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
-                        <label className="text-sm font-bold text-gray-700">Work Email</label>
+                        <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Work Email</label>
                         <Input
                             type="email"
                             name="email"
@@ -96,64 +104,62 @@ export default function SignupForm() {
                             onChange={handleChange}
                             placeholder="john@company.com"
                             required
-                            className="text-gray-900"
+                            className="text-gray-900 dark:text-gray-100"
                         />
                     </div>
                     <div className="space-y-1.5">
-                        <label className="text-sm font-bold text-gray-700">Phone Number</label>
+                        <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Phone Number</label>
                         <Input
                             type="tel"
                             name="phone"
                             value={formData.profile.phone}
                             onChange={handleProfileChange}
                             placeholder="+1 (555) 000-0000"
-                            className="text-gray-900"
+                            className="text-gray-900 dark:text-gray-100"
                         />
                     </div>
                 </div>
-
-                {/* Role & Team */}
+                
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
-                        <label className="text-sm font-bold text-gray-700">Role</label>
+                        <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Gender</label>
                         <select
-                            name="role"
-                            value={formData.role}
+                            name="gender"
+                            value={formData.gender}
                             onChange={handleChange}
-                            className="w-full h-10 px-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent text-sm bg-white text-gray-900 font-medium"
+                            className="w-full h-10 px-3 rounded-md border border-gray-300 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 font-medium"
                         >
-                            <option value="Employee">Employee</option>
-                            <option value="HR">HR</option>
-                            <option value="Admin">Admin</option>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                            <option value="Other">Other</option>
                         </select>
                     </div>
                     <div className="space-y-1.5">
-                        <label className="text-sm font-bold text-gray-700">Team / Department</label>
+                        <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Team / Department</label>
                         <Input
                             name="team"
                             value={formData.team}
                             onChange={handleChange}
                             placeholder="e.g. Engineering"
                             required
-                            className="text-gray-900"
+                            className="text-gray-900 dark:text-gray-100"
                         />
                     </div>
                 </div>
-
-                {/* Address */}
+                
                 <div className="space-y-1.5">
-                    <label className="text-sm font-bold text-gray-700">Address</label>
+                    <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Address</label>
                     <Input
                         name="address"
                         value={formData.profile.address}
                         onChange={handleProfileChange}
                         placeholder="123 Business Pkwy, Suite 100"
-                        className="text-gray-900"
+                        className="text-gray-900 dark:text-gray-100"
                     />
                 </div>
-                {/* Password */}
+                
                 <div className="space-y-1.5">
-                    <label className="text-sm font-bold text-gray-700">Password</label>
+                    <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Password</label>
                     <div className="relative">
                         <Input
                             type={showPassword ? "text" : "password"}
@@ -162,34 +168,33 @@ export default function SignupForm() {
                             onChange={handleChange}
                             placeholder="Min. 8 characters"
                             required
-                            className="pr-10"
+                            className="pr-10 text-gray-900 dark:text-gray-100"
                         />
                         <button
                             type="button"
                             onClick={() => setShowPassword(!showPassword)}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
                         >
                             {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                         </button>
                     </div>
                 </div>
-
-                {/* Submit Action */}
+                
                 <div className="pt-4">
                     <Button
                         type="submit"
                         variant="primary"
-                        className="w-full py-6 font-bold"
+                        className="w-full py-6 font-bold flex items-center justify-center gap-2"
                         disabled={isLoading}
                     >
-                        {isLoading ? 'Processing...' : 'Create Account'}
+                        {isLoading ? <Loader2 className="animate-spin w-5 h-5" /> : 'Create Account'}
                     </Button>
                 </div>
             </form>
-
-            <p className="text-center text-sm text-gray-500 mt-8">
+            
+            <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-8">
                 Already have an account?{' '}
-                <Link href="/login" className="text-blue-600 font-bold hover:underline">Sign In</Link>
+                <Link href="/login" className="text-blue-600 dark:text-blue-400 font-bold hover:underline">Sign In</Link>
             </p>
         </div>
     );

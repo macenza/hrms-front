@@ -1,3 +1,4 @@
+// src/components/assets/AssignAssetModal.tsx
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -6,7 +7,6 @@ import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 
-// Data contracts for dropdowns and API submission
 export interface SelectOption {
     id: string;
     label: string;
@@ -22,9 +22,10 @@ export interface AssignAssetPayload {
 interface AssignAssetModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onSubmit?: (payload: AssignAssetPayload) => Promise<void>; // Upgraded to expect a Promise for loading states
+    onSubmit?: (payload: AssignAssetPayload) => Promise<void>; 
     employees?: SelectOption[];
     availableAssets?: SelectOption[];
+    isSubmitting?: boolean; // Synced with React Query from parent
 }
 
 const initialFormState: AssignAssetPayload = {
@@ -39,17 +40,18 @@ export default function AssignAssetModal({
     onClose,
     onSubmit,
     employees = [],
-    availableAssets = []
+    availableAssets = [],
+    isSubmitting = false
 }: AssignAssetModalProps) {
-
-    // Track form state for backend submission
     const [formData, setFormData] = useState<AssignAssetPayload>(initialFormState);
-    const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // Auto-select employee if there is only 1 option
     useEffect(() => {
-        if (isOpen && employees.length === 1) {
-            setFormData(prev => ({ ...prev, employeeId: employees[0].id }));
+        if (isOpen) {
+            setFormData(initialFormState);
+            // Pre-select employee if only one is available (e.g., viewing an employee's profile)
+            if (employees.length === 1) {
+                setFormData(prev => ({ ...prev, employeeId: employees[0].id }));
+            }
         }
     }, [isOpen, employees]);
 
@@ -58,38 +60,27 @@ export default function AssignAssetModal({
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
-    const handleClose = () => {
-        setFormData(initialFormState); // Clear form on close
-        setIsSubmitting(false);
-        onClose();
-    };
-
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setIsSubmitting(true);
-
         try {
             if (onSubmit) {
                 await onSubmit(formData);
             }
-            handleClose(); // Close and reset only on success
+            // onClose() is triggered by the parent upon success
         } catch (error) {
             console.error('Submission failed:', error);
-            // Modal stays open so the user can fix any errors
-        } finally {
-            setIsSubmitting(false);
         }
     };
 
     return (
-        <Modal isOpen={isOpen} onClose={handleClose} title="Assign Asset" className="max-w-lg">
+        <Modal isOpen={isOpen} onClose={onClose} title="Assign Asset" className="max-w-lg">
             <form onSubmit={handleSubmit} className="flex flex-col h-full">
                 <div className="flex-1 space-y-5 p-2">
-
-                    {/* Employee Selection */}
+                    
+                    {/* Employee Select */}
                     <div className="space-y-1.5">
-                        <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                            <User size={16} className="text-gray-400" /> Employee
+                        <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 transition-colors">
+                            <User size={16} className="text-gray-400 dark:text-gray-500" /> Employee
                         </label>
                         <select
                             name="employeeId"
@@ -97,7 +88,7 @@ export default function AssignAssetModal({
                             onChange={handleChange}
                             required
                             disabled={employees.length === 1 || isSubmitting}
-                            className="w-full h-10 px-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent text-sm bg-white disabled:bg-gray-100 disabled:text-gray-500"
+                            className="w-full h-10 px-3 rounded-md border border-gray-300 dark:border-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-600 dark:focus:ring-blue-500/40 focus:border-transparent text-sm bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 disabled:bg-gray-100 dark:disabled:bg-gray-900 disabled:text-gray-500 dark:disabled:text-gray-600 transition-all"
                         >
                             <option value="" disabled>Search employee...</option>
                             {employees.map((emp, index) => (
@@ -105,11 +96,11 @@ export default function AssignAssetModal({
                             ))}
                         </select>
                     </div>
-
-                    {/* Asset Selection */}
+                    
+                    {/* Asset Select */}
                     <div className="space-y-1.5">
-                        <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                            <Laptop size={16} className="text-gray-400" /> Available Asset
+                        <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 transition-colors">
+                            <Laptop size={16} className="text-gray-400 dark:text-gray-500" /> Available Asset
                         </label>
                         <select
                             name="assetId"
@@ -117,25 +108,24 @@ export default function AssignAssetModal({
                             onChange={handleChange}
                             required
                             disabled={isSubmitting}
-                            className="w-full h-10 px-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent text-sm bg-white disabled:bg-gray-100 disabled:text-gray-500"
+                            className="w-full h-10 px-3 rounded-md border border-gray-300 dark:border-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-600 dark:focus:ring-blue-500/40 focus:border-transparent text-sm bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 disabled:bg-gray-100 dark:disabled:bg-gray-900 disabled:text-gray-500 dark:disabled:text-gray-600 transition-all"
                         >
                             <option value="" disabled>Select available asset...</option>
                             {availableAssets.length === 0 && (
                                 <option value="" disabled>No assets currently available</option>
                             )}
                             {availableAssets.map((asset, index) => (
-                                // FIX: Add || "" to the value prop to prevent HTML text fallback
                                 <option key={asset.id || `asset-${index}`} value={asset.id || ""}>
                                     {asset.label}
                                 </option>
                             ))}
                         </select>
                     </div>
-
-                    {/* Date Selection */}
+                    
+                    {/* Assignment Date */}
                     <div className="space-y-1.5">
-                        <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                            <Calendar size={16} className="text-gray-400" /> Assignment Date
+                        <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 transition-colors">
+                            <Calendar size={16} className="text-gray-400 dark:text-gray-500" /> Assignment Date
                         </label>
                         <Input
                             type="date"
@@ -144,13 +134,14 @@ export default function AssignAssetModal({
                             onChange={handleChange}
                             disabled={isSubmitting}
                             required
+                            className="text-gray-900 dark:text-gray-100 [color-scheme:light] dark:[color-scheme:dark]"
                         />
                     </div>
-
-                    {/* Notes Textarea */}
+                    
+                    {/* Condition Notes */}
                     <div className="space-y-1.5">
-                        <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                            <AlignLeft size={16} className="text-gray-400" /> Condition Notes
+                        <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 transition-colors">
+                            <AlignLeft size={16} className="text-gray-400 dark:text-gray-500" /> Condition Notes
                         </label>
                         <textarea
                             name="notes"
@@ -158,21 +149,27 @@ export default function AssignAssetModal({
                             onChange={handleChange}
                             disabled={isSubmitting}
                             placeholder="Add any notes about the asset's condition before handover..."
-                            className="w-full px-3 py-2 text-sm rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent min-h-[100px] resize-y bg-white disabled:bg-gray-50 disabled:text-gray-500"
+                            className="w-full px-3 py-2 text-sm rounded-md border border-gray-300 dark:border-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-600 dark:focus:ring-blue-500/40 focus:border-transparent min-h-[100px] resize-y bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 disabled:bg-gray-50 dark:disabled:bg-gray-900 disabled:text-gray-500 dark:disabled:text-gray-600 placeholder:text-gray-400 dark:placeholder:text-gray-600 transition-all"
                         />
                     </div>
                 </div>
-
-                {/* Footer Controls */}
-                <div className="pt-6 mt-6 border-t border-gray-100 flex justify-end gap-3 px-2 pb-2 shrink-0">
-                    <Button type="button" variant="ghost" onClick={handleClose} disabled={isSubmitting}>
+                
+                {/* Footer Actions */}
+                <div className="pt-6 mt-6 border-t border-gray-100 dark:border-gray-800 flex justify-end gap-3 px-2 pb-2 shrink-0 transition-colors">
+                    <Button 
+                        type="button" 
+                        variant="ghost" 
+                        onClick={onClose} 
+                        disabled={isSubmitting}
+                        className="text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                    >
                         Cancel
                     </Button>
                     <Button
                         type="submit"
                         variant="primary"
                         disabled={isSubmitting || !formData.employeeId || !formData.assetId}
-                        className="min-w-[140px] gap-2"
+                        className="min-w-[140px] gap-2 font-semibold shadow-sm shadow-blue-500/25 dark:shadow-none"
                     >
                         {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : null}
                         {isSubmitting ? 'Assigning...' : 'Assign Asset'}

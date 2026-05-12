@@ -1,0 +1,40 @@
+// src/hooks/api/useEmployees.ts
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { employeeService } from '@/services/employeeService';
+import { EmployeeFilterState } from '@/components/employees/EmployeeFilters';
+import { EmployeeFormData } from '@/components/employees/AddEmployeeModal';
+
+interface UseEmployeesParams {
+    page: number;
+    limit: number;
+    searchTerm: string;
+    filters: EmployeeFilterState;
+}
+
+export function useEmployees(params: UseEmployeesParams) {
+    return useQuery({
+        // The queryKey uniquely identifies this specific request. 
+        // If any of these values change, React Query automatically refetches.
+        queryKey: ['employees', params.page, params.limit, params.searchTerm, params.filters],
+        queryFn: () => employeeService.getAll(
+            params.page, 
+            params.limit, 
+            params.searchTerm, 
+            params.filters
+        ),
+        // Keep previous data on the screen while fetching the next page for smoother UX
+        placeholderData: (previousData) => previousData, 
+    });
+}
+
+export function useCreateEmployee() {
+    const queryClient = useQueryClient();
+    
+    return useMutation({
+        mutationFn: (data: EmployeeFormData) => employeeService.create(data),
+        onSuccess: () => {
+            // Invalidates the cache, forcing useEmployees to refetch the fresh list
+            queryClient.invalidateQueries({ queryKey: ['employees'] });
+        }
+    });
+}

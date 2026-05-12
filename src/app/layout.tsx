@@ -1,33 +1,36 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
-import StoreProvider from '@/store/StoreProvider';
+
+
 import { ThemeProvider } from '@/components/theme/ThemeProvider';
-import AuthProvider from '@/components/providers/AuthProvider';
+import StoreProvider from '@/store/StoreProvider';
+import AuthInitializer from '@/components/auth/AuthInitializer';
 
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Macenza HRMS',
-  description: 'HR Management System',
+    title: 'HRMS Portal',
+    description: 'Human Resource Management System',
 };
 
 export default function RootLayout({
-  children,
+    children,
 }: {
-  children: React.ReactNode;
+    children: React.ReactNode;
 }) {
-  return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={inter.className}>
-        <ThemeProvider>
-          <StoreProvider>
-            <AuthProvider>
-              {children}
-            </AuthProvider>
-          </StoreProvider>
-        </ThemeProvider>
-      </body>
-    </html>
-  );
+    return (
+        // suppressHydrationWarning is REQUIRED here for next-themes to work properly
+        <html lang="en" suppressHydrationWarning> 
+            <body className={inter.className}>
+                <ThemeProvider>
+                        <StoreProvider>
+                            <AuthInitializer>
+                                {children}
+                            </AuthInitializer>
+                        </StoreProvider>
+                </ThemeProvider>
+            </body>
+        </html>
+    );
 }

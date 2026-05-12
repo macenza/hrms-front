@@ -13,6 +13,7 @@ export interface EmployeeSummaryRow {
 
 export interface DashboardStats {
     totalUsers: number;
+    newUsers?: number;
     activeUsers: number;
     inactiveUsers: number;
     usersByRole: Record<string, number>;
@@ -42,7 +43,7 @@ export interface DashboardAttendance {
 }
 
 
-interface DashboardState {
+export interface DashboardState {
     activeTab: string;
     isSidebarOpen: boolean;
     stats: DashboardStats | null;

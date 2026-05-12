@@ -10,6 +10,7 @@ import { cn } from '@/utils/cn';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { logOut } from '@/store/authSlice';
 import { logoutUser } from '@/services/authService';
+import { setCredentials } from '@/store/authSlice';
 
 import {
     LayoutDashboard, Users, CalendarCheck, CalendarDays, Briefcase,
@@ -41,40 +42,51 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
 
     // Architect Note: Config-driven RBAC. Easily extendable if you add "Manager" or "Finance" roles later.
     const menuItems = useMemo(() => {
+        // 1. Grab the user ID safely. (Fallback to 'me' or empty if undefined, though auth guards should prevent this)
+        const currentUserId = user?.id || user?._id || '';
+
         const items = [
             { id: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', show: true },
-            
             // Administrative Links
             { id: 'Employees', href: '/employees', icon: Users, label: 'Employees', show: isAdminOrHR },
             { id: 'Payroll', href: '/payroll', icon: DollarSign, label: 'Payroll', show: isAdminOrHR },
             { id: 'Assets', href: '/assets', icon: Package, label: 'Assets', show: isAdminOrHR },
-            
-            // Employee-Specific Links
-            { id: 'Profile', href: '/profile', icon: User, label: 'My Profile', show: !isAdminOrHR },
-            
+
+            // --- ARCHITECTURE UPGRADE: Dynamic Profile Routing ---
+            // Instead of a dead '/profile' link, we route them to the dynamic employee view.
+            {
+                id: 'Profile',
+                href: '/profile',
+                icon: User,
+                label: 'My Profile',
+                show: !isAdminOrHR
+            },
+
             // Shared Links
-            { id: 'Attendance', href: '/attendance', icon: CalendarCheck, label: 'Attendance', show: true },
+            { id: 'Attendance', href: '/attendance', icon: CalendarCheck, label: 'Attendance', show: isAdminOrHR },
             { id: 'Projects', href: '/projects', icon: Briefcase, label: 'Projects', show: true },
             { id: 'Leave', href: '/leave', icon: CalendarDays, label: 'Leave', show: true },
             { id: 'Loan', href: '/loan', icon: CreditCard, label: 'Loan', show: true },
             { id: 'Notice', href: '/notice', icon: Bell, label: 'Notice', show: true },
             { id: 'Settings', href: '/settings', icon: Settings, label: 'Settings', show: true },
         ];
-
         return items.filter(item => item.show);
-    }, [isAdminOrHR]);
+    }, [isAdminOrHR, user]);
 
     const handleLogout = async () => {
         try {
-            await logoutUser();
+            // Ask the backend to destroy the HttpOnly cookies
+            await logoutUser(); 
         } catch (error) {
             console.error("Backend logout failed:", error);
         } finally {
-            Cookies.remove('token');
-            Cookies.remove('role');
-            localStorage.removeItem('user');
+            // Explicitly wipe the Redux state
             dispatch(logOut());
-            onClose();
+            
+            // Close the sidebar
+            if (typeof onClose === 'function') onClose();
+            
+            // Force Next.js to navigate to the login page securely
             router.push('/login');
         }
     };
@@ -138,7 +150,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
 
                 {/* Bottom Actions */}
                 <div className="p-4 border-t border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-900 shrink-0">
-                    
+
                     {/* Theme Toggle */}
                     <div className="bg-white rounded-xl p-1 flex items-center justify-between mb-4 border border-gray-200 shadow-sm dark:bg-gray-800 dark:border-gray-700">
                         <button

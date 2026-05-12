@@ -1,13 +1,11 @@
 'use client';
 
 import React from 'react';
-import { CheckCircle2, XCircle, CalendarRange, Clock, Loader2 } from 'lucide-react';
-
-// UI Components
+import { CheckCircle2, XCircle, CalendarRange, Clock, Calendar } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
+import { cn } from '@/utils/cn';
 
-// Data Contracts for Backend Integration
 export interface EmployeeAttendanceStats {
     present: number;
     absent: number;
@@ -15,7 +13,7 @@ export interface EmployeeAttendanceStats {
     lateCheckIns: number;
 }
 
-export type AttendanceLogStatus = 'Present' | 'Absent' | 'Late' | 'Half Day';
+export type AttendanceLogStatus = 'Present' | 'Absent' | 'Late' | 'Half-Day' | 'On Leave';
 
 export interface AttendanceLogRecord {
     id: string;
@@ -29,109 +27,142 @@ export interface AttendanceLogRecord {
 interface AttendanceTabProps {
     stats?: EmployeeAttendanceStats;
     logs?: AttendanceLogRecord[];
-    isLoading?: boolean; // <-- Added loading state
+    isLoading?: boolean; 
 }
 
-// Dynamic UI Helper for Badges
 const getStatusBadgeVariant = (status: AttendanceLogStatus) => {
     switch (status) {
         case 'Present': return 'success';
         case 'Late': return 'warning';
-        case 'Half Day': return 'info';
+        case 'Half-Day': return 'info';
+        case 'On Leave': return 'warning';
         case 'Absent': return 'error';
         default: return 'default';
     }
 };
 
+// Premium Skeleton Loaders
+const StatCardSkeleton = () => (
+    <Card className="border-gray-200 dark:border-gray-800 shadow-sm dark:shadow-none bg-white dark:bg-gray-900 transition-colors">
+        <CardContent className="p-5">
+            <div className="flex justify-between items-start mb-2">
+                <div className="h-4 bg-gray-200 dark:bg-gray-800 rounded w-1/2 animate-pulse" />
+                <div className="h-6 w-6 bg-gray-200 dark:bg-gray-800 rounded-md animate-pulse shrink-0" />
+            </div>
+            <div className="h-8 bg-gray-200 dark:bg-gray-800 rounded w-1/3 animate-pulse mt-2" />
+        </CardContent>
+    </Card>
+);
+
+const TableRowSkeleton = () => (
+    <tr className="animate-pulse bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800">
+        <td className="px-6 py-4"><div className="h-4 w-24 bg-gray-200 dark:bg-gray-800 rounded"></div></td>
+        <td className="px-6 py-4"><div className="h-4 w-16 bg-gray-200 dark:bg-gray-800 rounded"></div></td>
+        <td className="px-6 py-4"><div className="h-4 w-16 bg-gray-200 dark:bg-gray-800 rounded"></div></td>
+        <td className="px-6 py-4"><div className="h-4 w-16 bg-gray-200 dark:bg-gray-800 rounded"></div></td>
+        <td className="px-6 py-4"><div className="h-6 w-20 bg-gray-200 dark:bg-gray-800 rounded-full"></div></td>
+    </tr>
+);
+
 export default function AttendanceTab({
     stats,
     logs = [],
-    isLoading = false // Default to false
+    isLoading = false
 }: AttendanceTabProps) {
-    
-    // Show a loading spinner while the parent component fetches the data
-    if (isLoading || !stats) {
-        return (
-            <div className="flex flex-col items-center justify-center py-20 animate-in fade-in duration-300">
-                <Loader2 className="w-8 h-8 animate-spin text-blue-500 mb-4" />
-                <p className="text-sm text-gray-500 font-medium">Loading attendance records...</p>
-            </div>
-        );
-    }
 
-    // Structure stats for clean mapping
+    const safeStats = stats || { present: 0, absent: 0, onLeave: 0, lateCheckIns: 0 };
+
     const statCards = [
         {
             title: "Present Days",
-            value: stats.present,
-            icon: <CheckCircle2 size={18} className="text-emerald-500" />,
+            value: safeStats.present,
+            icon: <CheckCircle2 size={18} className="text-emerald-600 dark:text-emerald-400" />,
+            bgClass: "bg-emerald-50 dark:bg-emerald-500/10"
         },
         {
             title: "Absent",
-            value: stats.absent,
-            icon: <XCircle size={18} className="text-red-500" />,
+            value: safeStats.absent,
+            icon: <XCircle size={18} className="text-red-600 dark:text-red-400" />,
+            bgClass: "bg-red-50 dark:bg-red-500/10"
         },
         {
             title: "On Leave",
-            value: stats.onLeave,
-            icon: <CalendarRange size={18} className="text-yellow-500" />,
+            value: safeStats.onLeave,
+            icon: <CalendarRange size={18} className="text-yellow-600 dark:text-yellow-400" />,
+            bgClass: "bg-yellow-50 dark:bg-yellow-500/10"
         },
         {
             title: "Late Check-ins",
-            value: stats.lateCheckIns,
-            icon: <Clock size={18} className="text-purple-500" />,
+            value: safeStats.lateCheckIns,
+            icon: <Clock size={18} className="text-purple-600 dark:text-purple-400" />,
+            bgClass: "bg-purple-50 dark:bg-purple-500/10"
         }
     ];
 
     return (
         <div className="space-y-8 animate-in fade-in duration-300">
-            {/* Overview Stats */}
+            
+            {/* Stats Overview */}
             <div>
-                <h2 className="text-lg font-bold text-gray-900 mb-4">Attendance Overview (This Month)</h2>
+                <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4 transition-colors">Attendance Overview (This Month)</h2>
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                    {statCards.map((stat, index) => (
-                        <Card key={index} className="border-gray-100 shadow-sm hover:shadow-md transition-shadow duration-200">
-                            <CardContent className="p-5">
-                                <div className="flex justify-between items-start mb-2">
-                                    <p className="text-sm font-medium text-gray-500">{stat.title}</p>
-                                    {stat.icon}
-                                </div>
-                                <p className="text-2xl font-bold text-gray-900 tracking-tight">{stat.value}</p>
-                            </CardContent>
-                        </Card>
-                    ))}
+                    {isLoading ? (
+                        Array.from({ length: 4 }).map((_, i) => <StatCardSkeleton key={i} />)
+                    ) : (
+                        statCards.map((stat, index) => (
+                            <Card key={index} className="border-gray-200 dark:border-gray-800 shadow-sm dark:shadow-none bg-white dark:bg-gray-900 transition-all duration-300 hover:shadow-md dark:hover:shadow-none hover:border-blue-200 dark:hover:border-blue-900/50">
+                                <CardContent className="p-5">
+                                    <div className="flex justify-between items-start mb-2">
+                                        <p className="text-sm font-medium text-gray-500 dark:text-gray-400 transition-colors">{stat.title}</p>
+                                        <div className={cn("p-1.5 rounded-lg transition-colors", stat.bgClass)}>
+                                            {stat.icon}
+                                        </div>
+                                    </div>
+                                    <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 tracking-tight transition-colors">{stat.value}</p>
+                                </CardContent>
+                            </Card>
+                        ))
+                    )}
                 </div>
             </div>
 
-            {/* Recent Logs Table */}
+            {/* Logs Table */}
             <div>
-                <h2 className="text-lg font-bold text-gray-900 mb-4">Recent Logs</h2>
-                <Card className="border-gray-200 overflow-hidden">
+                <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4 transition-colors">Recent Logs</h2>
+                <Card className="border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm dark:shadow-none overflow-hidden transition-colors duration-300">
                     <div className="overflow-x-auto">
                         <table className="w-full text-left text-sm whitespace-nowrap">
-                            <thead className="bg-gray-50 border-b border-gray-200 text-gray-500 font-medium">
+                            <thead className="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-400 font-medium transition-colors">
                                 <tr>
-                                    <th className="px-6 py-4">DATE</th>
-                                    <th className="px-6 py-4">CHECK IN</th>
-                                    <th className="px-6 py-4">CHECK OUT</th>
-                                    <th className="px-6 py-4">TOTAL HOURS</th>
-                                    <th className="px-6 py-4">STATUS</th>
+                                    <th className="px-6 py-4 uppercase text-xs tracking-wider">Date</th>
+                                    <th className="px-6 py-4 uppercase text-xs tracking-wider">Check In</th>
+                                    <th className="px-6 py-4 uppercase text-xs tracking-wider">Check Out</th>
+                                    <th className="px-6 py-4 uppercase text-xs tracking-wider">Total Hours</th>
+                                    <th className="px-6 py-4 uppercase text-xs tracking-wider">Status</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-gray-100 bg-white">
-                                {logs.length === 0 ? (
+                            <tbody className="divide-y divide-gray-100 dark:divide-gray-800 bg-white dark:bg-gray-900 transition-colors">
+                                {isLoading ? (
+                                    Array.from({ length: 5 }).map((_, idx) => <TableRowSkeleton key={idx} />)
+                                ) : logs.length === 0 ? (
                                     <tr>
-                                        <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
-                                            No attendance logs found for this period.
+                                        <td colSpan={5} className="px-6 py-16 text-center text-gray-500 dark:text-gray-400 transition-colors">
+                                            <div className="flex flex-col items-center justify-center">
+                                                <div className="w-12 h-12 bg-gray-50 dark:bg-gray-800 rounded-full flex items-center justify-center mb-3 transition-colors">
+                                                    <Calendar size={24} className="text-gray-400 dark:text-gray-500" />
+                                                </div>
+                                                <p className="font-semibold text-gray-900 dark:text-gray-100 text-base transition-colors">No attendance logs found</p>
+                                                <p className="text-sm mt-1">There are no attendance records for this period.</p>
+                                            </div>
                                         </td>
                                     </tr>
                                 ) : (
                                     logs.map((log) => (
-                                        <tr key={log.id} className="hover:bg-gray-50 transition-colors">
-                                            <td className="px-6 py-4 text-gray-900 font-medium">{log.date}</td>
-                                            <td className="px-6 py-4 text-gray-600">{log.checkIn}</td>
-                                            <td className="px-6 py-4 text-gray-600">{log.checkOut}</td>
-                                            <td className="px-6 py-4 text-gray-600">{log.totalHours}</td>
+                                        <tr key={log.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                                            <td className="px-6 py-4 text-gray-900 dark:text-gray-100 font-medium transition-colors">{log.date}</td>
+                                            <td className="px-6 py-4 text-gray-600 dark:text-gray-400 transition-colors">{log.checkIn || '-'}</td>
+                                            <td className="px-6 py-4 text-gray-600 dark:text-gray-400 transition-colors">{log.checkOut || '-'}</td>
+                                            <td className="px-6 py-4 text-gray-600 dark:text-gray-300 font-medium transition-colors">{log.totalHours}</td>
                                             <td className="px-6 py-4">
                                                 <Badge variant={getStatusBadgeVariant(log.status)}>
                                                     {log.status}

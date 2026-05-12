@@ -1,3 +1,4 @@
+// src/components/assets/AssetTable.tsx
 'use client';
 
 import React from 'react';
@@ -6,7 +7,6 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/utils/cn';
 
-// Define strict types for the backend payload
 export type AssetStatus = 'Assigned' | 'Available' | 'Maintenance';
 
 export interface Asset {
@@ -25,7 +25,6 @@ interface AssetTableProps {
     onEdit?: (record: Asset) => void;
 }
 
-// Helper to map strings from the API to frontend visual assets
 const getCategoryIcon = (category: string) => {
     switch (category.toLowerCase()) {
         case 'laptop': return <LaptopIcon size={20} />;
@@ -45,24 +44,44 @@ const getStatusBadgeVariant = (status: AssetStatus) => {
     }
 };
 
+// Premium Dark-Mode Compatible Skeleton
+const TableRowSkeleton = () => (
+    <tr className="animate-pulse bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800">
+        <td className="px-6 py-4 flex items-center gap-4">
+            <div className="w-10 h-10 rounded-lg bg-gray-200 dark:bg-gray-800 shrink-0"></div>
+            <div className="space-y-2">
+                <div className="h-4 w-32 bg-gray-200 dark:bg-gray-800 rounded"></div>
+                <div className="h-3 w-20 bg-gray-100 dark:bg-gray-800/50 rounded"></div>
+            </div>
+        </td>
+        <td className="px-6 py-4"><div className="h-4 w-24 bg-gray-200 dark:bg-gray-800 rounded"></div></td>
+        <td className="px-6 py-4"><div className="h-4 w-32 bg-gray-200 dark:bg-gray-800 rounded"></div></td>
+        <td className="px-6 py-4"><div className="h-4 w-24 bg-gray-200 dark:bg-gray-800 rounded"></div></td>
+        <td className="px-6 py-4"><div className="h-6 w-20 bg-gray-200 dark:bg-gray-800 rounded-full"></div></td>
+        <td className="px-6 py-4 text-center"><div className="h-8 w-8 bg-gray-200 dark:bg-gray-800 rounded-full mx-auto"></div></td>
+    </tr>
+);
+
 export default function AssetTable({ 
     assets = [], 
     isLoading = false,
     onEdit 
 }: AssetTableProps) {
+
+    const isInitialLoad = isLoading && assets.length === 0;
+
     return (
-        <div className="relative overflow-x-auto border border-gray-200 rounded-xl bg-white min-h-[400px]">
+        <div className="relative overflow-x-auto border-none sm:border-solid border-gray-200 dark:border-gray-800 sm:rounded-xl bg-white dark:bg-gray-900 min-h-[400px] transition-colors duration-300">
             
-            {/* Loading Overlay */}
-            {isLoading && (
-                <div className="absolute inset-0 bg-white/70 z-10 flex flex-col items-center justify-center backdrop-blur-[1px]">
-                    <Loader2 className="w-8 h-8 animate-spin text-blue-600 mb-2" />
-                    <p className="text-sm font-medium text-gray-600">Loading company assets...</p>
+            {/* Soft overlay for background fetches while data is still visible */}
+            {isLoading && !isInitialLoad && (
+                <div className="absolute inset-0 bg-white/40 dark:bg-black/20 z-10 flex items-center justify-center pointer-events-none transition-opacity duration-200 backdrop-blur-[1px]">
+                     <Loader2 className="w-6 h-6 animate-spin text-blue-600 dark:text-blue-500" />
                 </div>
             )}
 
             <table className="w-full text-left text-sm whitespace-nowrap">
-                <thead className="bg-gray-50 border-b border-gray-200 text-gray-500 font-bold uppercase tracking-wider text-xs">
+                <thead className="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-400 font-bold uppercase tracking-wider text-xs transition-colors">
                     <tr>
                         <th className="px-6 py-4">Asset Details</th>
                         <th className="px-6 py-4">Category</th>
@@ -72,58 +91,56 @@ export default function AssetTable({
                         <th className="px-6 py-4 text-center">Actions</th>
                     </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100">
-                    {!isLoading && assets.length === 0 ? (
+                <tbody className="divide-y divide-gray-100 dark:divide-gray-800 bg-white dark:bg-gray-900 transition-colors">
+                    {isInitialLoad ? (
+                         // Render skeleton rows during initial fetch
+                         Array.from({ length: 5 }).map((_, idx) => <TableRowSkeleton key={idx} />)
+                    ) : assets.length === 0 ? (
                         <tr>
-                            <td colSpan={6} className="px-6 py-16 text-center text-gray-500">
+                            <td colSpan={6} className="px-6 py-16 text-center text-gray-500 dark:text-gray-400 transition-colors">
                                 <div className="flex flex-col items-center justify-center">
-                                    <div className="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center mb-3">
-                                        <PackageOpen size={24} className="text-gray-400" />
+                                    <div className="w-12 h-12 bg-gray-50 dark:bg-gray-800 rounded-full flex items-center justify-center mb-3 transition-colors">
+                                        <PackageOpen size={24} className="text-gray-400 dark:text-gray-500" />
                                     </div>
-                                    <p className="font-semibold text-gray-900 text-base">No assets found</p>
+                                    <p className="font-semibold text-gray-900 dark:text-gray-100 text-base transition-colors">No assets found</p>
                                     <p className="text-sm mt-1">There are no assets matching your current criteria.</p>
                                 </div>
                             </td>
                         </tr>
                     ) : (
                         assets.map((record) => (
-                            <tr key={record.dbId || record.id} className="hover:bg-gray-50 transition-colors group">
+                            <tr key={record.dbId || record.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors group">
                                 <td className="px-6 py-4 flex items-center gap-4">
-                                    <div className="p-2.5 bg-gray-100 text-gray-500 rounded-lg shadow-sm group-hover:text-blue-600 group-hover:bg-blue-50 transition-colors">
+                                    <div className="p-2.5 bg-gray-100 dark:bg-gray-800/50 text-gray-500 dark:text-gray-400 rounded-lg shadow-sm dark:shadow-none group-hover:text-blue-600 dark:group-hover:text-blue-400 group-hover:bg-blue-50 dark:group-hover:bg-blue-500/10 transition-colors">
                                         {getCategoryIcon(record.category)}
                                     </div>
                                     <div>
-                                        <p className="font-bold text-gray-900">{record.name}</p>
-                                        <p className="text-xs font-mono text-gray-500 mt-0.5">{record.id}</p>
+                                        <p className="font-bold text-gray-900 dark:text-gray-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{record.name}</p>
+                                        <p className="text-xs font-mono text-gray-500 dark:text-gray-400 mt-0.5 transition-colors">{record.id}</p>
                                     </div>
                                 </td>
-
-                                <td className="px-6 py-4 font-medium text-gray-600">{record.category}</td>
-
+                                <td className="px-6 py-4 font-medium text-gray-600 dark:text-gray-300 transition-colors">{record.category}</td>
                                 <td className="px-6 py-4">
                                     <span className={cn(
-                                        "font-medium",
-                                        !record.assignee ? "text-gray-400 italic" : "text-gray-900"
+                                        "font-medium transition-colors",
+                                        !record.assignee ? "text-gray-400 dark:text-gray-500 italic" : "text-gray-900 dark:text-gray-100"
                                     )}>
                                         {record.assignee || 'Unassigned'}
                                     </span>
                                 </td>
-
-                                <td className="px-6 py-4 text-gray-600 font-medium">
+                                <td className="px-6 py-4 text-gray-600 dark:text-gray-300 font-medium transition-colors">
                                     {record.date || '-'}
                                 </td>
-
                                 <td className="px-6 py-4">
                                     <Badge variant={getStatusBadgeVariant(record.status)}>
                                         {record.status}
                                     </Badge>
                                 </td>
-
                                 <td className="px-6 py-4 text-center">
                                     <Button 
                                         variant="ghost" 
                                         size="sm" 
-                                        className="p-2 rounded-full h-8 w-8 text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors" 
+                                        className="p-2 rounded-full h-8 w-8 text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-colors" 
                                         aria-label="More actions"
                                         onClick={() => onEdit && onEdit(record)}
                                     >

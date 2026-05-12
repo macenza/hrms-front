@@ -7,6 +7,11 @@ export const ENDPOINTS = {
         PROFILE: '/auth/profile',
     },
 
+    DASHBOARD: {
+        STATS: '/dashboard/stats',
+        ATTENDANCE: '/dashboard/attendance',
+    },
+
     EMPLOYEE: {
         BASE: '/employees', // GET (list) and POST (create)
         GET_BY_ID: (id: string | number) => `/employees/${id}`,

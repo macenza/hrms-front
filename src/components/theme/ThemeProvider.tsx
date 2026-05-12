@@ -1,18 +1,21 @@
+// src/components/theme/ThemeProvider.tsx
 'use client';
 
+import * as React from 'react';
 import { ThemeProvider as NextThemesProvider } from 'next-themes';
-import type { ReactNode } from 'react';
 
-export function ThemeProvider({ children }: { children: ReactNode }) {
-    return (
-        <NextThemesProvider
-            attribute="class"
-            defaultTheme="light"
-            enableSystem={false}
-            storageKey="macenza-theme"
-            disableTransitionOnChange
-        >
-            {children}
-        </NextThemesProvider>
-    );
+type ThemeProviderProps = React.ComponentProps<typeof NextThemesProvider>;
+
+export function ThemeProvider({ children, ...props }: ThemeProviderProps) {
+  return (
+    <NextThemesProvider 
+        attribute="class" 
+        defaultTheme="system" 
+        enableSystem 
+        disableTransitionOnChange={false}
+        {...props}
+    >
+      {children}
+    </NextThemesProvider>
+  );
 }

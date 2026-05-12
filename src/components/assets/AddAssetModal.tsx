@@ -1,6 +1,7 @@
+// src/components/assets/AddAssetModal.tsx
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Tag, Laptop, AlignLeft, Loader2 } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
@@ -17,6 +18,7 @@ interface AddAssetModalProps {
     isOpen: boolean;
     onClose: () => void;
     onSubmit: (payload: AddAssetPayload) => Promise<void>;
+    isSubmitting?: boolean; // Synced with React Query from parent
 }
 
 const initialFormState: AddAssetPayload = {
@@ -26,43 +28,47 @@ const initialFormState: AddAssetPayload = {
     notes: ''
 };
 
-export default function AddAssetModal({ isOpen, onClose, onSubmit }: AddAssetModalProps) {
+export default function AddAssetModal({ 
+    isOpen, 
+    onClose, 
+    onSubmit, 
+    isSubmitting = false 
+}: AddAssetModalProps) {
+    
     const [formData, setFormData] = useState<AddAssetPayload>(initialFormState);
-    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // Reset form to blank state whenever the modal is opened
+    useEffect(() => {
+        if (isOpen) {
+            setFormData(initialFormState);
+        }
+    }, [isOpen]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
-    const handleClose = () => {
-        setFormData(initialFormState);
-        setIsSubmitting(false);
-        onClose();
-    };
-
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setIsSubmitting(true);
         try {
             await onSubmit(formData);
-            handleClose();
+            // Modal closing is handled by the parent component upon successful mutation
         } catch (error) {
             console.error('Submission failed:', error);
-        } finally {
-            setIsSubmitting(false);
         }
     };
 
     return (
-        <Modal isOpen={isOpen} onClose={handleClose} title="Add New Asset" className="max-w-lg">
+        <Modal isOpen={isOpen} onClose={onClose} title="Add New Asset" className="max-w-lg">
             <form onSubmit={handleSubmit} className="flex flex-col h-full">
                 <div className="flex-1 space-y-5 p-2">
                     
                     {/* Asset Tag */}
                     <div className="space-y-1.5">
-                        <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                            <Tag size={16} className="text-gray-400" /> Asset Tag / Serial Number
+                        <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 transition-colors">
+                            <Tag size={16} className="text-gray-400 dark:text-gray-500" /> 
+                            Asset Tag / Serial Number
                         </label>
                         <Input
                             type="text"
@@ -72,14 +78,15 @@ export default function AddAssetModal({ isOpen, onClose, onSubmit }: AddAssetMod
                             required
                             disabled={isSubmitting}
                             placeholder="e.g., AST-1055 or S/N..."
-                            className="uppercase"
+                            className="uppercase text-gray-900 dark:text-gray-100"
                         />
                     </div>
-
-                    {/* Asset Name */}
+                    
+                    {/* Device Name */}
                     <div className="space-y-1.5">
-                        <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                            <Laptop size={16} className="text-gray-400" /> Device Name
+                        <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 transition-colors">
+                            <Laptop size={16} className="text-gray-400 dark:text-gray-500" /> 
+                            Device Name
                         </label>
                         <Input
                             type="text"
@@ -89,19 +96,22 @@ export default function AddAssetModal({ isOpen, onClose, onSubmit }: AddAssetMod
                             required
                             disabled={isSubmitting}
                             placeholder="e.g., MacBook Pro 16 M3"
+                            className="text-gray-900 dark:text-gray-100"
                         />
                     </div>
-
-                    {/* Category Selection */}
+                    
+                    {/* Category */}
                     <div className="space-y-1.5">
-                        <label className="text-sm font-semibold text-gray-700">Category</label>
+                        <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 transition-colors">
+                            Category
+                        </label>
                         <select
                             name="category"
                             value={formData.category}
                             onChange={handleChange}
                             required
                             disabled={isSubmitting}
-                            className="w-full h-10 px-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent text-sm bg-white disabled:bg-gray-50"
+                            className="w-full h-10 px-3 rounded-md border border-gray-300 dark:border-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-600 dark:focus:ring-blue-500/40 focus:border-transparent text-sm bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 disabled:bg-gray-50 dark:disabled:bg-gray-900 disabled:text-gray-500 dark:disabled:text-gray-600 transition-all"
                         >
                             <option value="" disabled>Select category...</option>
                             <option value="Laptop">Laptop</option>
@@ -110,11 +120,12 @@ export default function AddAssetModal({ isOpen, onClose, onSubmit }: AddAssetMod
                             <option value="Accessories">Accessories & Peripherals</option>
                         </select>
                     </div>
-
-                    {/* Notes */}
+                    
+                    {/* Initial Notes */}
                     <div className="space-y-1.5">
-                        <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                            <AlignLeft size={16} className="text-gray-400" /> Initial Notes
+                        <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 transition-colors">
+                            <AlignLeft size={16} className="text-gray-400 dark:text-gray-500" /> 
+                            Initial Notes
                         </label>
                         <textarea
                             name="notes"
@@ -122,21 +133,27 @@ export default function AddAssetModal({ isOpen, onClose, onSubmit }: AddAssetMod
                             onChange={handleChange}
                             disabled={isSubmitting}
                             placeholder="Condition, purchase date, warranty info..."
-                            className="w-full px-3 py-2 text-sm rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent min-h-[100px] resize-y bg-white disabled:bg-gray-50"
+                            className="w-full px-3 py-2 text-sm rounded-md border border-gray-300 dark:border-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-600 dark:focus:ring-blue-500/40 focus:border-transparent min-h-[100px] resize-y bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 disabled:bg-gray-50 dark:disabled:bg-gray-900 disabled:text-gray-500 dark:disabled:text-gray-600 placeholder:text-gray-400 dark:placeholder:text-gray-600 transition-all"
                         />
                     </div>
                 </div>
-
-                {/* Footer Controls */}
-                <div className="pt-6 mt-6 border-t border-gray-100 flex justify-end gap-3 px-2 pb-2 shrink-0">
-                    <Button type="button" variant="ghost" onClick={handleClose} disabled={isSubmitting}>
+                
+                {/* Footer Actions */}
+                <div className="pt-6 mt-6 border-t border-gray-100 dark:border-gray-800 flex justify-end gap-3 px-2 pb-2 shrink-0 transition-colors">
+                    <Button 
+                        type="button" 
+                        variant="ghost" 
+                        onClick={onClose} 
+                        disabled={isSubmitting}
+                        className="text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                    >
                         Cancel
                     </Button>
                     <Button 
                         type="submit" 
                         variant="primary"
                         disabled={isSubmitting || !formData.assetTag || !formData.name || !formData.category}
-                        className="min-w-[140px] gap-2"
+                        className="min-w-[140px] gap-2 font-semibold shadow-sm shadow-blue-500/25 dark:shadow-none"
                     >
                         {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : null}
                         {isSubmitting ? 'Saving...' : 'Add Asset'}

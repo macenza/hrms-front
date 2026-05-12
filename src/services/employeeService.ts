@@ -1,4 +1,3 @@
-// src/services/employeeService.ts
 import apiClient from './apiClient';
 import { Employee, PaginationState } from '@/components/employees/EmployeeTable';
 
@@ -8,64 +7,59 @@ export interface FetchEmployeesResponse {
 }
 
 export const employeeService = {
-    getAll: async (page = 1, limit = 10, search = '', filters: any = {}, department = ''): Promise<FetchEmployeesResponse> => {
+    getAll: async (
+        page = 1, 
+        limit = 10, 
+        search = '', 
+        filters: any = {}
+    ): Promise<FetchEmployeesResponse> => {
         try {
-            // Your backend currently returns a direct array and doesn't process query params yet
-            const response = await apiClient.get('/employees');
+            // 1. Construct query parameters for the backend
+            const params: Record<string, any> = {
+                page,
+                limit,
+            };
 
-            // FIX: Map directly over response.data, not response.data.data
-            const rawData = response.data || [];
+            // Only attach parameters if they have a value to keep URLs clean
+            if (search) params.search = search;
+            if (filters.department) params.department = filters.department;
+            if (filters.role) params.role = filters.role;
+            
+            // Map the UI "Active/Inactive" status to the backend's boolean expected format
+            if (filters.status) {
+                params.status = filters.status.toLowerCase() === 'active' ? 'true' : 'false';
+            }
 
-            // Map the raw backend data first
-            let employees: Employee[] = rawData.map((user: any) => ({
+            // 2. Fetch the paginated and filtered data from the backend
+            const response = await apiClient.get('/employees', { params });
+
+            // The upgraded backend now returns { employees: [...], pagination: {...} }
+            const { employees: rawEmployees, pagination } = response.data;
+
+            // 3. Map the raw backend data to our strict frontend interface
+            // Notice the corrected paths aligning exactly with your User.js schema
+            const employees: Employee[] = rawEmployees.map((user: any) => ({
                 id: user._id,
                 empId: user.employeeId || 'N/A',
                 name: user.name,
-                department: user.profile?.department || 'Unassigned',
+                department: user.profile?.employment?.department || 'Unassigned',
                 role: user.role,
                 email: user.email,
-                phone: user.profile?.phone || 'N/A',
-                joiningDate: user.profile?.joiningDate
-                    ? new Date(user.profile.joiningDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+                phone: user.profile?.personal?.phone || 'N/A',
+                joiningDate: user.profile?.employment?.joiningDate
+                    ? new Date(user.profile.employment.joiningDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
                     : 'N/A',
                 status: user.isActive ? 'Active' : 'Inactive'
             }));
 
-            if (search) {
-                const lowerSearch = search.toLowerCase();
-                employees = employees.filter(emp => 
-                    emp.name.toLowerCase().includes(lowerSearch) || 
-                    emp.email.toLowerCase().includes(lowerSearch)
-                );
-            }
-            if (filters.department) {
-                employees = employees.filter(emp => emp.department === filters.department);
-            }
-            if (filters.role) {
-                employees = employees.filter(emp => emp.role === filters.role);
-            }
-            if (filters.status) {
-                // Ensure cases match ("Active" vs "active")
-                employees = employees.filter(emp => emp.status.toLowerCase() === filters.status.toLowerCase());
-            }
-
-            if (department) {
-                employees = employees.filter(emp => emp.department === department);
-            }
-            
-            // Return the mapped data and a fallback pagination object
             return {
                 employees,
-                pagination: {
-                    currentPage: 1,
-                    totalPages: 1,
-                    totalEntries: employees.length,
-                    entriesPerPage: employees.length > 0 ? employees.length : 10
-                }
+                pagination
             };
         } catch (error) {
             console.error("Error fetching employees:", error);
-            throw error;
+            // In a production app, you might want to map this to a custom AppError class here
+            throw error; 
         }
     },
 
@@ -78,6 +72,7 @@ export const employeeService = {
             throw error;
         }
     },
+
     /**
      * Fetch a single employee's profile by ID
      */
@@ -85,12 +80,13 @@ export const employeeService = {
         try {
             const response = await apiClient.get(`/employees/${id}`);
             const user = response.data;
+            
             return {
                 ...user,
                 id: user._id,
                 empId: user.employeeId || 'N/A',
                 name: user.name,
-                department: user.profile?.department || 'Unassigned',
+                department: user.profile?.employment?.department || 'Unassigned',
                 role: user.role,
                 status: user.isActive ? 'Active' : 'Inactive'
             };
@@ -118,7 +114,6 @@ export const employeeService = {
      */
     update: async (id: string, updateData: any) => {
         try {
-            // We use a PUT request as defined in your backend
             const response = await apiClient.put(`/employees/${id}`, updateData);
             return response.data;
         } catch (error) {

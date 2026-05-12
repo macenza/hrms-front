@@ -1,9 +1,10 @@
+// src/components/dashboard/AttendanceChart.tsx
 "use client";
-import React, { useState, useEffect } from "react";
+
+import React, { useState, useEffect, useMemo } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
-import { ChevronDown, Loader2 } from "lucide-react";
-import { useAppDispatch, useAppSelector } from "@/store/hooks"; 
-import { setAttendanceTimeframe } from "@/store/dashboardSlice";
+import { Loader2 } from "lucide-react";
+import { type DailyAttendance } from "@/store/dashboardSlice";
 
 const LEGEND = [
     { label: "Present", color: "#60A5FA", key: "present" },
@@ -11,79 +12,70 @@ const LEGEND = [
 ];
 
 interface AttendanceChartProps {
-    isDark?: boolean;
-    timeframe?: 'week' | 'month'; // Passed from parent
-    isEmployee?: boolean;         // Passed from parent
-    disableAnimations?: boolean;  // Passed from parent
+    timeframe?: 'week' | 'month';
+    isEmployee?: boolean;
+    disableAnimations?: boolean;
+    chartData?: {
+        overviewChart?: DailyAttendance[]
+    };
 }
 
 const AttendanceChart = ({ 
-    isDark = false, 
     timeframe = 'week', 
     isEmployee = false,
-    disableAnimations = false 
+    disableAnimations = false,
+    chartData: dataFromApi
 }: AttendanceChartProps) => {
-    const dispatch = useAppDispatch();
+    
+    // Required to prevent hydration mismatch with Recharts
     const [mounted, setMounted] = useState(false);
     
-    // Pull the live data and loading states from Redux
-    const { attendance, isLoading, attendanceTimeframe: reduxTimeframe } = useAppSelector((state) => state.dashboard);
-    
-    // Determine the active timeframe. Force to props.timeframe if provided, else fallback to Redux.
-    const activeTimeframe = isEmployee ? 'month' : (timeframe || reduxTimeframe);
-
     useEffect(() => {
         setMounted(true);
     }, []);
 
-    // Data fetching was moved to the Parent (page.tsx) to centralize API calls.
-    // This component now strictly handles presentation based on Redux state.
-
-    const handleTogglePeriod = () => {
-        if (isEmployee) return; // Employees cannot toggle
-        const newTimeframe = activeTimeframe === "week" ? "month" : "week";
-        dispatch(setAttendanceTimeframe(newTimeframe));
-    };
-
-    const chartData = React.useMemo(() => {
-        if (!attendance?.overviewChart) return [];
-        return attendance.overviewChart.map((item) => {
-            const dateObj = new Date(item._id);
+    const chartData = useMemo(() => {
+        if (!dataFromApi?.overviewChart) return [];
+        
+        return dataFromApi.overviewChart.map((item: DailyAttendance) => {
+            const [yearStr, monthStr, dayStr] = item._id.split('-');
+            const year = parseInt(yearStr, 10);
+            const month = parseInt(monthStr, 10) - 1; 
+            const day = parseInt(dayStr, 10);
+            
+            let displayDay = "";
+            if (timeframe === "week") {
+                const utcDate = new Date(Date.UTC(year, month, day));
+                displayDay = new Intl.DateTimeFormat('en-US', { 
+                    weekday: 'short', 
+                    timeZone: 'UTC' 
+                }).format(utcDate);
+            } else {
+                const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+                displayDay = `${monthNames[month]} ${day}`;
+            }
             return {
                 ...item,
-                day: activeTimeframe === "week" 
-                    ? dateObj.toLocaleDateString("en-US", { weekday: "short" })
-                    : dateObj.toLocaleDateString("en-US", { month: "short", day: "numeric" })
+                day: displayDay
             };
         });
-    }, [attendance?.overviewChart, activeTimeframe]);
+    }, [dataFromApi?.overviewChart, timeframe]);
 
-    if (!mounted || (isLoading && !attendance)) {
+    if (!mounted) {
         return (
-            <div className={`rounded-2xl p-5 min-w-0 h-[360px] md:h-[400px] flex items-center justify-center ${isDark ? "bg-gray-800" : "bg-white shadow-sm"}`}>
-                 <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+            <div className="rounded-xl p-5 min-w-0 h-[360px] md:h-[400px] flex items-center justify-center bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-sm dark:shadow-none transition-colors duration-300">
+                <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
             </div>
         );
     }
 
     return (
-        <div
-            className={`
-                rounded-2xl p-5 flex flex-col gap-5 min-w-0
-                transition-all duration-300 relative border
-                ${isDark ? "bg-gray-800 border-gray-700" : "bg-white border-transparent shadow-sm"}
-            `}
-        >
-            {isLoading && attendance && (
-                <div className="absolute inset-0 bg-white/50 dark:bg-gray-800/50 flex items-center justify-center z-10 rounded-2xl">
-                    <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
-                </div>
-            )}
+        <div className="rounded-xl p-5 flex flex-col gap-5 min-w-0 transition-colors duration-300 relative border bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 shadow-sm dark:shadow-none">
             
             <div className="flex items-center justify-between flex-wrap gap-3">
-                <h3 className={`text-base font-semibold ${isDark ? "text-white" : "text-gray-800"}`}>
+                <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 transition-colors">
                     {isEmployee ? "My Monthly Attendance" : "Attendance Overview"}
-                </h3>
+                </h3> 
                 
                 <div className="flex items-center gap-4 flex-wrap">
                     <div className="flex items-center gap-3 flex-wrap">
@@ -93,34 +85,18 @@ const AttendanceChart = ({
                                     className="w-2.5 h-2.5 rounded-full"
                                     style={{ backgroundColor: l.color }}
                                 />
-                                <span className="text-xs text-gray-400">
+                                <span className="text-xs text-gray-500 dark:text-gray-400 transition-colors">
                                     {l.label}
                                 </span>
                             </div>
                         ))}
                     </div>
-                    
-                    {/* Hide toggle for Employees */}
-                    {!isEmployee && (
-                        <button
-                            className={`
-                                flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium capitalize
-                                transition-all duration-200
-                                ${isDark ? "bg-gray-700 text-gray-300 hover:bg-gray-600" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}
-                            `}
-                            onClick={handleTogglePeriod}
-                            disabled={isLoading}
-                        >
-                            {activeTimeframe}
-                            <ChevronDown className="w-3.5 h-3.5" />
-                        </button>
-                    )}
                 </div>
             </div>
-            
+
             <div className="w-full h-[260px] sm:h-[300px] md:h-[320px]">
                 {chartData.length === 0 ? (
-                    <div className="w-full h-full flex items-center justify-center text-sm text-gray-400">
+                    <div className="w-full h-full flex items-center justify-center text-sm text-gray-400 dark:text-gray-500 transition-colors">
                         No attendance data found for this period.
                     </div>
                 ) : (
@@ -131,31 +107,36 @@ const AttendanceChart = ({
                             barGap={4}
                             margin={{ top: 10, right: 10, bottom: 0, left: -10 }}
                         >
+                            {/* CartesianGrid stroke color cannot use pure Tailwind classes directly via Recharts API.
+                                It requires explicit hex. In a real-world app, you'd use a useTheme hook, but for now, 
+                                transparent grid lines or a very soft gray works globally. */}
                             <CartesianGrid
                                 vertical={false}
-                                stroke={isDark ? "#374151" : "#F1F5F9"}
+                                stroke="#E2E8F0"
+                                strokeOpacity={0.3} 
                             />
                             <XAxis
                                 dataKey="day"
                                 axisLine={false}
                                 tickLine={false}
-                                tick={{ fontSize: 12, fill: isDark ? "#9CA3AF" : "#94A3B8" }}
+                                tick={{ fontSize: 12, fill: "#94A3B8" }} // Neutral Slate
                             />
                             <YAxis
                                 axisLine={false}
                                 tickLine={false}
                                 allowDecimals={false}
-                                tick={{ fontSize: 12, fill: isDark ? "#9CA3AF" : "#94A3B8" }}
+                                tick={{ fontSize: 12, fill: "#94A3B8" }} // Neutral Slate
                             />
                             <Tooltip
-                                cursor={{ fill: "transparent" }}
+                                cursor={{ fill: "rgba(148, 163, 184, 0.1)" }}
                                 contentStyle={{
-                                    background: isDark ? "#1F2937" : "#fff",
-                                    border: isDark ? "1px solid #374151" : "1px solid #E2E8F0",
-                                    borderRadius: 12,
+                                    // Hardcoded fallback for tooltip as Recharts struggles with dark mode injection dynamically without context hooks
+                                    background: "#1E293B", 
+                                    border: "1px solid #334155",
+                                    borderRadius: 8,
                                     fontSize: 12,
-                                    color: isDark ? "#E5E7EB" : "#374151",
-                                    boxShadow: "0 6px 20px rgba(0,0,0,0.08)",
+                                    color: "#F8FAFC",
+                                    boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
                                 }}
                             />
                             {LEGEND.map((item) => (
@@ -163,9 +144,9 @@ const AttendanceChart = ({
                                     key={item.key}
                                     dataKey={item.key}
                                     fill={item.color}
-                                    radius={[6, 6, 0, 0]}
+                                    radius={[4, 4, 0, 0]}
                                     maxBarSize={14}
-                                    isAnimationActive={!disableAnimations} // CHANGE 4: Reduce animations
+                                    isAnimationActive={!disableAnimations}
                                     animationDuration={800}
                                 />
                             ))}

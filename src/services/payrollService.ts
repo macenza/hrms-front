@@ -1,22 +1,16 @@
-import apiClient from './apiClient';
+// src/services/payrollService.ts
+import apiClient from "./apiClient";
 
 export const payrollService = {
-    getDashboardData: async () => {
-        try {
-            const response = await apiClient.get('/payroll');
-            return response.data;
-        } catch (error) {
-            console.error("Error fetching payroll data:", error);
-            throw error;
-        }
+    getDashboardData: async (payPeriod?: string) => {
+        const url = payPeriod ? `/payroll?payPeriod=${payPeriod}` : '/payroll';
+        const response = await apiClient.get(url);
+        return response.data.data;
     },
-    runPayroll: async () => {
-        try {
-            const response = await apiClient.post('/payroll/run');
-            return response.data;
-        } catch (error) {
-            console.error("Error running payroll:", error);
-            throw error;
-        }
+    
+    runPayroll: async (payPeriod?: string) => {
+        const payload = payPeriod ? { payPeriod } : {};
+        const response = await apiClient.post('/payroll/run', payload);
+        return response.data;
     }
 };

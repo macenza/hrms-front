@@ -2,12 +2,10 @@
 
 import React from 'react';
 import { Briefcase, MapPin, User, Calendar, Hash, Tag, Plus, Building } from 'lucide-react';
-
-// UI Components
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { cn } from '@/utils/cn';
 
-// Data Contract for Backend Integration
 export interface EmploymentDetailsData {
     employeeId: string;
     designation: string;
@@ -24,12 +22,11 @@ interface EmploymentDetailsTabProps {
     onAddSkill?: () => void;
 }
 
-// Reusable Detail Item Helper with safety fallbacks
 const DetailItem = ({
     label,
     value,
     icon: Icon,
-    iconColor = "text-gray-400"
+    iconColor = "text-gray-400 dark:text-gray-500"
 }: {
     label: string,
     value?: string,
@@ -37,10 +34,12 @@ const DetailItem = ({
     iconColor?: string
 }) => (
     <div>
-        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">{label}</p>
-        <div className="flex items-start gap-2 text-gray-900 font-medium">
-            {Icon && <Icon size={16} className={`${iconColor} mt-0.5 shrink-0`} />}
-            <span className={!value || value === 'N/A' ? 'text-gray-400 italic font-normal' : ''}>
+        <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1 transition-colors">
+            {label}
+        </p>
+        <div className="flex items-start gap-2 text-gray-900 dark:text-gray-100 font-medium transition-colors">
+            {Icon && <Icon size={16} className={cn(iconColor, "mt-0.5 shrink-0 transition-colors")} />}
+            <span className={!value || value === 'N/A' ? 'text-gray-400 dark:text-gray-500 italic font-normal' : ''}>
                 {value || 'Not provided'}
             </span>
         </div>
@@ -51,18 +50,16 @@ export default function EmploymentDetailsTab({
     data,
     onAddSkill
 }: EmploymentDetailsTabProps) {
-    
-    // Safety check
     if (!data) return null;
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in fade-in duration-300">
-            {/* Employment Information - Takes up 2 columns */}
+            {/* Main Details Card */}
             <div className="lg:col-span-2 space-y-6">
-                <Card className="border-gray-200 shadow-sm bg-gray-50/50">
-                    <CardHeader className="pb-4 border-b border-gray-100">
-                        <CardTitle className="text-lg flex items-center gap-2">
-                            <Briefcase size={20} className="text-blue-600" />
+                <Card className="border-gray-200 dark:border-gray-800 shadow-sm bg-gray-50/50 dark:bg-gray-900/50 transition-colors duration-300">
+                    <CardHeader className="pb-4 border-b border-gray-100 dark:border-gray-800 transition-colors">
+                        <CardTitle className="text-lg flex items-center gap-2 text-gray-900 dark:text-gray-100">
+                            <Briefcase size={20} className="text-blue-600 dark:text-blue-400" />
                             Employment Information
                         </CardTitle>
                     </CardHeader>
@@ -74,12 +71,12 @@ export default function EmploymentDetailsTab({
                             <DetailItem label="Date of Joining" value={data.dateOfJoining} icon={Calendar} />
                             <DetailItem label="Department" value={data.department} icon={Building} />
                             <DetailItem label="Employment Type" value={data.employmentType} />
-                            <div className="sm:col-span-2 pt-2">
+                            <div className="sm:col-span-2 pt-2 border-t border-gray-100 dark:border-gray-800 transition-colors">
                                 <DetailItem
                                     label="Work Location"
                                     value={data.workLocation}
                                     icon={MapPin}
-                                    iconColor="text-red-400"
+                                    iconColor="text-red-500 dark:text-red-400"
                                 />
                             </div>
                         </div>
@@ -87,30 +84,32 @@ export default function EmploymentDetailsTab({
                 </Card>
             </div>
 
-            {/* Skills - Takes up 1 column */}
+            {/* Skills Card */}
             <div className="space-y-6">
-                <Card className="border-gray-200 shadow-sm bg-gray-50/50">
-                    <CardHeader className="pb-4 border-b border-gray-100 flex flex-row items-center justify-between">
-                        <CardTitle className="text-lg">Skills</CardTitle>
+                <Card className="border-gray-200 dark:border-gray-800 shadow-sm bg-gray-50/50 dark:bg-gray-900/50 transition-colors duration-300 flex flex-col h-full">
+                    <CardHeader className="pb-4 border-b border-gray-100 dark:border-gray-800 flex flex-row items-center justify-between transition-colors">
+                        <CardTitle className="text-lg text-gray-900 dark:text-gray-100">Skills</CardTitle>
                         <Button
                             variant="ghost"
                             size="sm"
                             onClick={onAddSkill}
-                            className="h-8 w-8 p-0 rounded-full text-blue-600 hover:bg-blue-50 hover:text-blue-700"
+                            className="h-8 w-8 p-0 rounded-full text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/10 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
                             aria-label="Add new skill"
                         >
-                            <Plus size={20} />
+                            <Plus size={20} strokeWidth={2.5} />
                         </Button>
                     </CardHeader>
-                    <CardContent className="pt-6">
+                    <CardContent className="pt-6 flex-1">
                         {!data.skills || data.skills.length === 0 ? (
-                            <p className="text-sm text-gray-500 italic text-center py-4">No skills added yet.</p>
+                            <div className="flex flex-col items-center justify-center h-full text-center py-4">
+                                <p className="text-sm text-gray-500 dark:text-gray-400 italic">No skills added yet.</p>
+                            </div>
                         ) : (
                             <div className="flex flex-wrap gap-2">
                                 {data.skills.map((skill, idx) => (
                                     <span
                                         key={idx}
-                                        className="px-3 py-1.5 bg-white border border-gray-200 text-gray-700 text-sm font-medium rounded-lg shadow-sm hover:border-blue-300 transition-colors cursor-default"
+                                        className="px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-lg shadow-sm hover:border-blue-300 dark:hover:border-blue-500/50 transition-colors cursor-default"
                                     >
                                         {skill}
                                     </span>

@@ -1,9 +1,9 @@
+// src/components/auth/LoginForm.tsx
 'use client';
 
 import React, { useState } from 'react';
 import { Eye, EyeOff, Loader2, AlertCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import Cookies from 'js-cookie';
 import { useAppDispatch } from '@/store/hooks';
 import { setCredentials } from '@/store/authSlice';
 import { loginUser } from '@/services/authService';
@@ -25,35 +25,20 @@ export default function LoginForm() {
         e.preventDefault();
         setError(null);
         setIsLoading(true);
-
+        
         try {
             const data = await loginUser({ email, password });
-            
-            // Standardize token access based on your backend response
-            const token = data.accessToken || data.token || '';
-            if (!token) {
-                throw new Error('Authentication token missing from server response.');
-            }
             const raw = data.user;
             
+            // Normalize Mongoose _id to frontend id
             const user = {
                 ...raw,
-                id: String(raw._id || raw.id || ''),
+                id: String((raw as any)._id || raw.id || ''),
             };
-
-            // Secure token storage
-            Cookies.set('token', token, { expires: 7, secure: process.env.NODE_ENV === 'production' });
-            Cookies.set('role', user.role, { expires: 7, secure: process.env.NODE_ENV === 'production' });
             
-            localStorage.setItem('user', JSON.stringify(user));
-            
-            dispatch(setCredentials({ user, token }));
-            
-            // Push to dashboard
+            dispatch(setCredentials({ user }));
             router.push('/dashboard');
-            
         } catch (err: any) {
-            // Give user-friendly fallback error
             setError(err.message || 'Invalid credentials or server error.');
         } finally {
             setIsLoading(false);
@@ -68,31 +53,31 @@ export default function LoginForm() {
                     Enter your credentials to access your account
                 </p>
             </div>
-
+            
             {error && (
-                <div className="mb-6 p-3 bg-red-50 border border-red-200 text-red-600 text-sm rounded-lg flex items-center justify-center gap-2 font-medium">
-                    <AlertCircle size={18} />
+                <div className="mb-6 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm rounded-lg flex items-center justify-center gap-2 font-medium">
+                    <AlertCircle size={18} className="shrink-0" />
                     <span>{error}</span>
                 </div>
             )}
-
+            
             <form onSubmit={handleSubmit} className="space-y-5">
                 <div className="space-y-1.5">
-                    <label className="text-sm font-bold text-gray-700">Email Address</label>
+                    <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Email Address</label>
                     <Input
                         type="email"
                         placeholder="name@company.com"
                         required
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        className="text-gray-900"
+                        className="text-gray-900 dark:text-gray-100"
                     />
                 </div>
-
+                
                 <div className="space-y-1.5">
                     <div className="flex justify-between items-center">
-                        <label className="text-sm font-bold text-gray-700">Password</label>
-                        <Link href="/forgot-password" className="text-xs font-bold text-blue-600 hover:underline">
+                        <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Password</label>
+                        <Link href="/forgot-password" className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline">
                             Forgot?
                         </Link>
                     </div>
@@ -103,32 +88,32 @@ export default function LoginForm() {
                             required
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
-                            className="pr-10 text-gray-900"
+                            className="pr-10 text-gray-900 dark:text-gray-100"
                         />
                         <button
                             type="button"
                             onClick={() => setShowPassword(!showPassword)}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
                             aria-label={showPassword ? "Hide password" : "Show password"}
                         >
                             {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                         </button>
                     </div>
                 </div>
-
+                
                 <Button
                     type="submit"
                     variant="primary"
-                    className="w-full py-6 text-base font-bold shadow-lg shadow-blue-200"
+                    className="w-full py-6 text-base font-bold flex items-center justify-center gap-2 shadow-lg shadow-blue-200 dark:shadow-none"
                     disabled={isLoading}
                 >
-                    {isLoading ? <Loader2 className="animate-spin mx-auto" /> : 'Sign In'}
+                    {isLoading ? <Loader2 className="animate-spin w-5 h-5" /> : 'Sign In'}
                 </Button>
             </form>
-
-            <p className="text-center text-sm text-gray-500 mt-8">
+            
+            <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-8">
                 Don&apos;t have an account?{' '}
-                <Link href="/signup" className="text-blue-600 font-bold hover:underline">
+                <Link href="/signup" className="text-blue-600 dark:text-blue-400 font-bold hover:underline">
                     Create one
                 </Link>
             </p>

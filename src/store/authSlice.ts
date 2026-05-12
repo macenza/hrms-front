@@ -1,6 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
-// Aligns with auth API user payload (register/login); `id` is normalized from `_id` when storing.
 export interface User {
     id: string;
     _id?: string;
@@ -13,16 +12,13 @@ export interface User {
     updatedAt?: string;
 }
 
-// Define the shape of our Auth State
-interface AuthState {
+export interface AuthState {
     user: User | null;
-    token: string | null;
     isAuthenticated: boolean;
 }
 
 const initialState: AuthState = {
     user: null,
-    token: null,
     isAuthenticated: false,
 };
 
@@ -30,19 +26,15 @@ const authSlice = createSlice({
     name: 'auth',
     initialState,
     reducers: {
-        // Action to call when the user successfully logs in
         setCredentials: (
             state,
-            action: PayloadAction<{ user: User; token: string }>
+            action: PayloadAction<{ user: User }> // Removed token payload
         ) => {
             state.user = action.payload.user;
-            state.token = action.payload.token;
             state.isAuthenticated = true;
         },
-        // Action to call when the user logs out
         logOut: (state) => {
             state.user = null;
-            state.token = null;
             state.isAuthenticated = false;
         },
     },

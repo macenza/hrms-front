@@ -1,13 +1,12 @@
+// src/components/profile/tabs/PersonalInfoTab.tsx
 'use client';
 
 import React, { useMemo } from 'react';
 import { Mail, Phone, MapPin, Gift, User, Calendar, Hash } from 'lucide-react';
-
-// UI Components
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { cn } from '@/utils/cn';
 
-// Data Contract for Backend Integration
 export interface PersonalInfoData {
     fullName: string;
     dob: string; 
@@ -24,42 +23,39 @@ interface PersonalInfoTabProps {
     onScheduleWish?: () => void;
 }
 
-// Helper: Calculate days remaining until next birthday
 const calculateDaysToBirthday = (dobString?: string) => {
     if (!dobString) return undefined;
     const birthDate = new Date(dobString);
     if (isNaN(birthDate.getTime())) return undefined;
-
     const today = new Date();
-    // Set current year to the birth date to find THIS year's birthday
     const nextBirthday = new Date(today.getFullYear(), birthDate.getMonth(), birthDate.getDate());
-
-    // If the birthday passed this year, look at next year
+    
     if (today > nextBirthday) {
         nextBirthday.setFullYear(today.getFullYear() + 1);
     }
-
+    
     const diffTime = nextBirthday.getTime() - today.getTime();
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 };
 
-// Reusable Detail Item Helper
 const DetailItem = ({
     label,
     value,
     icon: Icon,
-    iconColor = "text-gray-400"
+    iconColor = "text-gray-400 dark:text-gray-500"
 }: {
     label: string,
-    value: string,
+    value?: string,
     icon: any,
     iconColor?: string
 }) => (
     <div>
-        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">{label}</p>
-        <div className="flex items-start gap-2 text-gray-900 font-medium">
-            <Icon size={16} className={`${iconColor} mt-0.5 shrink-0`} />
-            <span className={!value || value === 'N/A' ? 'text-gray-400 italic font-normal' : ''}>
+        <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1 transition-colors">
+            {label}
+        </p>
+        <div className="flex items-start gap-2 text-gray-900 dark:text-gray-100 font-medium transition-colors">
+            <Icon size={16} className={cn(iconColor, "mt-0.5 shrink-0 transition-colors")} />
+            <span className={!value || value === 'N/A' ? 'text-gray-400 dark:text-gray-500 italic font-normal transition-colors' : 'transition-colors'}>
                 {value || 'Not provided'}
             </span>
         </div>
@@ -70,15 +66,11 @@ export default function PersonalInfoTab({
     data,
     onScheduleWish
 }: PersonalInfoTabProps) {
-    
-    // Safety fallback
     if (!data) return null;
 
-    // Derived values
     const firstName = data.fullName ? data.fullName.split(' ')[0] : 'Employee';
     const daysToBirthday = useMemo(() => calculateDaysToBirthday(data.rawDob), [data.rawDob]);
     
-    // Format the DOB for the birthday card ("October 24")
     const formattedBirthday = useMemo(() => {
         if (!data.rawDob) return '';
         const date = new Date(data.rawDob);
@@ -87,15 +79,14 @@ export default function PersonalInfoTab({
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in fade-in duration-300">
-            {/* Main Details - Takes up 2 columns on large screens */}
             <div className="lg:col-span-2 space-y-6">
                 
-                {/* Basic Details */}
-                <Card className="border-gray-200 shadow-sm bg-gray-50/50">
-                    <CardHeader className="pb-4">
-                        <CardTitle className="text-lg">Basic Details</CardTitle>
+                {/* Basic Details Card */}
+                <Card className="border-gray-200 dark:border-gray-800 shadow-sm dark:shadow-none bg-gray-50/50 dark:bg-gray-900/50 transition-colors duration-300">
+                    <CardHeader className="pb-4 border-b border-gray-100 dark:border-gray-800 transition-colors">
+                        <CardTitle className="text-lg text-gray-900 dark:text-gray-100 transition-colors">Basic Details</CardTitle>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="pt-6">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <DetailItem label="Full Name" value={data.fullName} icon={User} />
                             <DetailItem label="Date of Birth" value={data.dob} icon={Calendar} />
@@ -105,45 +96,65 @@ export default function PersonalInfoTab({
                     </CardContent>
                 </Card>
 
-                {/* Contact Info */}
-                <Card className="border-gray-200 shadow-sm bg-gray-50/50">
-                    <CardHeader className="pb-4">
-                        <CardTitle className="text-lg">Contact Info</CardTitle>
+                {/* Contact Info Card */}
+                <Card className="border-gray-200 dark:border-gray-800 shadow-sm dark:shadow-none bg-gray-50/50 dark:bg-gray-900/50 transition-colors duration-300">
+                    <CardHeader className="pb-4 border-b border-gray-100 dark:border-gray-800 transition-colors">
+                        <CardTitle className="text-lg text-gray-900 dark:text-gray-100 transition-colors">Contact Info</CardTitle>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="pt-6">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <DetailItem label="Email ID" value={data.email} icon={Mail} iconColor="text-blue-500" />
-                            <DetailItem label="Phone Number" value={data.phone} icon={Phone} iconColor="text-emerald-500" />
-                            <div className="md:col-span-2">
-                                <DetailItem label="Current Address" value={data.address} icon={MapPin} iconColor="text-red-400" />
+                            <DetailItem 
+                                label="Email ID" 
+                                value={data.email} 
+                                icon={Mail} 
+                                iconColor="text-blue-500 dark:text-blue-400" 
+                            />
+                            <DetailItem 
+                                label="Phone Number" 
+                                value={data.phone} 
+                                icon={Phone} 
+                                iconColor="text-emerald-500 dark:text-emerald-400" 
+                            />
+                            <div className="md:col-span-2 pt-2 border-t border-gray-100 dark:border-gray-800 transition-colors">
+                                <DetailItem 
+                                    label="Current Address" 
+                                    value={data.address} 
+                                    icon={MapPin} 
+                                    iconColor="text-red-500 dark:text-red-400" 
+                                />
                             </div>
                         </div>
                     </CardContent>
                 </Card>
             </div>
 
-            {/* Right Sidebar - Birthday Reminder (Only shows if birthday is within 30 days) */}
+            {/* Sidebar Widgets */}
             <div className="space-y-6">
+                {/* Birthday Reminder Widget */}
                 {daysToBirthday !== undefined && daysToBirthday <= 30 && (
-                    <div className="bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-xl p-6 border border-blue-500/20 relative overflow-hidden shadow-sm">
-                        {/* Background floating icon */}
-                        <div className="absolute -right-4 -top-4 text-blue-500/10 rotate-12 pointer-events-none">
+                    <div className="bg-gradient-to-br from-blue-500/10 to-purple-500/10 dark:from-blue-500/20 dark:to-purple-500/20 rounded-xl p-6 border border-blue-500/20 dark:border-blue-500/30 relative overflow-hidden shadow-sm dark:shadow-none transition-colors duration-300">
+                        
+                        <div className="absolute -right-4 -top-4 text-blue-500/10 dark:text-blue-500/20 rotate-12 pointer-events-none transition-colors">
                             <Gift size={100} />
                         </div>
+                        
                         <div className="relative z-10">
-                            <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm text-blue-600 mb-4">
+                            <div className="w-12 h-12 bg-white dark:bg-gray-800 rounded-full flex items-center justify-center shadow-sm dark:shadow-none text-blue-600 dark:text-blue-400 mb-4 transition-colors">
                                 <Gift size={24} />
                             </div>
-                            <h3 className="text-lg font-bold text-gray-900 mb-1">Birthday Reminder</h3>
-                            <p className="text-sm text-gray-600 mb-4">
-                                {firstName}'s birthday is coming up in <span className="font-bold text-blue-600">{daysToBirthday === 0 ? 'today' : `${daysToBirthday} days`}</span>!
+                            
+                            <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-1 transition-colors">Birthday Reminder</h3>
+                            <p className="text-sm text-gray-600 dark:text-gray-300 mb-4 transition-colors">
+                                {firstName}'s birthday is coming up in <span className="font-bold text-blue-600 dark:text-blue-400 transition-colors">{daysToBirthday === 0 ? 'today' : `${daysToBirthday} days`}</span>!
                             </p>
-                            <div className="bg-white/60 rounded-lg p-3 text-center mb-4">
-                                <p className="text-xs text-gray-500 font-bold uppercase">{formattedBirthday}</p>
+                            
+                            <div className="bg-white/60 dark:bg-gray-900/60 rounded-lg p-3 text-center mb-4 transition-colors">
+                                <p className="text-xs text-gray-500 dark:text-gray-400 font-bold uppercase transition-colors">{formattedBirthday}</p>
                             </div>
+                            
                             <Button
                                 variant="primary"
-                                className="w-full shadow-sm shadow-blue-500/20"
+                                className="w-full shadow-sm shadow-blue-500/25 dark:shadow-none font-semibold"
                                 onClick={onScheduleWish}
                             >
                                 Schedule Wish
