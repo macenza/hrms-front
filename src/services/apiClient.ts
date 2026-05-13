@@ -28,21 +28,21 @@ const processQueue = (error: Error | null, token: string | null = null) => {
 };
 
 apiClient.interceptors.response.use(
-    (response) => response, 
+    (response) => response,
     async (error: AxiosError) => {
         const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
-        
+
         if (error.response?.status === 401 && originalRequest) {
-            
-            // FIX: DO NOT intercept 401s from Login or Register. Pass them directly to the UI.
-            const isAuthRoute = originalRequest.url?.includes('login') || originalRequest.url?.includes('register');
+            // DO NOT intercept 401s from Login or Register. Pass them directly to the UI.
+            const isAuthRoute =
+                originalRequest.url?.includes('login') || originalRequest.url?.includes('register');
             if (isAuthRoute) {
                 return Promise.reject(error);
             }
 
             if (originalRequest.url?.includes(ENDPOINTS.AUTH.REFRESH)) {
                 if (typeof window !== 'undefined') {
-                    console.error("Refresh token expired. Forcing logout.");
+                    console.error('Refresh token expired. Forcing logout.');
                     window.location.href = '/login?error=session_expired';
                 }
                 return Promise.reject(error);
@@ -53,22 +53,22 @@ apiClient.interceptors.response.use(
                     return new Promise(function (resolve, reject) {
                         failedQueue.push({ resolve, reject });
                     })
-                    .then(() => apiClient(originalRequest))
-                    .catch((err) => Promise.reject(err));
+                        .then(() => apiClient(originalRequest))
+                        .catch((err) => Promise.reject(err));
                 }
 
                 originalRequest._retry = true;
                 isRefreshing = true;
 
                 try {
-                    await apiClient.post(ENDPOINTS.AUTH.REFRESH); 
+                    await apiClient.post(ENDPOINTS.AUTH.REFRESH);
                     processQueue(null);
                     return apiClient(originalRequest);
                 } catch (refreshError) {
                     processQueue(refreshError as Error, null);
-                    
+
                     if (typeof window !== 'undefined') {
-                        console.error("Session permanently expired. Redirecting.");
+                        console.error('Session permanently expired. Redirecting.');
                         window.location.href = '/login?error=session_expired';
                     }
                     return Promise.reject(refreshError);
@@ -76,11 +76,10 @@ apiClient.interceptors.response.use(
                     isRefreshing = false;
                 }
             }
-        } 
-        else if (error.response?.status === 403) {
-            console.warn("Access Denied (403): You do not have permission for this API route.");
+        } else if (error.response?.status === 403) {
+            console.warn('Access Denied (403): You do not have permission for this API route.');
         }
-        
+
         return Promise.reject(error);
     }
 );
