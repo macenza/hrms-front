@@ -2,13 +2,13 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { Eye, EyeOff, AlertCircle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import Link from 'next/link';
 import { registerUser } from '@/services/authService';
 import { SignupPayload } from '@/types/index';
-import { useRouter } from 'next/navigation';
-import { Eye, EyeOff, AlertCircle, Loader2 } from 'lucide-react';
 import { useAppDispatch } from '@/store/hooks';
 import { setCredentials } from '@/store/authSlice';
 
@@ -18,17 +18,17 @@ export default function SignupForm() {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [showPassword, setShowPassword] = useState(false);
-    
+
     const [formData, setFormData] = useState({
         name: '',
         email: '',
         password: '',
         team: '',
-        gender: 'Male', // Added missing gender field based on backend
+        gender: 'Male',
         profile: {
             phone: '',
-            address: ''
-        }
+            address: '',
+        },
     });
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -40,7 +40,7 @@ export default function SignupForm() {
         const { name, value } = e.target;
         setFormData((prev) => ({
             ...prev,
-            profile: { ...prev.profile, [name]: value }
+            profile: { ...prev.profile, [name]: value },
         }));
     };
 
@@ -49,19 +49,18 @@ export default function SignupForm() {
         setIsLoading(true);
         setError(null);
         try {
-            // Role is strictly omitted. Backend proxy rule: "Only Admin can create Admin/HR users"
-            // The backend automatically defaults omitted roles to 'employee'.
             const data = await registerUser(formData as unknown as SignupPayload);
             const raw = data.user;
             const user = {
                 ...raw,
-                id: String((raw as any)._id || raw.id || ''),
+                id: String((raw as { _id?: string; id?: string })._id || raw.id || ''),
             };
-            
+
             dispatch(setCredentials({ user }));
             router.push('/dashboard');
-        } catch (err: any) {
-            setError(err.message || 'Server error. Please check your details.');
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : 'Server error. Please check your details.';
+            setError(message);
         } finally {
             setIsLoading(false);
         }
@@ -73,14 +72,14 @@ export default function SignupForm() {
                 <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Get Started</h1>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">Create your HRMS account</p>
             </div>
-            
+
             {error && (
-                <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-red-600 text-sm flex items-center gap-2">
+                <div className="mb-4 p-3 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400 text-sm flex items-center gap-2">
                     <AlertCircle size={16} className="shrink-0" />
                     <span>{error}</span>
                 </div>
             )}
-            
+
             <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-1.5">
                     <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Full Name</label>
@@ -93,7 +92,7 @@ export default function SignupForm() {
                         className="text-gray-900 dark:text-gray-100"
                     />
                 </div>
-                
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
                         <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Work Email</label>
@@ -119,7 +118,7 @@ export default function SignupForm() {
                         />
                     </div>
                 </div>
-                
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
                         <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Gender</label>
@@ -146,7 +145,7 @@ export default function SignupForm() {
                         />
                     </div>
                 </div>
-                
+
                 <div className="space-y-1.5">
                     <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Address</label>
                     <Input
@@ -157,12 +156,12 @@ export default function SignupForm() {
                         className="text-gray-900 dark:text-gray-100"
                     />
                 </div>
-                
+
                 <div className="space-y-1.5">
                     <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Password</label>
                     <div className="relative">
                         <Input
-                            type={showPassword ? "text" : "password"}
+                            type={showPassword ? 'text' : 'password'}
                             name="password"
                             value={formData.password}
                             onChange={handleChange}
@@ -174,12 +173,13 @@ export default function SignupForm() {
                             type="button"
                             onClick={() => setShowPassword(!showPassword)}
                             className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                            aria-label={showPassword ? 'Hide password' : 'Show password'}
                         >
                             {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                         </button>
                     </div>
                 </div>
-                
+
                 <div className="pt-4">
                     <Button
                         type="submit"
@@ -191,10 +191,12 @@ export default function SignupForm() {
                     </Button>
                 </div>
             </form>
-            
+
             <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-8">
                 Already have an account?{' '}
-                <Link href="/login" className="text-blue-600 dark:text-blue-400 font-bold hover:underline">Sign In</Link>
+                <Link href="/login" className="text-blue-600 dark:text-blue-400 font-bold hover:underline">
+                    Sign In
+                </Link>
             </p>
         </div>
     );
