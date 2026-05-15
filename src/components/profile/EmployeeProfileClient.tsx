@@ -21,7 +21,8 @@ import NotesTab from '@/components/profile/tabs/NotesTab';
 import { 
     useEmployeeProfile, 
     useEmployeeAttendanceLogs, 
-    useUploadDocument, 
+    useUploadDocument,
+    useUploadCertificate,
     useAddNote 
 } from '@/hooks/api/useProfile';
 
@@ -80,6 +81,7 @@ export default function EmployeeProfileClient({ id }: EmployeeProfileClientProps
     );
 
     const uploadDocumentMutation = useUploadDocument(resolvedEmployeeId);
+    const uploadCertificateMutation = useUploadCertificate(resolvedEmployeeId);
     const addNoteMutation = useAddNote(resolvedEmployeeId);
 
     const handleUploadDocument = async (file: File) => {
@@ -89,6 +91,19 @@ export default function EmployeeProfileClient({ id }: EmployeeProfileClientProps
             await uploadDocumentMutation.mutateAsync(formData);
         } catch (error) {
             alert("Failed to upload document. Please try again.");
+        }
+    };
+
+    const handleUploadCertificate = async (file: File) => {
+        try {
+            const formData = new FormData();
+            formData.append('certificate', file);
+            const baseTitle = file.name.replace(/\.[^/.]+$/, '');
+            formData.append('title', baseTitle);
+            formData.append('description', 'Uploaded certificate');
+            await uploadCertificateMutation.mutateAsync(formData);
+        } catch (error) {
+            alert('Failed to upload certificate. Please try again.');
         }
     };
 
@@ -265,16 +280,30 @@ export default function EmployeeProfileClient({ id }: EmployeeProfileClientProps
                     {activeTab === 'certificates' && (
                         <CertificatesTab
                             certificates={employee.profile?.certificates?.map((cert: any) => ({
-                                id: cert._id,
-                                title: cert.title,
-                                description: cert.description,
-                                issueDate: new Date(cert.issueDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
-                                fileUrl: cert.fileUrl
+                                id: cert._id || cert.id,
+                                title: cert.title || cert.name || 'Certificate',
+                                description: cert.description || cert.type || '',
+                                issueDate:
+                                    cert.issueDate || cert.createdAt
+                                        ? new Date(cert.issueDate || cert.createdAt).toLocaleDateString('en-US', {
+                                              month: 'short',
+                                              year: 'numeric',
+                                          })
+                                        : '—',
+                                fileUrl: cert.fileUrl || cert.url,
+                                sizeInBytes:
+                                    typeof cert.sizeInBytes === 'number'
+                                        ? cert.sizeInBytes
+                                        : typeof cert.size === 'number'
+                                          ? cert.size
+                                          : typeof cert.fileSize === 'number'
+                                            ? cert.fileSize
+                                            : undefined,
                             })) || []}
                             isLoading={isProfileLoading}
-                            onGenerate={() => alert("Generate certificate modal opening...")}
-                            onPreview={(id) => alert(`Previewing certificate ${id}`)}
-                            onDownload={(id) => alert(`Downloading certificate ${id}`)}
+                            canUpload={isAdminOrHR}
+                            isUploading={uploadCertificateMutation.isPending}
+                            onUpload={isAdminOrHR ? handleUploadCertificate : undefined}
                         />
                     )}
                     {activeTab === 'documents' && (
@@ -289,7 +318,8 @@ export default function EmployeeProfileClient({ id }: EmployeeProfileClientProps
                             })) || []}
                             isLoading={isProfileLoading}
                             isUploading={uploadDocumentMutation.isPending}
-                            onUpload={handleUploadDocument}
+                            canUploadDocuments={isAdminOrHR}
+                            onUpload={isAdminOrHR ? handleUploadDocument : undefined}
                             onActionClick={(id) => console.log(`Open menu for document ${id}`)}
                         />
                     )}

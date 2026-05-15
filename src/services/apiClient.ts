@@ -1,10 +1,9 @@
-// src/services/apiClient.ts
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { ENDPOINTS } from '../constants/endpoints';
 
 const apiClient = axios.create({
     baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api',
-    withCredentials: true, // CRITICAL: Ensures HttpOnly cookies are always sent
+    withCredentials: true,
     headers: {
         'Content-Type': 'application/json',
     },
@@ -31,19 +30,24 @@ apiClient.interceptors.response.use(
     (response) => response,
     async (error: AxiosError) => {
         const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
-
+        
         if (error.response?.status === 401 && originalRequest) {
-            // DO NOT intercept 401s from Login or Register. Pass them directly to the UI.
             const isAuthRoute =
                 originalRequest.url?.includes('login') || originalRequest.url?.includes('register');
+            
             if (isAuthRoute) {
                 return Promise.reject(error);
             }
 
+            // Prevent infinite refresh loops
             if (originalRequest.url?.includes(ENDPOINTS.AUTH.REFRESH)) {
                 if (typeof window !== 'undefined') {
-                    console.error('Refresh token expired. Forcing logout.');
-                    window.location.href = '/login?error=session_expired';
+                    console.log('Refresh token expired. Forcing logout.');
+                    localStorage.removeItem('user');
+
+                    if (window.location.pathname !== '/login') {
+                        window.location.href = '/login?error=session_expired';
+                    }
                 }
                 return Promise.reject(error);
             }
@@ -66,10 +70,13 @@ apiClient.interceptors.response.use(
                     return apiClient(originalRequest);
                 } catch (refreshError) {
                     processQueue(refreshError as Error, null);
-
                     if (typeof window !== 'undefined') {
-                        console.error('Session permanently expired. Redirecting.');
-                        window.location.href = '/login?error=session_expired';
+                        console.log('Session permanently expired. Redirecting.');
+                        localStorage.removeItem('user');
+
+                        if (window.location.pathname !== '/login') {
+                            window.location.href = '/login?error=session_expired';
+                        }
                     }
                     return Promise.reject(refreshError);
                 } finally {

@@ -2,7 +2,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { employeeService } from '@/services/employeeService';
 import { EmployeeFilterState } from '@/components/employees/EmployeeFilters';
-import { EmployeeFormData } from '@/components/employees/AddEmployeeModal';
 
 interface UseEmployeesParams {
     page: number;
@@ -31,7 +30,7 @@ export function useCreateEmployee() {
     const queryClient = useQueryClient();
     
     return useMutation({
-        mutationFn: (data: EmployeeFormData) => employeeService.create(data),
+        mutationFn: (data: unknown) => employeeService.create(data),
         onSuccess: () => {
             // Invalidates the cache, forcing useEmployees to refetch the fresh list
             queryClient.invalidateQueries({ queryKey: ['employees'] });

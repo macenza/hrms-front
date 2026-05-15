@@ -30,6 +30,16 @@ export function useUploadDocument(employeeId: string) {
     });
 }
 
+export function useUploadCertificate(employeeId: string) {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (formData: FormData) => employeeService.uploadCertificate(employeeId, formData),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['profile', employeeId] });
+        },
+    });
+}
+
 export function useAddNote(employeeId: string) {
     const queryClient = useQueryClient();
     return useMutation({

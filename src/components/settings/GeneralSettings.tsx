@@ -3,16 +3,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { UploadCloud, Save, Building2, Trash2, Lock } from 'lucide-react';
 import { cn } from '@/utils/cn';
-
-// UI Components
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
-
-// State
 import { useAppSelector } from '@/store/hooks';
 
-// Data Contract for Backend Integration
 export interface CompanySettings {
     name: string;
     supportEmail: string;
@@ -22,13 +17,12 @@ export interface CompanySettings {
 }
 
 interface GeneralSettingsProps {
-    initialData?: CompanySettings | null; // Allow null during parent's loading state
+    initialData?: CompanySettings | null; 
     onSave?: (data: CompanySettings) => void;
     onLogoUpload?: (file: File) => void;
     onLogoRemove?: () => void;
 }
 
-// Default Fallback (Used only until API loads, replacing static mock)
 const defaultSettings: CompanySettings = {
     name: '',
     supportEmail: '',
@@ -37,32 +31,43 @@ const defaultSettings: CompanySettings = {
     logoUrl: null,
 };
 
+function normalizeCompanySettings(
+    data: Partial<CompanySettings> | null | undefined
+): CompanySettings {
+    return {
+        ...defaultSettings,
+        ...data,
+        name: data?.name ?? '',
+        supportEmail: data?.supportEmail ?? '',
+        phoneNumber: data?.phoneNumber ?? '',
+        timezone: data?.timezone ?? defaultSettings.timezone,
+        logoUrl: data?.logoUrl ?? null,
+    };
+}
+
 export default function GeneralSettings({
     initialData,
     onSave,
     onLogoUpload,
     onLogoRemove
 }: GeneralSettingsProps) {
-    // Form State
-    const [formData, setFormData] = useState<CompanySettings>(initialData || defaultSettings);
+    const [formData, setFormData] = useState<CompanySettings>(() =>
+        normalizeCompanySettings(initialData)
+    );
     const fileInputRef = useRef<HTMLInputElement>(null);
-
-    // RBAC Implementation
+    
     const { user } = useAppSelector((state) => state.auth);
-    // Determine if the user has permission to edit company-wide settings
     const userRole = user?.role?.toLowerCase() || '';
-    const canEdit = userRole === 'admin'; // Adjust if 'hr' should also edit this
+    const canEdit = userRole === 'admin'; 
 
-    // Sync state if parent fetches data asynchronously
     useEffect(() => {
         if (initialData) {
-            setFormData(initialData);
+            setFormData(normalizeCompanySettings(initialData));
         }
     }, [initialData]);
 
-    // Form Handlers
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-        if (!canEdit) return; // Secondary safeguard
+        if (!canEdit) return; 
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
     };
@@ -87,38 +92,38 @@ export default function GeneralSettings({
 
     return (
         <div className="animate-in fade-in duration-300 max-w-4xl">
+            
             <div className="mb-8 flex justify-between items-start">
                 <div>
-                    <h2 className="text-xl font-bold text-gray-900 tracking-tight">Company Profile</h2>
-                    <p className="text-sm text-gray-500 mt-1">
+                    <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 tracking-tight transition-colors">Company Profile</h2>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 transition-colors">
                         Update your company's basic information and brand identity.
                     </p>
                 </div>
-                
-                {/* Visual indicator for read-only users */}
                 {!canEdit && (
-                    <span className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 text-gray-600 rounded-md text-xs font-semibold uppercase tracking-wider">
+                    <span className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 rounded-md text-xs font-semibold uppercase tracking-wider transition-colors">
                         <Lock size={14} /> Read Only
                     </span>
                 )}
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-8">
+                
                 {/* Logo Section */}
-                <section className="flex flex-col sm:flex-row items-start sm:items-center gap-6 p-6 bg-gray-50 border border-gray-100 rounded-2xl">
+                <section className="flex flex-col sm:flex-row items-start sm:items-center gap-6 p-6 bg-gray-50 dark:bg-gray-800/30 border border-gray-100 dark:border-gray-800 rounded-2xl transition-colors">
                     <div className="relative group">
                         {formData.logoUrl ? (
                             <img
                                 src={formData.logoUrl}
                                 alt="Company Logo"
                                 className={cn(
-                                    "w-20 h-20 rounded-xl object-cover border border-gray-200 shadow-sm",
+                                    "w-20 h-20 rounded-xl object-cover border border-gray-200 dark:border-gray-700 shadow-sm transition-opacity",
                                     !canEdit && "opacity-80"
                                 )}
                             />
                         ) : (
-                            <div className="w-20 h-20 bg-white border border-gray-200 rounded-xl flex items-center justify-center text-2xl font-black text-blue-600 shadow-sm">
-                                {formData.name ? formData.name.charAt(0).toUpperCase() : <Building2 size={32} className="text-gray-400" />}
+                            <div className="w-20 h-20 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl flex items-center justify-center text-2xl font-black text-blue-600 dark:text-blue-500 shadow-sm transition-colors">
+                                {formData.name ? formData.name.charAt(0).toUpperCase() : <Building2 size={32} className="text-gray-400 dark:text-gray-600" />}
                             </div>
                         )}
                         <input
@@ -131,7 +136,6 @@ export default function GeneralSettings({
                         />
                     </div>
                     
-                    {/* Hide Logo Actions if user cannot edit */}
                     {canEdit ? (
                         <div className="space-y-3">
                             <div className="flex flex-wrap gap-3">
@@ -140,7 +144,7 @@ export default function GeneralSettings({
                                     variant="outline"
                                     size="sm"
                                     onClick={handleLogoButtonClick}
-                                    className="gap-2 bg-white"
+                                    className="gap-2 bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                                 >
                                     <UploadCloud size={16} />
                                     Change Logo
@@ -151,31 +155,31 @@ export default function GeneralSettings({
                                         variant="ghost"
                                         size="sm"
                                         onClick={onLogoRemove}
-                                        className="text-red-500 hover:bg-red-50 hover:text-red-600"
+                                        className="text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-400 transition-colors"
                                     >
                                         <Trash2 size={16} className="mr-2" />
                                         Remove
                                     </Button>
                                 )}
                             </div>
-                            <p className="text-xs text-gray-500 font-medium">
+                            <p className="text-xs text-gray-500 dark:text-gray-400 font-medium transition-colors">
                                 Recommended: 256x256px. Formats: JPG, PNG, SVG (Max 2MB).
                             </p>
                         </div>
                     ) : (
-                        <div className="space-y-1 text-sm text-gray-500">
-                            <p className="font-medium text-gray-700">Active Company Logo</p>
+                        <div className="space-y-1 text-sm text-gray-500 dark:text-gray-400 transition-colors">
+                            <p className="font-medium text-gray-700 dark:text-gray-300">Active Company Logo</p>
                             <p>Contact an administrator to change company branding.</p>
                         </div>
                     )}
                 </section>
 
-                {/* Form Fields Card */}
-                <Card className="border-gray-200">
+                {/* Form Section */}
+                <Card className="border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm dark:shadow-none transition-colors duration-300">
                     <CardContent className="p-6">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
                             <div className="space-y-1.5">
-                                <label className="text-sm font-bold text-gray-700">Company Name</label>
+                                <label className="text-sm font-bold text-gray-700 dark:text-gray-300 transition-colors">Company Name</label>
                                 <Input
                                     name="name"
                                     value={formData.name || ''}
@@ -183,44 +187,46 @@ export default function GeneralSettings({
                                     placeholder="e.g. Acme Corp"
                                     required
                                     disabled={!canEdit}
-                                    className={!canEdit ? "bg-gray-50 cursor-not-allowed" : ""}
+                                    className="text-gray-900 dark:text-gray-100 disabled:bg-gray-50 dark:disabled:bg-gray-900/50 disabled:text-gray-500 dark:disabled:text-gray-400 transition-colors"
                                 />
                             </div>
+                            
                             <div className="space-y-1.5">
-                                <label className="text-sm font-bold text-gray-700">Support Email</label>
+                                <label className="text-sm font-bold text-gray-700 dark:text-gray-300 transition-colors">Support Email</label>
                                 <Input
                                     name="supportEmail"
                                     type="email"
-                                    value={formData.supportEmail}
+                                    value={formData.supportEmail || ''}
                                     onChange={handleChange}
                                     placeholder="support@company.com"
                                     required
                                     disabled={!canEdit}
-                                    className={!canEdit ? "bg-gray-50 cursor-not-allowed" : ""}
+                                    className="text-gray-900 dark:text-gray-100 disabled:bg-gray-50 dark:disabled:bg-gray-900/50 disabled:text-gray-500 dark:disabled:text-gray-400 transition-colors"
                                 />
                             </div>
+                            
                             <div className="space-y-1.5">
-                                <label className="text-sm font-bold text-gray-700">Phone Number</label>
+                                <label className="text-sm font-bold text-gray-700 dark:text-gray-300 transition-colors">Phone Number</label>
                                 <Input
                                     name="phoneNumber"
-                                    value={formData.phoneNumber}
+                                    value={formData.phoneNumber || ''}
                                     onChange={handleChange}
                                     placeholder="+1 (555) 000-0000"
                                     disabled={!canEdit}
-                                    className={!canEdit ? "bg-gray-50 cursor-not-allowed" : ""}
+                                    className="text-gray-900 dark:text-gray-100 disabled:bg-gray-50 dark:disabled:bg-gray-900/50 disabled:text-gray-500 dark:disabled:text-gray-400 transition-colors"
                                 />
                             </div>
-
+                            
                             <div className="space-y-1.5">
-                                <label className="text-sm font-bold text-gray-700">Default Timezone</label>
+                                <label className="text-sm font-bold text-gray-700 dark:text-gray-300 transition-colors">Default Timezone</label>
                                 <select
                                     name="timezone"
-                                    value={formData.timezone}
+                                    value={formData.timezone || defaultSettings.timezone}
                                     onChange={handleChange}
                                     disabled={!canEdit}
                                     className={cn(
-                                        "w-full h-10 px-4 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent text-sm bg-white font-medium text-gray-700 transition-colors",
-                                        !canEdit && "bg-gray-50 text-gray-500 cursor-not-allowed opacity-90"
+                                        "w-full h-10 px-4 py-2 rounded-md border border-gray-300 dark:border-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-600 dark:focus:ring-blue-500/40 focus:border-transparent text-sm bg-white dark:bg-gray-950 font-medium text-gray-700 dark:text-gray-300 transition-all shadow-sm dark:shadow-none cursor-pointer",
+                                        !canEdit && "bg-gray-50 dark:bg-gray-900/50 text-gray-500 dark:text-gray-400 cursor-not-allowed opacity-90"
                                     )}
                                 >
                                     <option value="pst">Pacific Standard Time (PST)</option>
@@ -233,13 +239,13 @@ export default function GeneralSettings({
                     </CardContent>
                 </Card>
 
-                {/* Footer Actions - Only render if user can edit */}
+                {/* Footer Actions */}
                 {canEdit && (
-                    <div className="pt-6 border-t border-gray-100 flex justify-end">
+                    <div className="pt-6 border-t border-gray-100 dark:border-gray-800 flex justify-end transition-colors">
                         <Button
                             type="submit"
                             variant="primary"
-                            className="gap-2 px-8 shadow-md shadow-blue-500/20"
+                            className="gap-2 px-8 shadow-md shadow-blue-500/25 dark:shadow-none font-semibold"
                         >
                             <Save size={18} />
                             Save Changes

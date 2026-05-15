@@ -1,13 +1,11 @@
+// src/components/settings/NotificationSettings.tsx
 'use client';
 
 import React, { useState, useEffect } from 'react';
 import { Mail, Bell, ShieldCheck, Lock } from 'lucide-react';
 import { cn } from '@/utils/cn';
-
-// State
 import { useAppSelector } from '@/store/hooks';
 
-// Data Contract for Backend Integration
 export interface NotificationPreferences {
     email_leave_requests: boolean;
     email_payroll_processing: boolean;
@@ -21,7 +19,6 @@ interface NotificationSettingsProps {
     onUpdate?: (data: NotificationPreferences) => void;
 }
 
-// Clean Default State
 const defaultPreferences: NotificationPreferences = {
     email_leave_requests: false,
     email_payroll_processing: false,
@@ -34,42 +31,36 @@ export default function NotificationSettings({
     initialData,
     onUpdate
 }: NotificationSettingsProps) {
-    // Form State
     const [prefs, setPrefs] = useState<NotificationPreferences>(initialData || defaultPreferences);
-
-    // RBAC Implementation
+    
     const { user } = useAppSelector((state) => state.auth);
     const userRole = user?.role?.toLowerCase() || '';
-    // Only Admin and HR should manage system-wide operational alerts
     const canManageAlerts = ['admin', 'hr'].includes(userRole);
 
-    // Sync state when parent dynamically fetches data
     useEffect(() => {
         if (initialData) {
             setPrefs(initialData);
         }
     }, [initialData]);
 
-    // Centralized Toggle Handler with Security Guard
     const handleToggle = (key: keyof NotificationPreferences) => {
-        if (!canManageAlerts) return; // Prevent state update if unauthorized
-
+        if (!canManageAlerts) return; 
         const updated = { ...prefs, [key]: !prefs[key] };
         setPrefs(updated);
         onUpdate?.(updated);
     };
 
-    // Internal Toggle UI Component
     const Switch = ({ id, checked, disabled }: { id: keyof NotificationPreferences; checked: boolean; disabled: boolean }) => (
         <button
             type="button"
             onClick={() => handleToggle(id)}
             disabled={disabled}
             className={cn(
-                "relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2",
+                "relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-600 dark:focus:ring-blue-500/50 focus:ring-offset-2 dark:focus:ring-offset-gray-900",
                 disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer",
-                checked ? "bg-blue-600" : "bg-gray-200"
+                checked ? "bg-blue-600 dark:bg-blue-500" : "bg-gray-200 dark:bg-gray-700"
             )}
+            role="switch"
             aria-checked={checked}
             aria-disabled={disabled}
         >
@@ -85,27 +76,27 @@ export default function NotificationSettings({
 
     return (
         <div className="animate-in fade-in duration-300 max-w-4xl space-y-10">
-            {/* Header section with RBAC visual indicator */}
+            
             <div className="flex justify-between items-start mb-2">
                 <div>
-                    <h2 className="text-xl font-bold text-gray-900 tracking-tight">Notification Preferences</h2>
-                    <p className="text-sm text-gray-500 mt-1">Manage the alerts and emails you receive from the HRMS.</p>
+                    <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 tracking-tight transition-colors">Notification Preferences</h2>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 transition-colors">Manage the alerts and emails you receive from the HRMS.</p>
                 </div>
                 {!canManageAlerts && (
-                    <span className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 text-gray-600 rounded-md text-xs font-semibold uppercase tracking-wider">
+                    <span className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 rounded-md text-xs font-semibold uppercase tracking-wider transition-colors">
                         <Lock size={14} /> Read Only
                     </span>
                 )}
             </div>
 
-            {/* Email Notifications Group */}
+            {/* Admin Emails Section */}
             <section>
                 <div className="flex items-center gap-2 mb-1">
-                    <Mail size={18} className="text-gray-400" />
-                    <h3 className="text-lg font-bold text-gray-900">Administrative Emails</h3>
+                    <Mail size={18} className="text-gray-400 dark:text-gray-500 transition-colors" />
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 transition-colors">Administrative Emails</h3>
                 </div>
-                <p className="text-sm text-gray-500 mb-6">Choose what operational events trigger an email to your inbox.</p>
-
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 transition-colors">Choose what operational events trigger an email to your inbox.</p>
+                
                 <div className="space-y-3">
                     <NotificationRow
                         title="New Leave Requests"
@@ -125,14 +116,14 @@ export default function NotificationSettings({
                 </div>
             </section>
 
-            {/* System Alerts Group */}
-            <section className="pt-8 border-t border-gray-100">
+            {/* System Alerts Section */}
+            <section className="pt-8 border-t border-gray-100 dark:border-gray-800 transition-colors">
                 <div className="flex items-center gap-2 mb-1">
-                    <Bell size={18} className="text-gray-400" />
-                    <h3 className="text-lg font-bold text-gray-900">System Alerts</h3>
+                    <Bell size={18} className="text-gray-400 dark:text-gray-500 transition-colors" />
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 transition-colors">System Alerts</h3>
                 </div>
-                <p className="text-sm text-gray-500 mb-6">In-app notifications for the admin dashboard.</p>
-
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 transition-colors">In-app notifications for the admin dashboard.</p>
+                
                 <div className="space-y-3">
                     <NotificationRow
                         title="Daily Attendance Summary"
@@ -147,24 +138,24 @@ export default function NotificationSettings({
                 </div>
             </section>
 
-            {/* Security Disclaimer */}
-            <div className="p-4 bg-gray-50 rounded-xl flex items-start gap-3 border border-gray-100">
-                <ShieldCheck size={20} className="text-blue-600 mt-0.5 shrink-0" />
-                <p className="text-xs text-gray-600 leading-relaxed">
-                    <strong>Privacy Note:</strong> Your notification preferences are private and only apply to your account. Some critical system alerts (like password resets) will always be sent regardless of these settings.
+            {/* Privacy Note */}
+            <div className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl flex items-start gap-3 border border-gray-100 dark:border-gray-800 transition-colors">
+                <ShieldCheck size={20} className="text-blue-600 dark:text-blue-500 mt-0.5 shrink-0 transition-colors" />
+                <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed transition-colors">
+                    <strong className="text-gray-900 dark:text-gray-100">Privacy Note:</strong> Your notification preferences are private and only apply to your account. Some critical system alerts (like password resets) will always be sent regardless of these settings.
                 </p>
             </div>
+
         </div>
     );
 }
 
-// Sub-component for clean layout
 function NotificationRow({ title, description, control }: { title: string; description: string; control: React.ReactNode }) {
     return (
-        <div className="flex items-center justify-between p-4 bg-white border border-gray-100 rounded-xl hover:border-blue-200 transition-all shadow-sm">
+        <div className="flex items-center justify-between p-4 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl hover:border-blue-200 dark:hover:border-blue-900/50 transition-all shadow-sm dark:shadow-none">
             <div className="pr-4">
-                <p className="font-bold text-gray-900">{title}</p>
-                <p className="text-sm text-gray-500 mt-0.5">{description}</p>
+                <p className="font-bold text-gray-900 dark:text-gray-100 transition-colors">{title}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5 transition-colors">{description}</p>
             </div>
             {control}
         </div>

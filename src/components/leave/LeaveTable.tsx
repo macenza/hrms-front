@@ -2,99 +2,83 @@
 
 import React, { useEffect, useState } from 'react';
 import { useAppSelector } from '@/store/hooks';
-import { getMyLeaves, getAllLeaves } from '@/services/leaveService';
+import { useLeaveRequests } from '@/hooks/api/useLeave';
 import { Leave } from '@/types';
 import { Loader2, CheckCircle2, XCircle, Clock, Filter, ChevronLeft, ChevronRight, Search, ArrowUpDown, RefreshCw } from 'lucide-react';
-
-interface LeaveTableProps {
-    refreshTrigger?: number;
-}
+import { cn } from '@/utils/cn';
 
 type SortKey = 'leaveType' | 'startDate' | 'numberOfDays' | 'status' | 'requestedAt' | 'employeeName';
 
-export default function LeaveTable({ refreshTrigger = 0 }: LeaveTableProps) {
+// Dark-Mode Compatible Skeleton
+const TableRowSkeleton = ({ isHrOrAdmin, viewMode }: { isHrOrAdmin: boolean, viewMode: string }) => (
+    <tr className="animate-pulse bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800">
+        {isHrOrAdmin && viewMode === 'all' && (
+            <td className="p-4 space-y-2">
+                <div className="h-4 w-24 bg-gray-200 dark:bg-gray-800 rounded"></div>
+                <div className="h-3 w-16 bg-gray-100 dark:bg-gray-800/50 rounded"></div>
+            </td>
+        )}
+        <td className="p-4"><div className="h-4 w-20 bg-gray-200 dark:bg-gray-800 rounded"></div></td>
+        <td className="p-4"><div className="h-4 w-32 bg-gray-200 dark:bg-gray-800 rounded"></div></td>
+        <td className="p-4"><div className="h-4 w-8 bg-gray-200 dark:bg-gray-800 rounded"></div></td>
+        <td className="p-4"><div className="h-4 w-32 bg-gray-200 dark:bg-gray-800 rounded"></div></td>
+        <td className="p-4"><div className="h-6 w-24 bg-gray-200 dark:bg-gray-800 rounded-full"></div></td>
+        <td className="p-4"><div className="h-4 w-24 bg-gray-200 dark:bg-gray-800 rounded"></div></td>
+    </tr>
+);
+
+export default function LeaveTable() {
     const { user } = useAppSelector((state) => state.auth);
-    const [leaves, setLeaves] = useState<Leave[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState('');
-    const [isRefreshing, setIsRefreshing] = useState(false);
-
     const isHrOrAdmin = user?.role === 'HR' || user?.role === 'Admin';
-
-    // --- New State Controls ---
+    
+    // View State
     const [viewMode, setViewMode] = useState<'all' | 'mine'>(isHrOrAdmin ? 'all' : 'mine');
+    
+    // Fetch Data using React Query
+    const { 
+        data: leaves = [], 
+        isLoading, 
+        isFetching,
+        isError,
+        refetch
+    } = useLeaveRequests(isHrOrAdmin && viewMode === 'all' ? undefined : user?.id);
+
+    // Filters & Pagination State
     const [searchQuery, setSearchQuery] = useState('');
     const [filterType, setFilterType] = useState('All');
     const [filterStatus, setFilterStatus] = useState('All');
     const [currentPage, setCurrentPage] = useState(1);
     const [entriesPerPage, setEntriesPerPage] = useState(10);
-    
-    // Sorting State
     const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: 'asc' | 'desc' } | null>({ key: 'requestedAt', direction: 'desc' });
 
-    // Fetch Function extracted so it can be called manually via the refresh button
-    const fetchLeaves = async (showRefreshSpinner = false) => {
-        if (!user) return;
-        if (showRefreshSpinner) setIsRefreshing(true);
-        else setIsLoading(true);
-        
-        try {
-            let data: Leave[] = [];
-            // If user is HR/Admin AND they want to see all leaves, fetch all. Otherwise, fetch their own.
-            if (isHrOrAdmin && viewMode === 'all') {
-                data = await getAllLeaves();
-            } else {
-                data = await getMyLeaves();
-            }
-            setLeaves(data);
-            setError('');
-        } catch (err: any) {
-            setError(err.message);
-        } finally {
-            setIsLoading(false);
-            setIsRefreshing(false);
-        }
-    };
-
-    // Auto-fetch on mount, when dependencies change, or when HR toggles the view
-    useEffect(() => {
-        fetchLeaves();
-    }, [user, isHrOrAdmin, refreshTrigger, viewMode]);
-
-    // --- Data Processing: Filter -> Search -> Sort ---
+    // Client-side processing
     let processedLeaves = [...leaves];
-
-    // 1. Filtering (Dropdowns)
+    
     processedLeaves = processedLeaves.filter((leave) => {
         const matchType = filterType === 'All' || leave.leaveType === filterType;
         const matchStatus = filterStatus === 'All' || leave.status === filterStatus;
         return matchType && matchStatus;
     });
 
-    // 2. Searching (Employee Name or ID) - Only apply if viewing all leaves
     if (searchQuery.trim() !== '' && isHrOrAdmin && viewMode === 'all') {
         const query = searchQuery.toLowerCase();
         processedLeaves = processedLeaves.filter((leave) => {
             const empData = typeof leave.userId === 'object' ? leave.userId : null;
             const empName = (empData as any)?.name?.toLowerCase() || '';
             const empId = (empData as any)?._id?.toLowerCase() || String(leave.userId).toLowerCase();
-            
             return empName.includes(query) || empId.includes(query);
         });
     }
 
-    // 3. Sorting
     if (sortConfig) {
         processedLeaves.sort((a, b) => {
             let aValue: any = a[sortConfig.key as keyof Leave];
             let bValue: any = b[sortConfig.key as keyof Leave];
 
-            // Special handling for Employee Name sorting
             if (sortConfig.key === 'employeeName') {
                 aValue = typeof a.userId === 'object' ? (a.userId as any)?.name || '' : '';
                 bValue = typeof b.userId === 'object' ? (b.userId as any)?.name || '' : '';
             }
-            // Special handling for Dates
             if (sortConfig.key === 'startDate' || sortConfig.key === 'requestedAt') {
                 aValue = new Date(aValue || a.createdAt).getTime();
                 bValue = new Date(bValue || b.createdAt).getTime();
@@ -106,16 +90,15 @@ export default function LeaveTable({ refreshTrigger = 0 }: LeaveTableProps) {
         });
     }
 
-    // --- Pagination Logic ---
     const totalPages = Math.ceil(processedLeaves.length / entriesPerPage) || 1;
     const startIndex = (currentPage - 1) * entriesPerPage;
     const currentData = processedLeaves.slice(startIndex, startIndex + entriesPerPage);
 
+    // Reset pagination when filters change
     useEffect(() => {
-        setCurrentPage(1); // Reset page when filters change
+        setCurrentPage(1); 
     }, [filterType, filterStatus, searchQuery, entriesPerPage, viewMode]);
 
-    // Handlers
     const handleSort = (key: SortKey) => {
         let direction: 'asc' | 'desc' = 'asc';
         if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
@@ -126,87 +109,88 @@ export default function LeaveTable({ refreshTrigger = 0 }: LeaveTableProps) {
 
     const getStatusBadge = (status: string) => {
         switch (status) {
-            case 'Approved': return <span className="flex w-fit items-center gap-1 text-xs font-medium text-green-700 bg-green-50 px-2.5 py-1 rounded-full border border-green-200"><CheckCircle2 size={14}/> Approved</span>;
-            case 'Rejected': return <span className="flex w-fit items-center gap-1 text-xs font-medium text-red-700 bg-red-50 px-2.5 py-1 rounded-full border border-red-200"><XCircle size={14}/> Rejected</span>;
-            case 'Pending': return <span className="flex w-fit items-center gap-1 text-xs font-medium text-yellow-700 bg-yellow-50 px-2.5 py-1 rounded-full border border-yellow-200"><Clock size={14}/> Pending</span>;
-            default: return <span className="text-xs font-medium text-gray-700 bg-gray-100 px-2.5 py-1 rounded-full">{status}</span>;
+            case 'Approved': return <span className="flex w-fit items-center gap-1 text-xs font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 px-2.5 py-1 rounded border border-emerald-200 dark:border-emerald-500/20 transition-colors"><CheckCircle2 size={14}/> Approved</span>;
+            case 'Rejected': return <span className="flex w-fit items-center gap-1 text-xs font-bold uppercase tracking-wider text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-500/10 px-2.5 py-1 rounded border border-red-200 dark:border-red-900/50 transition-colors"><XCircle size={14}/> Rejected</span>;
+            case 'Pending': return <span className="flex w-fit items-center gap-1 text-xs font-bold uppercase tracking-wider text-yellow-700 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-500/10 px-2.5 py-1 rounded border border-yellow-200 dark:border-yellow-900/50 transition-colors"><Clock size={14}/> Pending</span>;
+            default: return <span className="text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-2.5 py-1 rounded transition-colors">{status}</span>;
         }
     };
 
-    if (isLoading) {
-        return (
-            <div className="flex justify-center items-center h-64 bg-white rounded-xl border border-gray-200 shadow-sm">
-                <Loader2 className="animate-spin text-blue-500 mr-2" size={24} />
-                <span className="text-gray-500 font-medium">Loading leave records...</span>
-            </div>
-        );
-    }
-
     return (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm dark:shadow-none border border-gray-200 dark:border-gray-800 overflow-hidden transition-colors duration-300 relative">
             
-            {/* Header, View Toggle & Refresh */}
-            <div className="p-5 border-b border-gray-200 bg-white flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            {/* Soft overlay for background fetches while data is still visible */}
+            {isFetching && !isLoading && (
+                <div className="absolute inset-0 bg-white/40 dark:bg-black/20 z-10 flex items-center justify-center pointer-events-none transition-opacity duration-200 backdrop-blur-[1px]">
+                     <Loader2 className="w-6 h-6 animate-spin text-blue-600 dark:text-blue-500" />
+                </div>
+            )}
+
+            {/* Header Toolbar */}
+            <div className="p-5 border-b border-gray-200 dark:border-gray-800 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 transition-colors">
                 <div className="flex items-center gap-4">
-                    <h3 className="font-bold text-gray-900 text-lg">Leave Records</h3>
-                    
-                    {/* HR/Admin Toggle */}
+                    <h3 className="font-bold text-gray-900 dark:text-gray-100 text-lg transition-colors">Leave Records</h3>
                     {isHrOrAdmin && (
-                        <div className="flex bg-gray-100 p-1 rounded-lg border border-gray-200">
+                        <div className="flex bg-gray-100 dark:bg-gray-950 p-1 rounded-lg border border-gray-200 dark:border-gray-800 transition-colors">
                             <button 
                                 onClick={() => setViewMode('all')}
-                                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${viewMode === 'all' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                                className={cn(
+                                    "px-3 py-1.5 text-sm font-medium rounded-md transition-all",
+                                    viewMode === 'all' 
+                                        ? "bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 shadow-sm dark:shadow-none" 
+                                        : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+                                )}
                             >
                                 Organization
                             </button>
                             <button 
                                 onClick={() => setViewMode('mine')}
-                                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${viewMode === 'mine' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                                className={cn(
+                                    "px-3 py-1.5 text-sm font-medium rounded-md transition-all",
+                                    viewMode === 'mine' 
+                                        ? "bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 shadow-sm dark:shadow-none" 
+                                        : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+                                )}
                             >
                                 My Leaves
                             </button>
                         </div>
                     )}
                 </div>
-
                 <button 
-                    onClick={() => fetchLeaves(true)}
-                    className="flex items-center gap-2 text-sm text-gray-600 hover:text-blue-600 transition-colors bg-gray-50 hover:bg-blue-50 px-3 py-2 rounded-lg border border-gray-200"
+                    onClick={() => refetch()}
+                    className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 bg-gray-50 dark:bg-gray-800/50 hover:bg-blue-50 dark:hover:bg-blue-500/10 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-800 transition-colors"
                 >
-                    <RefreshCw size={16} className={isRefreshing ? 'animate-spin' : ''} />
+                    <RefreshCw size={16} className={isFetching ? 'animate-spin' : ''} />
                     Refresh Data
                 </button>
             </div>
 
-            {/* Filters & Search */}
-            <div className="p-4 bg-gray-50 border-b border-gray-200 flex flex-wrap justify-between items-center gap-4">
-                
-                {/* Search Bar (Only for Organization View) */}
+            {/* Filters Toolbar */}
+            <div className="p-4 bg-gray-50 dark:bg-gray-800/20 border-b border-gray-200 dark:border-gray-800 flex flex-wrap justify-between items-center gap-4 transition-colors">
                 {isHrOrAdmin && viewMode === 'all' ? (
-                    <div className="relative w-full md:w-64">
-                        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <div className="relative w-full md:w-64 group">
+                        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 group-focus-within:text-blue-500 transition-colors" />
                         <input 
                             type="text"
                             placeholder="Search employee name or ID..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full pl-9 pr-4 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                            className="w-full pl-9 pr-4 py-2 text-sm bg-white dark:bg-gray-950 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500/40 outline-none transition-all shadow-sm dark:shadow-none"
                         />
                     </div>
                 ) : (
                     <div></div> // Spacer
                 )}
-
-                {/* Dropdown Filters */}
-                <div className="flex items-center gap-3 w-full md:w-auto">
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                        <Filter size={16} className="text-gray-400" />
+                <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+                    <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 transition-colors">
+                        <Filter size={16} className="text-gray-400 dark:text-gray-500" />
                         <span className="hidden sm:inline">Filter:</span>
                     </div>
                     <select 
                         value={filterType} 
                         onChange={(e) => setFilterType(e.target.value)}
-                        className="text-sm border border-gray-300 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-blue-500 outline-none"
+                        className="text-sm border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500/40 outline-none transition-all shadow-sm dark:shadow-none cursor-pointer"
                     >
                         <option value="All">All Types</option>
                         <option value="Sick">Sick</option>
@@ -215,11 +199,10 @@ export default function LeaveTable({ refreshTrigger = 0 }: LeaveTableProps) {
                         <option value="Emergency">Emergency</option>
                         <option value="Other">Other</option>
                     </select>
-
                     <select 
                         value={filterStatus} 
                         onChange={(e) => setFilterStatus(e.target.value)}
-                        className="text-sm border border-gray-300 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-blue-500 outline-none"
+                        className="text-sm border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500/40 outline-none transition-all shadow-sm dark:shadow-none cursor-pointer"
                     >
                         <option value="All">All Statuses</option>
                         <option value="Pending">Pending</option>
@@ -229,92 +212,92 @@ export default function LeaveTable({ refreshTrigger = 0 }: LeaveTableProps) {
                 </div>
             </div>
 
-            {/* Error Display */}
-            {error && <div className="p-4 m-4 bg-red-50 text-red-600 rounded-xl text-sm font-medium border border-red-100">{error}</div>}
+            {isError && <div className="p-4 m-4 bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 rounded-xl text-sm font-medium border border-red-100 dark:border-red-900/50 transition-colors">Failed to load leave records.</div>}
             
-            {/* Table Data */}
+            {/* Table Area */}
             <div className="overflow-x-auto min-h-[400px]">
-                <table className="w-full text-left border-collapse">
+                <table className="w-full text-left border-collapse whitespace-nowrap">
                     <thead>
-                        <tr className="bg-white border-b border-gray-200 text-xs uppercase tracking-wider text-gray-500 font-semibold select-none">
-                            {/* Employee Column - Only visible in Organization view */}
+                        <tr className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400 font-semibold select-none transition-colors">
                             {isHrOrAdmin && viewMode === 'all' && (
-                                <th className="p-4 cursor-pointer hover:bg-gray-50 transition-colors group" onClick={() => handleSort('employeeName')}>
+                                <th className="p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors group" onClick={() => handleSort('employeeName')}>
                                     <div className="flex items-center gap-1">
-                                        Employee <ArrowUpDown size={14} className="text-gray-300 group-hover:text-gray-500" />
+                                        Employee <ArrowUpDown size={14} className="text-gray-300 dark:text-gray-600 group-hover:text-gray-500 dark:group-hover:text-gray-300 transition-colors" />
                                     </div>
                                 </th>
                             )}
-                            <th className="p-4 cursor-pointer hover:bg-gray-50 transition-colors group" onClick={() => handleSort('leaveType')}>
+                            <th className="p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors group" onClick={() => handleSort('leaveType')}>
                                 <div className="flex items-center gap-1">
-                                    Leave Type <ArrowUpDown size={14} className="text-gray-300 group-hover:text-gray-500" />
+                                    Leave Type <ArrowUpDown size={14} className="text-gray-300 dark:text-gray-600 group-hover:text-gray-500 dark:group-hover:text-gray-300 transition-colors" />
                                 </div>
                             </th>
-                            <th className="p-4 cursor-pointer hover:bg-gray-50 transition-colors group" onClick={() => handleSort('startDate')}>
+                            <th className="p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors group" onClick={() => handleSort('startDate')}>
                                 <div className="flex items-center gap-1">
-                                    Duration <ArrowUpDown size={14} className="text-gray-300 group-hover:text-gray-500" />
+                                    Duration <ArrowUpDown size={14} className="text-gray-300 dark:text-gray-600 group-hover:text-gray-500 dark:group-hover:text-gray-300 transition-colors" />
                                 </div>
                             </th>
-                            <th className="p-4 cursor-pointer hover:bg-gray-50 transition-colors group" onClick={() => handleSort('numberOfDays')}>
+                            <th className="p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors group" onClick={() => handleSort('numberOfDays')}>
                                 <div className="flex items-center gap-1">
-                                    Days <ArrowUpDown size={14} className="text-gray-300 group-hover:text-gray-500" />
+                                    Days <ArrowUpDown size={14} className="text-gray-300 dark:text-gray-600 group-hover:text-gray-500 dark:group-hover:text-gray-300 transition-colors" />
                                 </div>
                             </th>
                             <th className="p-4">Reason</th>
-                            <th className="p-4 cursor-pointer hover:bg-gray-50 transition-colors group" onClick={() => handleSort('status')}>
+                            <th className="p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors group" onClick={() => handleSort('status')}>
                                 <div className="flex items-center gap-1">
-                                    Status <ArrowUpDown size={14} className="text-gray-300 group-hover:text-gray-500" />
+                                    Status <ArrowUpDown size={14} className="text-gray-300 dark:text-gray-600 group-hover:text-gray-500 dark:group-hover:text-gray-300 transition-colors" />
                                 </div>
                             </th>
-                            <th className="p-4 cursor-pointer hover:bg-gray-50 transition-colors group" onClick={() => handleSort('requestedAt')}>
+                            <th className="p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors group" onClick={() => handleSort('requestedAt')}>
                                 <div className="flex items-center gap-1">
-                                    Requested <ArrowUpDown size={14} className="text-gray-300 group-hover:text-gray-500" />
+                                    Requested <ArrowUpDown size={14} className="text-gray-300 dark:text-gray-600 group-hover:text-gray-500 dark:group-hover:text-gray-300 transition-colors" />
                                 </div>
                             </th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-100">
-                        {currentData.length === 0 ? (
+                    <tbody className="divide-y divide-gray-100 dark:divide-gray-800 transition-colors">
+                        {isLoading ? (
+                            Array.from({ length: 5 }).map((_, idx) => <TableRowSkeleton key={idx} isHrOrAdmin={isHrOrAdmin} viewMode={viewMode} />)
+                        ) : currentData.length === 0 ? (
                             <tr>
-                                <td colSpan={isHrOrAdmin && viewMode === 'all' ? 7 : 6} className="p-12 text-center text-gray-500">
+                                <td colSpan={isHrOrAdmin && viewMode === 'all' ? 7 : 6} className="p-16 text-center text-gray-500 dark:text-gray-400 transition-colors">
                                     <div className="flex flex-col items-center justify-center">
-                                        <Filter size={32} className="text-gray-300 mb-3" />
-                                        <p className="text-sm font-medium">No leave records found.</p>
-                                        <p className="text-xs text-gray-400 mt-1">Try adjusting your search or filters.</p>
+                                        <Filter size={32} className="text-gray-300 dark:text-gray-600 mb-3 transition-colors" />
+                                        <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 transition-colors">No leave records found.</p>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 transition-colors">Try adjusting your search or filters.</p>
                                     </div>
                                 </td>
                             </tr>
                         ) : (
                             currentData.map((leave) => (
-                                <tr key={leave._id} className="hover:bg-blue-50/50 transition-colors">
+                                <tr key={leave._id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
                                     {isHrOrAdmin && viewMode === 'all' && (
                                         <td className="p-4">
-                                            <div className="text-sm font-bold text-gray-900">
+                                            <div className="text-sm font-bold text-gray-900 dark:text-gray-100 transition-colors">
                                                 {typeof leave.userId === 'object' && leave.userId !== null ? (leave.userId as any).name : 'Unknown Employee'}
                                             </div>
-                                            <div className="text-xs text-gray-400 mt-0.5 uppercase">
+                                            <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 uppercase transition-colors">
                                                 ID: {typeof leave.userId === 'object' && leave.userId !== null ? String((leave.userId as any)._id).slice(-6) : String(leave.userId).slice(-6)}
                                             </div>
                                         </td>
                                     )}
-                                    <td className="p-4 text-sm font-semibold text-gray-700">
+                                    <td className="p-4 text-sm font-semibold text-gray-700 dark:text-gray-300 transition-colors">
                                         {leave.leaveType}
                                     </td>
-                                    <td className="p-4 text-sm text-gray-600">
+                                    <td className="p-4 text-sm text-gray-600 dark:text-gray-400 transition-colors">
                                         {new Date(leave.startDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })} 
-                                        <span className="text-gray-300 mx-2">→</span> 
+                                        <span className="text-gray-300 dark:text-gray-600 mx-2 transition-colors">→</span> 
                                         {new Date(leave.endDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
                                     </td>
-                                    <td className="p-4 text-sm font-medium text-gray-900 text-center sm:text-left">
+                                    <td className="p-4 text-sm font-medium text-gray-900 dark:text-gray-100 text-center sm:text-left transition-colors">
                                         {leave.numberOfDays}
                                     </td>
-                                    <td className="p-4 text-sm text-gray-500 max-w-[200px] truncate" title={leave.reason}>
+                                    <td className="p-4 text-sm text-gray-500 dark:text-gray-400 max-w-[200px] truncate transition-colors" title={leave.reason}>
                                         {leave.reason}
                                     </td>
                                     <td className="p-4">
                                         {getStatusBadge(leave.status)}
                                     </td>
-                                    <td className="p-4 text-sm text-gray-500">
+                                    <td className="p-4 text-sm text-gray-500 dark:text-gray-400 transition-colors">
                                         {new Date(leave.requestedAt || leave.createdAt).toLocaleDateString()}
                                     </td>
                                 </tr>
@@ -324,14 +307,14 @@ export default function LeaveTable({ refreshTrigger = 0 }: LeaveTableProps) {
                 </table>
             </div>
 
-            {/* Pagination Controls */}
-            <div className="p-4 border-t border-gray-200 bg-white flex flex-col sm:flex-row justify-between items-center gap-4">
-                <div className="flex items-center gap-2 text-sm text-gray-600">
+            {/* Pagination Toolbar */}
+            <div className="p-4 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex flex-col sm:flex-row justify-between items-center gap-4 transition-colors">
+                <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 transition-colors">
                     <span>Show</span>
                     <select 
                         value={entriesPerPage} 
                         onChange={(e) => setEntriesPerPage(Number(e.target.value))}
-                        className="border border-gray-300 rounded px-2 py-1 bg-white outline-none focus:ring-2 focus:ring-blue-500"
+                        className="border border-gray-300 dark:border-gray-700 rounded px-2 py-1 bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 outline-none focus:ring-2 focus:ring-blue-500/40 transition-all shadow-sm dark:shadow-none cursor-pointer"
                     >
                         <option value={10}>10</option>
                         <option value={20}>20</option>
@@ -340,26 +323,24 @@ export default function LeaveTable({ refreshTrigger = 0 }: LeaveTableProps) {
                     </select>
                     <span>entries</span>
                 </div>
-
-                <div className="text-sm text-gray-500">
-                    Showing <span className="font-medium text-gray-900">{processedLeaves.length === 0 ? 0 : startIndex + 1}</span> to <span className="font-medium text-gray-900">{Math.min(startIndex + entriesPerPage, processedLeaves.length)}</span> of <span className="font-medium text-gray-900">{processedLeaves.length}</span> entries
+                <div className="text-sm text-gray-500 dark:text-gray-400 transition-colors">
+                    Showing <span className="font-medium text-gray-900 dark:text-gray-100">{processedLeaves.length === 0 ? 0 : startIndex + 1}</span> to <span className="font-medium text-gray-900 dark:text-gray-100">{Math.min(startIndex + entriesPerPage, processedLeaves.length)}</span> of <span className="font-medium text-gray-900 dark:text-gray-100">{processedLeaves.length}</span> entries
                 </div>
-
                 <div className="flex items-center gap-2">
                     <button 
                         onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                        disabled={currentPage === 1}
-                        className="p-1.5 rounded-lg border border-gray-300 text-gray-500 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        disabled={currentPage === 1 || isLoading}
+                        className="p-1.5 rounded-lg border border-gray-300 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
                         <ChevronLeft size={18} />
                     </button>
-                    <span className="text-sm font-medium text-gray-700 px-2">
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300 px-2 transition-colors">
                         Page {currentPage} of {totalPages}
                     </span>
                     <button 
                         onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                        disabled={currentPage === totalPages}
-                        className="p-1.5 rounded-lg border border-gray-300 text-gray-500 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        disabled={currentPage === totalPages || isLoading}
+                        className="p-1.5 rounded-lg border border-gray-300 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
                         <ChevronRight size={18} />
                     </button>

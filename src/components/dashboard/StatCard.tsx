@@ -1,4 +1,3 @@
-// src/components/dashboard/StatCard.tsx
 "use client";
 
 import React, { useMemo } from "react";
@@ -76,7 +75,7 @@ export default function StatCard({
                 // Assuming todayPresent comes from attendance overview if passed, else fallback
                 return attendanceData?.todayPresent ?? statsData?.activeUsers ?? 0; 
             case "total-applicant":
-                return 24; // Static placeholder until recruitment module is built
+                return 0; // Static placeholder until recruitment module is built
             default:
                 return card.value;
         }

@@ -136,6 +136,20 @@ export const employeeService = {
         }
     },
 
+    uploadCertificate: async (id: string, formData: FormData) => {
+        try {
+            const response = await apiClient.post(`/employees/${id}/certificates`, formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            });
+            return response.data;
+        } catch (error) {
+            console.error(`Error uploading certificate for employee ${id}:`, error);
+            throw error;
+        }
+    },
+
     addNote: async (id: string, text: string) => {
         try {
             const response = await apiClient.post(`/employees/${id}/notes`, { text });

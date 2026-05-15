@@ -12,33 +12,34 @@ export default function AuthInitializer({ children }: { children: React.ReactNod
 
     useEffect(() => {
         const hydrateAuth = async () => {
-            // Check if we have a fast-cache user object to prevent UI flashes
             const cachedUserStr = localStorage.getItem('user');
-            
             if (cachedUserStr) {
                 try {
                     const user = JSON.parse(cachedUserStr);
-                    // Fast-hydrate Redux immediately
                     dispatch(setCredentials({ user }));
-                    
-                    // Silently verify with the backend that the session cookie is still valid
-                    const verifiedUser = await fetchCurrentUser();
-                    
-                    // Keep local storage in sync in case their role/profile changed
-                    localStorage.setItem('user', JSON.stringify(verifiedUser)); 
-                    dispatch(setCredentials({ user: verifiedUser }));
-
-                } catch (error) {
-                    // If the API throws a 401 (token expired/invalid), wipe the slate clean
-                    console.error("Session verification failed. Logging out.");
-                    dispatch(logOut());
-                    localStorage.removeItem('user');
+                } catch (e) {
+                    // Ignore parse errors, fallback to backend
                 }
-            } else {
-                dispatch(logOut());
             }
-            
-            setIsHydrated(true);
+
+            try {
+                // apiClient will automatically attempt a refresh if the access token is expired.
+                const verifiedUser = await fetchCurrentUser();
+                localStorage.setItem('user', JSON.stringify(verifiedUser)); 
+                dispatch(setCredentials({ user: verifiedUser }));
+            } catch (error) {
+                // If we reach this catch block, the token is dead AND the refresh failed.
+                console.log("Session verification failed. Logging out.");
+                dispatch(logOut());
+                localStorage.removeItem('user');
+                
+                // CRITICAL: Prevent zombie state if we are on a protected route
+                if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+                    window.location.href = '/login?error=session_expired';
+                }
+            } finally {
+                setIsHydrated(true);
+            }
         };
 
         hydrateAuth();
@@ -46,8 +47,8 @@ export default function AuthInitializer({ children }: { children: React.ReactNod
 
     if (!isHydrated) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
-                <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+            <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950 transition-colors duration-300">
+                <Loader2 className="w-8 h-8 animate-spin text-blue-600 dark:text-blue-500" />
             </div>
         );
     }

@@ -1,107 +1,112 @@
+// src/components/leave/RecentLeaves.tsx
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useAppSelector } from '@/store/hooks';
-import { getMyLeaves, getAllLeaves } from '@/services/leaveService';
+import { useLeaveRequests } from '@/hooks/api/useLeave';
 import { Leave } from '@/types';
-import { Calendar, Clock, CheckCircle2, XCircle } from 'lucide-react';
+import { Calendar, Clock, CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
+import { cn } from '@/utils/cn';
+
+// Premium Skeleton Loader
+const RecentLeaveSkeleton = () => (
+    <div className="p-4 flex items-center justify-between border-b border-gray-50 dark:border-gray-800/50 animate-pulse bg-white dark:bg-gray-900 transition-colors">
+        <div className="flex items-start gap-3 w-2/3">
+            <div className="w-9 h-9 rounded-lg bg-gray-200 dark:bg-gray-800 shrink-0" />
+            <div className="space-y-2 w-full">
+                <div className="h-4 bg-gray-200 dark:bg-gray-800 rounded w-full" />
+                <div className="h-3 bg-gray-100 dark:bg-gray-800/50 rounded w-2/3" />
+            </div>
+        </div>
+        <div className="space-y-2 flex flex-col items-end shrink-0">
+            <div className="h-5 bg-gray-200 dark:bg-gray-800 rounded w-20" />
+            <div className="h-3 bg-gray-200 dark:bg-gray-800 rounded w-12" />
+        </div>
+    </div>
+);
 
 export default function RecentLeaves() {
     const { user } = useAppSelector((state) => state.auth);
-    const [leaves, setLeaves] = useState<Leave[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState('');
+    const isHrOrAdmin = user?.role === 'HR' || user?.role === 'Admin';
 
-    useEffect(() => {
-        const fetchLeaves = async () => {
-            if (!user) return;
-            try {
-                // 1. Add ': any' to fix the TypeScript 'never' error
-                let rawData: any; 
-                
-                if (user.role === 'HR' || user.role === 'Admin') {
-                    rawData = await getAllLeaves();
-                } else {
-                    rawData = await getMyLeaves();
-                }
+    // Leverage React Query to pull the globally cached data
+    const { 
+        data: rawData, 
+        isLoading, 
+        isError 
+    } = useLeaveRequests(isHrOrAdmin ? undefined : user?.id);
 
-                // 2. Log it to the console so we can see the exact shape!
-                console.log("Raw Leave API Response:", rawData);
+    // Safely extract the array regardless of backend payload structure
+    const leaves: Leave[] = Array.isArray(rawData) ? rawData : (rawData?.data || rawData?.leaves || rawData?.results || []);
 
-                // 3. Bulletproof Array Extraction (Using optional chaining '?.' for extra safety)
-                let leavesArray: Leave[] = [];
-                if (Array.isArray(rawData)) {
-                    leavesArray = rawData;
-                } else if (rawData?.data && Array.isArray(rawData.data)) {
-                    leavesArray = rawData.data;
-                } else if (rawData?.leaves && Array.isArray(rawData.leaves)) {
-                    leavesArray = rawData.leaves;
-                } else if (rawData?.results && Array.isArray(rawData.results)) {
-                    leavesArray = rawData.results;
-                } else {
-                    console.warn("Could not find the array inside the response.");
-                }
-                
-                setLeaves(leavesArray);
-
-            } catch (err: any) {
-                setError(err.message);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        fetchLeaves();
-    }, [user]);
-
-    // Helper function for status colors
     const getStatusBadge = (status: string) => {
         switch (status) {
-            case 'Approved': return <span className="flex items-center gap-1 text-xs font-medium text-green-700 bg-green-50 px-2 py-1 rounded-md border border-green-200"><CheckCircle2 size={12}/> Approved</span>;
-            case 'Rejected': return <span className="flex items-center gap-1 text-xs font-medium text-red-700 bg-red-50 px-2 py-1 rounded-md border border-red-200"><XCircle size={12}/> Rejected</span>;
-            case 'Pending': return <span className="flex items-center gap-1 text-xs font-medium text-yellow-700 bg-yellow-50 px-2 py-1 rounded-md border border-yellow-200"><Clock size={12}/> Pending</span>;
-            default: return <span className="text-xs font-medium text-gray-700 bg-gray-100 px-2 py-1 rounded-md">{status}</span>;
+            case 'Approved': return <span className="flex w-fit items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-1 rounded border border-emerald-200 dark:border-emerald-500/20 transition-colors"><CheckCircle2 size={12}/> Approved</span>;
+            case 'Rejected': return <span className="flex w-fit items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-500/10 px-2 py-1 rounded border border-red-200 dark:border-red-900/50 transition-colors"><XCircle size={12}/> Rejected</span>;
+            case 'Pending': return <span className="flex w-fit items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-yellow-700 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-500/10 px-2 py-1 rounded border border-yellow-200 dark:border-yellow-900/50 transition-colors"><Clock size={12}/> Pending</span>;
+            default: return <span className="text-[10px] font-bold uppercase tracking-wider text-gray-700 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded transition-colors">{status}</span>;
         }
     };
 
-    if (isLoading) return <div className="h-48 bg-white rounded-xl shadow-sm border border-gray-100 flex items-center justify-center animate-pulse text-gray-400">Loading leave data...</div>;
-    if (error) return <div className="p-4 bg-red-50 text-red-600 rounded-xl text-sm">{error}</div>;
+    if (isLoading) {
+        return (
+            <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm dark:shadow-none border border-gray-100 dark:border-gray-800 overflow-hidden transition-colors">
+                <div className="p-5 border-b border-gray-100 dark:border-gray-800">
+                    <div className="h-5 bg-gray-200 dark:bg-gray-800 rounded w-48 animate-pulse" />
+                </div>
+                <div className="divide-y divide-gray-50 dark:divide-gray-800/50">
+                    {Array.from({ length: 4 }).map((_, idx) => <RecentLeaveSkeleton key={idx} />)}
+                </div>
+            </div>
+        );
+    }
 
-    // --- THE FINAL FIX: Safe Rendering ---
-    // This guarantees that the variable we map and slice over is ALWAYS an array.
-    const safeLeaves = Array.isArray(leaves) ? leaves : [];
+    if (isError) {
+        return (
+            <div className="p-4 bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 flex items-center gap-2 rounded-xl text-sm font-medium border border-red-100 dark:border-red-900/50 transition-colors">
+                <AlertCircle size={18} /> Failed to load recent leaves.
+            </div>
+        );
+    }
 
     return (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-            <div className="p-5 border-b border-gray-100 flex justify-between items-center">
-                <h3 className="font-bold text-gray-900">
-                    {user?.role === 'HR' || user?.role === 'Admin' ? 'Organization Leave Requests' : 'My Recent Leaves'}
+        <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm dark:shadow-none border border-gray-100 dark:border-gray-800 overflow-hidden transition-colors duration-300">
+            <div className="p-5 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center transition-colors">
+                <h3 className="font-bold text-gray-900 dark:text-gray-100 transition-colors">
+                    {isHrOrAdmin ? 'Organization Leave Requests' : 'My Recent Leaves'}
                 </h3>
             </div>
-            
-            <div className="divide-y divide-gray-50">
-                {/* Use safeLeaves instead of leaves here */}
-                {safeLeaves.length === 0 ? (
-                    <div className="p-8 text-center text-sm text-gray-500">No leave requests found.</div>
+            <div className="divide-y divide-gray-50 dark:divide-gray-800/50 transition-colors">
+                {leaves.length === 0 ? (
+                    <div className="p-12 text-center flex flex-col items-center justify-center">
+                        <Calendar size={32} className="text-gray-300 dark:text-gray-600 mb-3" />
+                        <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 transition-colors">No leave requests.</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 transition-colors">Recent time-off requests will appear here.</p>
+                    </div>
                 ) : (
-                    // Use safeLeaves instead of leaves here
-                    safeLeaves.slice(0, 5).map((leave) => (
-                        <div key={leave._id} className="p-4 hover:bg-gray-50 transition-colors flex items-center justify-between">
-                            <div className="flex items-start gap-3">
-                                <div className="p-2 bg-blue-50 text-blue-600 rounded-lg mt-0.5">
+                    leaves.slice(0, 5).map((leave) => (
+                        <div key={leave._id} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors flex items-center justify-between group cursor-pointer">
+                            <div className="flex items-start gap-3 min-w-0 pr-4">
+                                <div className="p-2 bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-lg shrink-0 mt-0.5 transition-colors">
                                     <Calendar size={18} />
                                 </div>
-                                <div>
-                                    <p className="font-semibold text-sm text-gray-900">{leave.leaveType} Leave</p>
-                                    <p className="text-xs text-gray-500 mt-0.5">
+                                <div className="min-w-0">
+                                    <p className="font-semibold text-sm text-gray-900 dark:text-gray-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors truncate">
+                                        {leave.leaveType} Leave
+                                    </p>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 transition-colors truncate">
                                         {new Date(leave.startDate).toLocaleDateString()} - {new Date(leave.endDate).toLocaleDateString()}
                                     </p>
-                                    <p className="text-xs text-gray-400 mt-1 truncate max-w-[200px]">"{leave.reason}"</p>
+                                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-1 truncate transition-colors">
+                                        "{leave.reason}"
+                                    </p>
                                 </div>
                             </div>
-                            <div className="flex flex-col items-end gap-2">
+                            <div className="flex flex-col items-end gap-2 shrink-0">
                                 {getStatusBadge(leave.status)}
-                                <span className="text-xs font-bold text-gray-700">{leave.numberOfDays} Day(s)</span>
+                                <span className="text-[10px] font-bold text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded transition-colors">
+                                    {leave.numberOfDays} Day(s)
+                                </span>
                             </div>
                         </div>
                     ))
