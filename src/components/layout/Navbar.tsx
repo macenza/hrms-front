@@ -78,7 +78,7 @@ export default function Navbar() {
        
        
         <div className="flex md:flex-row flex-col gap-4 mt-8 md:mt-0 md:ml-20">
-          <ThemeToggle />
+          {/* <ThemeToggle /> */}
           <Link
             href="/login"
             className="bg-white border border-[#5B4DF0] text-[#111827] rounded-xl px-5 py-2 hover:scale-95 transition duration-300"
