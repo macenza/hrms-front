@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Menu, CircleX } from "lucide-react";
 import React, { useState } from "react";
+import ThemeToggle from "@/components/theme/ThemeToggle";
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
@@ -74,7 +75,10 @@ export default function Navbar() {
         {/* Right Side - Buttons */}
 
         {/* <div className="flex md:flex-row flex-col gap-4 mt-8 md:mt-0 ml-4"> */}
+       
+       
         <div className="flex md:flex-row flex-col gap-4 mt-8 md:mt-0 md:ml-20">
+          <ThemeToggle />
           <Link
             href="/login"
             className="bg-white border border-[#5B4DF0] text-[#111827] rounded-xl px-5 py-2 hover:scale-95 transition duration-300"
