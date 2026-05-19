@@ -16,19 +16,28 @@
 /* 4. Light Mode Variables (Default) */
 :root {
   --bg-color: #ffffff;
-  --text-color: #0f172a; /* slate-900 */
-  --primary-color: #2563eb; /* blue-600 */
-  --border-color: #e2e8f0; /* slate-200 */
-  --card-bg: #f8fafc; /* slate-50 */
+  --text-color: #0f172a;
+  /* slate-900 */
+  --primary-color: #2563eb;
+  /* blue-600 */
+  --border-color: #e2e8f0;
+  /* slate-200 */
+  --card-bg: #f8fafc;
+  /* slate-50 */
 }
 
 /* 5. Dark Mode Variables (Triggered by next-themes `.dark` class) */
 .dark {
-  --bg-color: #020617; /* slate-950 */
-  --text-color: #f8fafc; /* slate-50 */
-  --primary-color: #3b82f6; /* blue-500 */
-  --border-color: #1e293b; /* slate-800 */
-  --card-bg: #0f172a; /* slate-900 */
+  --bg-color: #020617;
+  /* slate-950 */
+  --text-color: #f8fafc;
+  /* slate-50 */
+  --primary-color: #3b82f6;
+  /* blue-500 */
+  --border-color: #1e293b;
+  /* slate-800 */
+  --card-bg: #0f172a;
+  /* slate-900 */
 }
 
 /* 6. Apply globally to the document body */
@@ -40,5 +49,18 @@
     transition-property: color, background-color, border-color;
     transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
     transition-duration: 200ms;
+  }
+
+  .footer-link {
+    @apply relative w-fit transition duration-300;
+  }
+
+  .footer-link::after {
+    content: "";
+    @apply absolute left-0 -bottom-1 w-0 h-[2px] bg-[#8B7BFF] transition-all duration-300;
+  }
+
+  .footer-link:hover::after {
+    @apply w-full;
   }
 }
