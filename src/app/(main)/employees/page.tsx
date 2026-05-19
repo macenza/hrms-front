@@ -11,6 +11,7 @@ import AddEmployeeModal, { AddEmployeeSubmitMeta } from '@/components/employees/
 import { useEmployees, useCreateEmployee } from '@/hooks/api/useEmployees';
 import { employeeService } from '@/services/employeeService';
 import { useDebounce } from '@/hooks/useDebounce';
+import { toast } from 'sonner';
 
 function resolveCreatedEmployeeId(data: unknown): string | undefined {
     if (!data || typeof data !== 'object') return undefined;
@@ -86,22 +87,25 @@ export default function EmployeesPage() {
                     const fd = new FormData();
                     fd.append('document', meta.profilePhoto);
                     await employeeService.uploadDocument(newId, fd);
+                    toast.success('Employee created and profile photo uploaded successfully!');
                 } catch (uploadErr) {
                     console.error('Profile photo upload failed:', uploadErr);
-                    alert(
+                    toast.warning(
                         'Employee was created, but the profile photo could not be uploaded. You can add documents from their profile page.'
                     );
                 }
+            } else {
+                toast.success('Employee created successfully!');
             }
             setIsModalOpen(false);
         } catch (error) {
             console.error('Failed to add employee:', error);
-            alert('An error occurred while creating the employee.');
+            toast.error('An error occurred while creating the employee.');
         }
     };
 
     const handleExport = () => {
-        if (employees.length === 0) return alert("No data to export");
+        if (employees.length === 0) return toast.info("No data to export");
         const headers = ["ID", "Name", "Department", "Role", "Email", "Phone", "Status"];
         const csvContent = [
             headers.join(","),
@@ -112,6 +116,7 @@ export default function EmployeesPage() {
         link.href = URL.createObjectURL(blob);
         link.download = `Employees_Export_${new Date().toLocaleDateString()}.csv`;
         link.click();
+        toast.success('Employee list exported successfully!');
     };
 
     if (isError) {

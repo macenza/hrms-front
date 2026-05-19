@@ -11,6 +11,7 @@ import LoanTable, { type LoanRecord } from '@/components/loan/LoanTable';
 import ApplyLoanModal, { LoanApplicationPayload } from '@/components/loan/ApplyLoanModal';
 import { useAppSelector } from '@/store/hooks';
 import { useLoanDashboard, useLoanEmployees, useApplyLoan } from '@/hooks/api/useLoans';
+import { toast } from 'sonner';
 
 export default function LoanPage() {
     const router = useRouter();
@@ -41,15 +42,15 @@ export default function LoanPage() {
         try {
             await applyLoanMutation.mutateAsync(payload);
             setIsModalOpen(false);
-            // We use a toast or standard alert; no need to manually refetch, React Query handles it.
+            toast.success('Loan request submitted successfully!');
         } catch (error) {
-            alert('Failed to submit loan request. Please try again.');
+            toast.error('Failed to submit loan request. Please try again.');
         }
     };
 
     const handleExportReport = () => {
         const records: LoanRecord[] = dashboardData?.records ?? [];
-        if (records.length === 0) return alert("No records to export.");
+        if (records.length === 0) return toast.info("No records to export.");
         
         const headers = ['Ref ID', 'Employee Name', 'Employee ID', 'Loan Type', 'Amount', 'EMI', 'Tenure (Mo)', 'Status'];
         const csvRows = records.map((rec) => [
@@ -69,6 +70,7 @@ export default function LoanPage() {
         link.href = URL.createObjectURL(blob);
         link.download = `Loan_Report_${new Date().toISOString().split('T')[0]}.csv`;
         link.click();
+        toast.success('Loan report exported successfully!');
     };
 
     if (!isAuthenticated) {
@@ -132,7 +134,7 @@ export default function LoanPage() {
                         <LoanTable
                             data={dashboardData?.records || []}
                             isLoading={isDashboardLoading}
-                            onViewDetails={(record) => alert(`Viewing details for: ${record.employeeName}`)}
+                            onViewDetails={(record) => toast.info(`Viewing details for: ${record.employeeName}`)}
                         />
                     </CardContent>
                 </Card>

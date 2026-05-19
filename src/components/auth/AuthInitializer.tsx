@@ -33,8 +33,9 @@ export default function AuthInitializer({ children }: { children: React.ReactNod
                 dispatch(logOut());
                 localStorage.removeItem('user');
                 
+                const PUBLIC_ROUTES = ['/', '/login', '/signup'];
                 // CRITICAL: Prevent zombie state if we are on a protected route
-                if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+                if (typeof window !== 'undefined' && !PUBLIC_ROUTES.includes(window.location.pathname)) {
                     window.location.href = '/login?error=session_expired';
                 }
             } finally {

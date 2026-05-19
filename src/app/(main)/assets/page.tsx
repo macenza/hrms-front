@@ -2,16 +2,38 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Download, Plus, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Download, Plus, Loader2, ChevronLeft, ChevronRight, Monitor, Smartphone, Laptop as LaptopIcon, Headphones } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
+import { Modal } from '@/components/ui/Modal';
+import { Badge } from '@/components/ui/Badge';
 import AssetStats from '@/components/assets/AssetStats';
 import AssetTable, { Asset } from '@/components/assets/AssetTable';
 import AssignAssetModal, { AssignAssetPayload } from '@/components/assets/AssignAssetModal';
 import AddAssetModal, { AddAssetPayload } from '@/components/assets/AddAssetModal';
 import { useAppSelector } from '@/store/hooks';
-import { useAssetData, useAssetFormOptions, useAvailableAssets, useCreateAsset, useAssignAsset } from '@/hooks/api/useAssets';
+import { useAssetData, useAssetFormOptions, useAvailableAssets, useCreateAsset, useAssignAsset, useDeleteAsset, useUpdateAssetStatus } from '@/hooks/api/useAssets';
 import { assetService } from '@/services/assetService';
+import { toast } from 'sonner';
+
+const getCategoryIcon = (category: string) => {
+    switch (category?.toLowerCase()) {
+        case 'laptop': return <LaptopIcon size={20} />;
+        case 'monitor': return <Monitor size={20} />;
+        case 'mobile': return <Smartphone size={20} />;
+        case 'accessories': return <Headphones size={20} />;
+        default: return <Monitor size={20} />;
+    }
+};
+
+const getStatusBadgeVariant = (status: string) => {
+    switch (status) {
+        case 'Available': return 'success';
+        case 'Assigned': return 'info';
+        case 'Maintenance': return 'warning';
+        default: return 'default';
+    }
+};
 
 export default function AssetsPage() {
     // 1. Strict RBAC Enforcement
@@ -30,6 +52,8 @@ export default function AssetsPage() {
     
     const createAssetMutation = useCreateAsset();
     const assignAssetMutation = useAssignAsset();
+    const deleteAssetMutation = useDeleteAsset();
+    const updateAssetStatusMutation = useUpdateAssetStatus();
 
     const stats = assetData?.stats || null;
     const records: Asset[] = assetData?.records || [];
@@ -37,7 +61,7 @@ export default function AssetsPage() {
     const totalPages = pagination.totalPages || 1;
     const totalEntries = pagination.totalEntries || 0;
 
-    const isLoading = isAssetsLoading || createAssetMutation.isPending || assignAssetMutation.isPending;
+    const isLoading = isAssetsLoading || createAssetMutation.isPending || assignAssetMutation.isPending || deleteAssetMutation.isPending || updateAssetStatusMutation.isPending;
 
     // Reset pagination when page size changes
     useEffect(() => {
@@ -47,16 +71,20 @@ export default function AssetsPage() {
     // 4. Local UI State
     const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+    const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+    const [selectedAssetForView, setSelectedAssetForView] = useState<Asset | null>(null);
+    const [selectedAssetIdForAssign, setSelectedAssetIdForAssign] = useState<string>('');
 
     const handleAddAsset = async (payload: AddAssetPayload) => {
         try {
             await createAssetMutation.mutateAsync(payload);
             setIsAddModalOpen(false);
+            toast.success('Asset added successfully!');
         } catch (error: any) {
             if (error.response?.status === 400) {
-                alert(error.response.data.message);
+                toast.error(error.response.data.message);
             } else {
-                alert('Failed to add asset.');
+                toast.error('Failed to add asset.');
             }
         }
     };
@@ -65,8 +93,31 @@ export default function AssetsPage() {
         try {
             await assignAssetMutation.mutateAsync(payload);
             setIsAssignModalOpen(false);
+            toast.success('Asset assigned successfully!');
         } catch (error) {
-            alert('Failed to assign asset.');
+            toast.error('Failed to assign asset.');
+        }
+    };
+
+    const handleDeleteAsset = async (record: Asset) => {
+        if (confirm(`Are you sure you want to delete the asset "${record.name}" (${record.id})?`)) {
+            try {
+                await deleteAssetMutation.mutateAsync(record.dbId);
+                toast.success('Asset deleted successfully!');
+            } catch (error) {
+                toast.error('Failed to delete asset.');
+            }
+        }
+    };
+
+    const handleUnassignAsset = async (record: Asset) => {
+        if (confirm(`Are you sure you want to unassign "${record.name}" from ${record.assignee}?`)) {
+            try {
+                await updateAssetStatusMutation.mutateAsync({ id: record.dbId, status: 'Available' });
+                toast.success('Asset unassigned successfully!');
+            } catch (error) {
+                toast.error('Failed to unassign asset.');
+            }
         }
     };
 
@@ -83,7 +134,7 @@ export default function AssetsPage() {
                 status: rec.status
             }));
 
-            if (allRecords.length === 0) return alert("No records to export.");
+            if (allRecords.length === 0) return toast.info("No records to export.");
             
             const headers = ['Asset Tag', 'Name', 'Category', 'Assignee', 'Assigned Date', 'Status'];
             const csvRows = allRecords.map((rec: any) => [
@@ -101,8 +152,9 @@ export default function AssetsPage() {
             link.href = URL.createObjectURL(blob);
             link.download = `Asset_Inventory_${new Date().toISOString().split('T')[0]}.csv`;
             link.click();
+            toast.success('Inventory exported successfully!');
         } catch (error) {
-            alert('Failed to export full inventory.');
+            toast.error('Failed to export full inventory.');
         }
     };
 
@@ -149,7 +201,7 @@ export default function AssetsPage() {
                         {isManagerial && (
                             <Button 
                                 variant="primary" 
-                                onClick={() => setIsAssignModalOpen(true)} 
+                                onClick={() => { setSelectedAssetIdForAssign(''); setIsAssignModalOpen(true); }} 
                                 disabled={isLoading || isEmpLoading}
                                 className="gap-2 shadow-sm shadow-blue-500/25 dark:shadow-none font-bold ml-1"
                             >
@@ -174,7 +226,16 @@ export default function AssetsPage() {
                         <AssetTable
                             assets={records}
                             isLoading={isAssetsLoading}
-                            onEdit={(record) => alert(`Edit asset: ${record.name}`)}
+                            onView={(record) => {
+                                setSelectedAssetForView(record);
+                                setIsViewModalOpen(true);
+                            }}
+                            onAssign={isManagerial ? (record) => {
+                                setSelectedAssetIdForAssign(record.dbId);
+                                setIsAssignModalOpen(true);
+                            } : undefined}
+                            onUnassign={isManagerial ? handleUnassignAsset : undefined}
+                            onDelete={isManagerial ? handleDeleteAsset : undefined}
                         />
                     </CardContent>
 
@@ -231,6 +292,7 @@ export default function AssetsPage() {
                     employees={employeesData}
                     availableAssets={availableAssets}
                     isSubmitting={assignAssetMutation.isPending}
+                    selectedAssetId={selectedAssetIdForAssign}
                 />
                 
                 <AddAssetModal
@@ -239,6 +301,93 @@ export default function AssetsPage() {
                     onSubmit={handleAddAsset}
                     isSubmitting={createAssetMutation.isPending}
                 />
+
+                {/* Asset Details Modal */}
+                <Modal isOpen={isViewModalOpen} onClose={() => { setIsViewModalOpen(false); setSelectedAssetForView(null); }} title="Asset Details" className="max-w-2xl">
+                    {selectedAssetForView && (
+                        <div className="space-y-6 p-2">
+                            <div className="flex items-center gap-4 border-b border-gray-100 dark:border-gray-800 pb-4">
+                                <div className="p-3 bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-xl">
+                                    {getCategoryIcon(selectedAssetForView.category)}
+                                </div>
+                                <div>
+                                    <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">{selectedAssetForView.name}</h3>
+                                    <p className="text-sm font-mono text-gray-500 dark:text-gray-400 mt-0.5">{selectedAssetForView.id}</p>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+                                <div>
+                                    <span className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Category</span>
+                                    <p className="text-sm font-bold text-gray-800 dark:text-gray-200 mt-0.5">{selectedAssetForView.category}</p>
+                                </div>
+                                <div>
+                                    <span className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Status</span>
+                                    <div className="mt-0.5">
+                                        <Badge variant={getStatusBadgeVariant(selectedAssetForView.status)}>
+                                            {selectedAssetForView.status}
+                                        </Badge>
+                                    </div>
+                                </div>
+                                <div>
+                                    <span className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Model</span>
+                                    <p className="text-sm font-bold text-gray-800 dark:text-gray-200 mt-0.5">{(selectedAssetForView as any).model || 'N/A'}</p>
+                                </div>
+                                <div>
+                                    <span className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Manufacturer</span>
+                                    <p className="text-sm font-bold text-gray-800 dark:text-gray-200 mt-0.5">{(selectedAssetForView as any).manufacturer || 'N/A'}</p>
+                                </div>
+                                <div>
+                                    <span className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Serial Number</span>
+                                    <p className="text-sm font-mono font-bold text-gray-800 dark:text-gray-200 mt-0.5">{(selectedAssetForView as any).serialNumber || 'N/A'}</p>
+                                </div>
+                                <div>
+                                    <span className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Procurement Cost</span>
+                                    <p className="text-sm font-bold text-gray-800 dark:text-gray-200 mt-0.5">${(selectedAssetForView as any).cost || 0}</p>
+                                </div>
+                                <div>
+                                    <span className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Condition</span>
+                                    <p className="text-sm font-bold text-gray-800 dark:text-gray-200 mt-0.5">{(selectedAssetForView as any).condition || 'New'}</p>
+                                </div>
+                                <div>
+                                    <span className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Assigned To</span>
+                                    <p className="text-sm font-bold text-gray-800 dark:text-gray-200 mt-0.5">{selectedAssetForView.assignee || 'Unassigned'}</p>
+                                </div>
+                                {selectedAssetForView.assignee && (
+                                    <>
+                                        <div>
+                                            <span className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Assignment Date</span>
+                                            <p className="text-sm font-bold text-gray-800 dark:text-gray-200 mt-0.5">{selectedAssetForView.date || 'N/A'}</p>
+                                        </div>
+                                        <div>
+                                            <span className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Expected Return</span>
+                                            <p className="text-sm font-bold text-gray-800 dark:text-gray-200 mt-0.5">{(selectedAssetForView as any).expectedReturnDate || 'N/A'}</p>
+                                        </div>
+                                        <div>
+                                            <span className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Assigned By</span>
+                                            <p className="text-sm font-bold text-gray-800 dark:text-gray-200 mt-0.5">{(selectedAssetForView as any).assignedBy || 'N/A'}</p>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+
+                            {selectedAssetForView.notes && (
+                                <div className="border-t border-gray-100 dark:border-gray-800 pt-4">
+                                    <span className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Condition Notes</span>
+                                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 bg-gray-50 dark:bg-gray-950 p-3 rounded-lg border border-gray-200 dark:border-gray-800">
+                                        {selectedAssetForView.notes}
+                                    </p>
+                                </div>
+                            )}
+
+                            <div className="flex justify-end pt-4 border-t border-gray-100 dark:border-gray-800">
+                                <Button variant="primary" onClick={() => { setIsViewModalOpen(false); setSelectedAssetForView(null); }}>
+                                    Close
+                                </Button>
+                            </div>
+                        </div>
+                    )}
+                </Modal>
             </div>
         </div>
     );

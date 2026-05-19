@@ -3,6 +3,7 @@
 import React from 'react';
 import { ChevronDown, RotateCcw } from 'lucide-react';
 import { cn } from '@/utils/cn';
+import { useAppSelector } from '@/store/hooks';
 
 export interface EmployeeFilterState {
     department: string;
@@ -52,6 +53,9 @@ const FilterSelect = ({ value, onChange, options, placeholder, className }: Filt
 );
 
 export default function EmployeeFilters({ filters, onFilterChange }: EmployeeFiltersProps) {
+    const { user } = useAppSelector((state) => state.auth);
+    const isAdmin = user?.role?.toLowerCase() === 'admin';
+
     const departments = [
         { label: 'Engineering', value: 'Engineering' },
         { label: 'Design', value: 'Design' },
@@ -72,6 +76,10 @@ export default function EmployeeFilters({ filters, onFilterChange }: EmployeeFil
         { label: 'Active', value: 'Active' },
         { label: 'Inactive', value: 'Inactive' },
     ];
+
+    if (isAdmin) {
+        statuses.push({ label: 'Past Employees', value: 'Past' });
+    }
 
     // Check if any filter is currently active
     const hasFilters = Object.values(filters).some(val => val !== '');
@@ -106,18 +114,6 @@ export default function EmployeeFilters({ filters, onFilterChange }: EmployeeFil
                 placeholder="All Status"
                 className="sm:w-36" 
             />
-            
-            <div className="relative w-full sm:w-auto">
-                <input
-                    type="date"
-                    value={filters.joiningDate}
-                    onChange={(e) => onFilterChange('joiningDate', e.target.value)}
-                    className={cn(
-                        "w-full sm:w-44 h-9 appearance-none border border-gray-200 px-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 cursor-pointer text-sm font-medium transition-all shadow-sm [&::-webkit-calendar-picker-indicator]:opacity-50 [&::-webkit-calendar-picker-indicator]:cursor-pointer",
-                        filters.joiningDate ? "bg-blue-50/50 border-blue-200 text-blue-800" : "bg-white text-gray-600 hover:bg-gray-50"
-                    )}
-                />
-            </div>
 
             {/* Dynamic Clear Button */}
             {hasFilters && (

@@ -34,3 +34,14 @@ export function useCreateEmployee() {
         }
     });
 }
+
+export function useDeleteEmployee() {
+    const queryClient = useQueryClient();
+    
+    return useMutation({
+        mutationFn: (id: string) => employeeService.delete(id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['employees'] });
+        }
+    });
+}

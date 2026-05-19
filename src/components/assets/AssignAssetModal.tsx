@@ -26,6 +26,7 @@ interface AssignAssetModalProps {
     employees?: SelectOption[];
     availableAssets?: SelectOption[];
     isSubmitting?: boolean; // Synced with React Query from parent
+    selectedAssetId?: string;
 }
 
 const initialFormState: AssignAssetPayload = {
@@ -41,19 +42,23 @@ export default function AssignAssetModal({
     onSubmit,
     employees = [],
     availableAssets = [],
-    isSubmitting = false
+    isSubmitting = false,
+    selectedAssetId = ''
 }: AssignAssetModalProps) {
     const [formData, setFormData] = useState<AssignAssetPayload>(initialFormState);
 
     useEffect(() => {
         if (isOpen) {
-            setFormData(initialFormState);
+            setFormData({
+                ...initialFormState,
+                assetId: selectedAssetId || ''
+            });
             // Pre-select employee if only one is available (e.g., viewing an employee's profile)
             if (employees.length === 1) {
                 setFormData(prev => ({ ...prev, employeeId: employees[0].id }));
             }
         }
-    }, [isOpen, employees]);
+    }, [isOpen, employees, selectedAssetId]);
 
     const handleChange = (e: React.ChangeEvent<HTMLSelectElement | HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;

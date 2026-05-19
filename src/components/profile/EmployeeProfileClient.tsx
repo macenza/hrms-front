@@ -8,6 +8,7 @@ import { cn } from '@/utils/cn';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Card, CardContent } from '@/components/ui/Card';
+import { toast } from 'sonner';
 
 import PersonalInfoTab from '@/components/profile/tabs/PersonalInfoTab';
 import EmploymentDetailsTab from '@/components/profile/tabs/EmploymentDetailsTab';
@@ -23,6 +24,7 @@ import {
     useUploadCertificate,
     useAddNote 
 } from '@/hooks/api/useProfile';
+import { useDeleteEmployee } from '@/hooks/api/useEmployees';
 
 const profileTabs = [
     { id: 'personal', label: 'Personal Information' },
@@ -80,14 +82,32 @@ export default function EmployeeProfileClient({ id }: EmployeeProfileClientProps
     const uploadDocumentMutation = useUploadDocument(resolvedEmployeeId);
     const uploadCertificateMutation = useUploadCertificate(resolvedEmployeeId);
     const addNoteMutation = useAddNote(resolvedEmployeeId);
+    const deleteEmployeeMutation = useDeleteEmployee();
+
+    const handleDeleteEmployee = async () => {
+        if (confirm(`WARNING: Are you sure you want to delete the employee "${employee.name}"? This action will archive them into the past employees collection and remove them from current employees.`)) {
+            try {
+                await deleteEmployeeMutation.mutateAsync(resolvedEmployeeId);
+                toast.success('Employee deleted and archived successfully!');
+                router.push('/employees');
+            } catch (error: any) {
+                if (error.response?.data?.message) {
+                    toast.error(error.response.data.message);
+                } else {
+                    toast.error('Failed to delete employee.');
+                }
+            }
+        }
+    };
 
     const handleUploadDocument = async (file: File) => {
         try {
             const formData = new FormData();
             formData.append('document', file);
             await uploadDocumentMutation.mutateAsync(formData);
+            toast.success("Document uploaded successfully!");
         } catch (error) {
-            alert("Failed to upload document. Please try again.");
+            toast.error("Failed to upload document. Please try again.");
         }
     };
 
@@ -99,16 +119,18 @@ export default function EmployeeProfileClient({ id }: EmployeeProfileClientProps
             formData.append('title', baseTitle);
             formData.append('description', 'Uploaded certificate');
             await uploadCertificateMutation.mutateAsync(formData);
+            toast.success("Certificate uploaded successfully!");
         } catch (error) {
-            alert('Failed to upload certificate. Please try again.');
+            toast.error('Failed to upload certificate. Please try again.');
         }
     };
 
     const handleAddNote = async (text: string) => {
         try {
             await addNoteMutation.mutateAsync(text);
+            toast.success("Note added successfully!");
         } catch (error) {
-            alert("Failed to add note. Please try again.");
+            toast.error("Failed to add note. Please try again.");
         }
     };
 
@@ -151,7 +173,7 @@ export default function EmployeeProfileClient({ id }: EmployeeProfileClientProps
             <Card className="border-gray-200 dark:border-gray-800 shadow-sm bg-white dark:bg-gray-900 overflow-hidden transition-colors duration-300">
                 <CardContent className="p-4 sm:p-6">
                     <div className="flex flex-col gap-6">
-                        <div className="flex items-start justify-between">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                             <div className="flex items-center gap-4">
                                 <div className={cn(
                                     "w-14 h-14 sm:w-20 sm:h-20 rounded-full flex items-center justify-center text-xl sm:text-2xl font-bold shrink-0 shadow-inner dark:shadow-none transition-colors",
@@ -174,6 +196,18 @@ export default function EmployeeProfileClient({ id }: EmployeeProfileClientProps
                                     </p>
                                 </div>
                             </div>
+
+                            {isAdminOrHR && !isCurrentUser && (
+                                <Button
+                                    variant="outline"
+                                    onClick={handleDeleteEmployee}
+                                    disabled={deleteEmployeeMutation.isPending}
+                                    className="border-red-200 dark:border-red-900/50 hover:bg-red-50 dark:hover:bg-red-500/10 text-red-600 dark:text-red-400 gap-2 font-bold shadow-sm transition-colors w-fit self-end sm:self-auto"
+                                >
+                                    {deleteEmployeeMutation.isPending ? <Loader2 size={16} className="animate-spin" /> : null}
+                                    Delete Employee
+                                </Button>
+                            )}
                         </div>
                     </div>
                 </CardContent>
@@ -212,7 +246,7 @@ export default function EmployeeProfileClient({ id }: EmployeeProfileClientProps
                                 fathersName: personal.fathersName || '',
                                 registrationNo: employee.employeeId || 'N/A'
                             }}
-                            onScheduleWish={() => alert(`Scheduled a wish for ${employee.name}!`)}
+                            onScheduleWish={() => toast.success(`Scheduled a wish for ${employee.name}!`)}
                         />
                     )}
 
@@ -230,7 +264,7 @@ export default function EmployeeProfileClient({ id }: EmployeeProfileClientProps
                                     ? new Date(employment.joiningDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
                                     : ''
                             }}
-                            onAddSkill={() => alert("Add skill functionality coming soon!")}
+                            onAddSkill={() => toast.info("Add skill functionality coming soon!")}
                         />
                     )}
 

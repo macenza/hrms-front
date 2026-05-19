@@ -25,9 +25,14 @@ export const employeeService = {
             if (filters.department) params.department = filters.department;
             if (filters.role) params.role = filters.role;
             
-            // Map the UI "Active/Inactive" status to the backend's boolean expected format
+            // Map the UI status to the backend's expected format
             if (filters.status) {
-                params.status = filters.status.toLowerCase() === 'active' ? 'true' : 'false';
+                const s = filters.status.toLowerCase();
+                if (s === 'past') {
+                    params.status = 'past';
+                } else {
+                    params.status = s === 'active' ? 'true' : 'false';
+                }
             }
 
             // 2. Fetch the paginated and filtered data from the backend
@@ -156,6 +161,16 @@ export const employeeService = {
             return response.data;
         } catch (error) {
             console.error(`Error adding note for employee ${id}:`, error);
+            throw error;
+        }
+    },
+
+    delete: async (id: string) => {
+        try {
+            const response = await apiClient.delete(`/employees/${id}`);
+            return response.data;
+        } catch (error) {
+            console.error(`Error deleting employee ${id}:`, error);
             throw error;
         }
     },

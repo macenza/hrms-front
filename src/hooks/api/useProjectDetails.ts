@@ -38,7 +38,7 @@ export function useProjectDetails(projectId: string) {
                     : 'No Date',
                 progress: data.progress || 0,
                 status: data.status || 'Active',
-                team: data.teamAvatars || data.team || [],
+                team: data.teamMembers || [],
                 tasks: data.tasks || { total: 0, open: 0 },
             };
         },
@@ -65,9 +65,11 @@ export function useProjectTasks(projectId: string) {
                     apiStatus,
                     priority: t.priority || 'Medium',
                     tag: t.tag || 'Task',
-                    dueDate: t.dueDate ? new Date(t.dueDate).toLocaleDateString() : '',
+                    description: t.description || '',
+                    dueDate: t.dueDate ? new Date(t.dueDate).toISOString().split('T')[0] : '',
+                    assignee: t.assignee || null,
                     assigneeName: t.assignee?.name || t.assigneeName || 'Unassigned',
-                    assigneeAvatar: t.assignee?.avatar || t.assigneeAvatar || '',
+                    assigneeAvatar: t.assignee?.profile?.avatar || t.assigneeAvatar || '',
                 };
             });
         },
@@ -111,6 +113,26 @@ export function useCreateTask(projectId: string) {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: (taskData: any) => taskService.create({ ...taskData, projectId }),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['project', projectId, 'tasks'] });
+        }
+    });
+}
+
+export function useUpdateTask(projectId: string) {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ taskId, taskData }: { taskId: string, taskData: any }) => taskService.update(taskId, taskData),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['project', projectId, 'tasks'] });
+        }
+    });
+}
+
+export function useDeleteTask(projectId: string) {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (taskId: string) => taskService.delete(taskId),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['project', projectId, 'tasks'] });
         }

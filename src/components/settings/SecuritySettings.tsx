@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input'; 
 import { Badge } from '@/components/ui/Badge'; 
 import { useAppSelector } from '@/store/hooks';
+import { toast } from 'sonner';
 
 export interface SecurityPreferences {
     is2FAEnabled: boolean;
@@ -51,7 +52,7 @@ export default function SecuritySettings({
     const handleUpdatePassword = async (e: React.FormEvent) => {
         e.preventDefault();
         if (passwords.new !== passwords.confirm) {
-            alert("Passwords don't match!");
+            toast.error("Passwords don't match!");
             return;
         }
         

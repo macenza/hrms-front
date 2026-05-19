@@ -62,4 +62,22 @@ export const taskService = {
             throw error;
         }
     },
+    update: async (taskId: string, taskData: Record<string, unknown>) => {
+        try {
+            const response = await apiClient.put(`/tasks/${taskId}`, taskData);
+            return response.data;
+        } catch (error) {
+            console.error('Error updating task:', error);
+            throw error;
+        }
+    },
+    delete: async (taskId: string) => {
+        try {
+            const response = await apiClient.delete(`/tasks/${taskId}`);
+            return response.data;
+        } catch (error) {
+            console.error('Error deleting task:', error);
+            throw error;
+        }
+    },
 };

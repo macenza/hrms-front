@@ -127,20 +127,6 @@ export default function AddProjectModal({
                                 className="text-gray-900 dark:text-gray-100 [color-scheme:light] dark:[color-scheme:dark]"
                             />
                         </div>
-                        <div className="space-y-3 pt-2">
-                            <div className="flex justify-between items-center">
-                                <label className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase transition-colors">Initial Progress</label>
-                                <span className="text-sm font-bold text-blue-600 dark:text-blue-400 transition-colors">{formData.progress}%</span>
-                            </div>
-                            <input
-                                type="range"
-                                min="0" max="100"
-                                value={formData.progress}
-                                onChange={(e) => setFormData({ ...formData, progress: Number(e.target.value) })}
-                                disabled={isSubmitting}
-                                className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-600 dark:accent-blue-500 disabled:opacity-50 transition-colors"
-                            />
-                        </div>
                     </form>
                 </div>
                 <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 flex justify-end gap-3 shrink-0 transition-colors">

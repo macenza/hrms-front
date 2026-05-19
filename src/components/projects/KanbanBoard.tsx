@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
-import { Plus, MoreHorizontal, Calendar, Loader2 } from 'lucide-react';
+import { Plus, Calendar, Loader2 } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import { Button } from '@/components/ui/Button';
 import TaskModal from './TaskModal';
@@ -24,6 +24,7 @@ export interface TaskRecord {
     apiStatus?: string;
     priority: TaskPriority;
     tag: string;
+    description?: string;
     dueDate: string;
     assigneeName: string;
     assigneeAvatar?: string;
@@ -43,17 +44,12 @@ interface KanbanBoardProps {
     isLoading?: boolean;
     onTaskMove?: (taskId: string, apiStatus: string) => Promise<void>;
     onTaskAdd?: (task: Partial<TaskRecord>) => Promise<void>;
+    onTaskUpdate?: (taskId: string, task: Partial<TaskRecord>) => Promise<void>;
+    onTaskDelete?: (taskId: string) => Promise<void>;
+    team?: any[];
 }
 
-const getTagColor = (tag: string) => {
-    switch (tag?.toLowerCase()) {
-        case 'design': return 'bg-purple-50 dark:bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-100 dark:border-purple-500/20';
-        case 'development': return 'bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-100 dark:border-blue-500/20';
-        case 'research': return 'bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-100 dark:border-orange-500/20';
-        case 'meeting': return 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-500/20';
-        default: return 'bg-gray-100 dark:bg-gray-800/50 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700';
-    }
-};
+
 
 const getInitials = (name: string) => {
     if (!name) return '??';
@@ -78,7 +74,10 @@ export default function KanbanBoard({
     tasks = [],
     isLoading = false,
     onTaskMove,
-    onTaskAdd
+    onTaskAdd,
+    onTaskUpdate,
+    onTaskDelete,
+    team = []
 }: KanbanBoardProps) {
     const [isMounted, setIsMounted] = useState(false);
     const [columns, setColumns] = useState<KanbanBoardData>({});
@@ -151,8 +150,21 @@ export default function KanbanBoard({
     };
 
     const handleAddTask = async (taskData: any) => {
-        if (onTaskAdd) {
-            await onTaskAdd(taskData);
+        if (editingTask) {
+            if (onTaskUpdate) {
+                await onTaskUpdate(editingTask.id, taskData);
+            }
+        } else {
+            if (onTaskAdd) {
+                await onTaskAdd(taskData);
+            }
+        }
+        setIsTaskModalOpen(false);
+    };
+
+    const handleTaskDelete = async (taskId: string) => {
+        if (onTaskDelete) {
+            await onTaskDelete(taskId);
         }
         setIsTaskModalOpen(false);
     };
@@ -201,9 +213,6 @@ export default function KanbanBoard({
                                         {column.items.length}
                                     </span>
                                 </div>
-                                <button className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-md text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors">
-                                    <MoreHorizontal size={18} />
-                                </button>
                             </div>
                             
                             <Droppable droppableId={columnId}>
@@ -235,14 +244,6 @@ export default function KanbanBoard({
                                                                 setIsTaskModalOpen(true);
                                                             }}
                                                         >
-                                                            <div className="flex justify-between items-start mb-3">
-                                                                <span className={cn(
-                                                                    "px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border transition-colors",
-                                                                    getTagColor(item.tag)
-                                                                )}>
-                                                                    {item.tag}
-                                                                </span>
-                                                            </div>
                                                             <h4 className="font-bold text-gray-900 dark:text-gray-100 mb-4 leading-snug transition-colors">
                                                                 {item.title}
                                                             </h4>
@@ -289,7 +290,9 @@ export default function KanbanBoard({
                 isOpen={isTaskModalOpen}
                 onClose={() => { setIsTaskModalOpen(false); setEditingTask(null); }}
                 onSubmit={handleAddTask}
+                onDelete={handleTaskDelete}
                 task={editingTask}
+                team={team}
             />
         </div>
     );

@@ -19,8 +19,11 @@ import {
     useUpdateProject, 
     useDeleteProject,
     useUpdateTaskStatus,
-    useCreateTask
+    useCreateTask,
+    useUpdateTask,
+    useDeleteTask
 } from '@/hooks/api/useProjectDetails';
+import { toast } from 'sonner';
 
 const ProjectHeaderSkeleton = () => (
     <div className="bg-white dark:bg-gray-900 p-6 sm:p-8 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm transition-colors animate-pulse">
@@ -43,7 +46,7 @@ export default function ProjectDetailsPage() {
     const role = user?.role?.toLowerCase() || 'employee';
     const canEdit = ['admin', 'manager', 'hr'].includes(role);
     
-    const { data: project, isLoading: isProjectLoading } = useProjectDetails(projectId);
+    const { data: project, isLoading: isProjectLoading, isError, error } = useProjectDetails(projectId);
     const { data: tasks = [], isLoading: isTasksLoading } = useProjectTasks(projectId);
     const { data: availableManagers = [] } = useProjectManagers(isAuthenticated && canEdit);
     
@@ -51,6 +54,8 @@ export default function ProjectDetailsPage() {
     const deleteProjectMutation = useDeleteProject();
     const updateTaskStatusMutation = useUpdateTaskStatus(projectId);
     const createTaskMutation = useCreateTask(projectId);
+    const updateTaskMutation = useUpdateTask(projectId);
+    const deleteTaskMutation = useDeleteTask(projectId);
     
     const [activeTab, setActiveTab] = useState('overview');
     const [taskView, setTaskView] = useState<'list' | 'kanban'>('kanban');
@@ -70,10 +75,10 @@ export default function ProjectDetailsPage() {
                 status: settingsData.status,
                 targetEndDate: settingsData.dueDate,
             });
-            alert('Settings updated successfully!');
+            toast.success('Settings updated successfully!');
             setActiveTab('overview');
         } catch (error) {
-            alert('Failed to update project settings.');
+            toast.error('Failed to update project settings.');
         }
     };
 
@@ -81,8 +86,9 @@ export default function ProjectDetailsPage() {
         try {
             await deleteProjectMutation.mutateAsync(id);
             router.push('/projects');
+            toast.success('Project deleted successfully!');
         } catch (error) {
-            alert('Failed to delete project.');
+            toast.error('Failed to delete project.');
         }
     };
 
@@ -91,7 +97,7 @@ export default function ProjectDetailsPage() {
         try {
             await updateTaskStatusMutation.mutateAsync({ taskId, status: apiStatus });
         } catch (error) {
-            alert("Failed to move task");
+            toast.error("Failed to move task");
         }
     };
 
@@ -105,9 +111,33 @@ export default function ProjectDetailsPage() {
         );
     }
 
+    if (isError) {
+        const errMsg = (error as any)?.response?.data?.message || 'Access Denied: You do not have permission to view this project.';
+        return (
+            <div className="min-h-[calc(100vh-4rem)] bg-gray-50/50 dark:bg-[#0a0a0a] flex flex-col justify-center items-center p-6 transition-colors duration-300">
+                <div className="max-w-md w-full bg-white dark:bg-gray-900 rounded-2xl border border-red-100 dark:border-red-950/30 p-8 shadow-sm text-center animate-in fade-in zoom-in-95 duration-300">
+                    <div className="w-16 h-16 bg-red-50 dark:bg-red-500/10 rounded-full flex items-center justify-center text-red-600 dark:text-red-400 mx-auto mb-4">
+                        <ChevronLeft size={32} className="rotate-180" />
+                    </div>
+                    <h2 className="text-xl font-bold text-red-600 dark:text-red-400 mb-2">Access Denied</h2>
+                    <p className="text-gray-500 dark:text-gray-400 text-sm mb-6 leading-relaxed">
+                        {errMsg}
+                    </p>
+                    <Button 
+                        variant="primary" 
+                        onClick={() => router.push('/projects')}
+                        className="w-full font-semibold shadow-sm"
+                    >
+                        Back to Projects
+                    </Button>
+                </div>
+            </div>
+        );
+    }
+
     if (!project) {
         return (
-            <div className="text-center py-20">
+            <div className="min-h-[calc(100vh-4rem)] bg-gray-50/50 dark:bg-[#0a0a0a] flex flex-col justify-center items-center p-6 text-center">
                 <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">Project Not Found</h2>
                 <Button variant="outline" className="mt-4" onClick={() => router.push('/projects')}>Go Back</Button>
             </div>
@@ -245,9 +275,16 @@ export default function ProjectDetailsPage() {
                                 <KanbanBoard 
                                     projectId={projectId}
                                     tasks={tasks}
+                                    team={project.team}
                                     onTaskMove={handleTaskMove}
                                     onTaskAdd={async (newTask) => {
                                         await createTaskMutation.mutateAsync(newTask);
+                                    }}
+                                    onTaskUpdate={async (taskId, updatedTask) => {
+                                        await updateTaskMutation.mutateAsync({ taskId, taskData: updatedTask });
+                                    }}
+                                    onTaskDelete={async (taskId) => {
+                                        await deleteTaskMutation.mutateAsync(taskId);
                                     }}
                                 />
                             )}

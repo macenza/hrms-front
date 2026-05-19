@@ -18,7 +18,15 @@ export function useAssetData(page: number = 1, limit: number = 10) {
                 assignee: rec.assignee?.name || null,
                 date: rec.assignedDate ? new Date(rec.assignedDate).toLocaleDateString() : null,
                 status: rec.status,
-                dbId: rec._id
+                dbId: rec._id,
+                serialNumber: rec.serialNumber || 'N/A',
+                manufacturer: rec.manufacturer || 'N/A',
+                model: rec.model || 'N/A',
+                cost: rec.cost || 0,
+                condition: rec.condition || 'New',
+                notes: rec.notes || '',
+                expectedReturnDate: rec.expectedReturnDate ? new Date(rec.expectedReturnDate).toLocaleDateString() : null,
+                assignedBy: rec.assignedBy?.name || null,
             }));
 
             return { 
@@ -79,6 +87,26 @@ export function useAssignAsset() {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: (payload: AssignAssetPayload) => assetService.assignAsset(payload),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['assets'] });
+        }
+    });
+}
+
+export function useDeleteAsset() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (id: string) => assetService.deleteAsset(id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['assets'] });
+        }
+    });
+}
+
+export function useUpdateAssetStatus() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ id, status }: { id: string; status: string }) => assetService.updateAssetStatus(id, status),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['assets'] });
         }

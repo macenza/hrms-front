@@ -9,6 +9,7 @@ import ProjectList, { Project } from '@/components/projects/ProjectList';
 import AddProjectModal, { ProjectFormData } from '@/components/projects/AddProjectModal';
 import { useAppSelector } from '@/store/hooks';
 import { useProjectsData, useProjectManagers, useCreateProject } from '@/hooks/api/useProjects';
+import { toast } from 'sonner';
 
 const ProjectsSkeleton = ({ view }: { view: 'grid' | 'list' }) => (
     <div className={cn(
@@ -62,8 +63,9 @@ export default function ProjectsPage() {
         try {
             await createProjectMutation.mutateAsync(data);
             setIsModalOpen(false);
+            toast.success('Project created successfully!');
         } catch (error) {
-            alert("Failed to create project. Please try again.");
+            toast.error("Failed to create project. Please try again.");
         }
     };
 

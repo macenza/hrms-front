@@ -43,5 +43,25 @@ export const assetService = {
             console.error("Error creating asset:", error);
             throw error;
         }
+    },
+    
+    deleteAsset: async (id: string) => {
+        try {
+            const response = await apiClient.delete(`${ENDPOINTS.ASSET.BASE}/${id}`);
+            return response.data;
+        } catch (error) {
+            console.error("Error deleting asset:", error);
+            throw error;
+        }
+    },
+
+    updateAssetStatus: async (id: string, status: string) => {
+        try {
+            const response = await apiClient.put(`${ENDPOINTS.ASSET.BASE}/${id}/status`, { status });
+            return response.data;
+        } catch (error) {
+            console.error("Error updating asset status:", error);
+            throw error;
+        }
     }
 };

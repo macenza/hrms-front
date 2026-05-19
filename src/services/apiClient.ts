@@ -39,13 +39,16 @@ apiClient.interceptors.response.use(
                 return Promise.reject(error);
             }
 
+            const PUBLIC_ROUTES = ['/', '/login', '/signup'];
+
             // Prevent infinite refresh loops
             if (originalRequest.url?.includes(ENDPOINTS.AUTH.REFRESH)) {
                 if (typeof window !== 'undefined') {
                     console.log('Refresh token expired. Forcing logout.');
                     localStorage.removeItem('user');
 
-                    if (window.location.pathname !== '/login') {
+                    const isPublicRoute = PUBLIC_ROUTES.includes(window.location.pathname);
+                    if (!isPublicRoute) {
                         window.location.href = '/login?error=session_expired';
                     }
                 }
@@ -74,7 +77,8 @@ apiClient.interceptors.response.use(
                         console.log('Session permanently expired. Redirecting.');
                         localStorage.removeItem('user');
 
-                        if (window.location.pathname !== '/login') {
+                        const isPublicRoute = PUBLIC_ROUTES.includes(window.location.pathname);
+                        if (!isPublicRoute) {
                             window.location.href = '/login?error=session_expired';
                         }
                     }

@@ -12,11 +12,13 @@ export function useProjectsData() {
                 id: p._id,
                 name: p.name,
                 description: p.description,
-                manager: p.managerName || 'Unassigned',
-                targetEndDate: p.dueDate ? new Date(p.dueDate).toISOString().split('T')[0] : 'No Date',
+                manager: p.manager || 'Unassigned',
+                managerName: p.manager?.name || p.managerName || 'Unassigned',
+                dueDate: p.targetEndDate ? new Date(p.targetEndDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : 'No Date',
+                targetEndDate: p.targetEndDate ? new Date(p.targetEndDate).toISOString().split('T')[0] : 'No Date',
                 progress: p.progress || 0,
                 status: p.status,
-                team: p.teamAvatars || [],
+                team: p.teamMembers?.map((m: any) => m.profile?.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${m.name || 'avatar'}`) || [],
                 tasks: p.tasks || { total: 0, open: 0 }
             }));
         },

@@ -122,15 +122,6 @@ export default function ProjectList({ projects, view, onActionClick }: ProjectLi
                             )}>
                                 {project.status === 'Completed' ? <CheckCircle2 size={22} /> : <Timer size={22} />}
                             </div>
-                            <button 
-                                onClick={(e) => {
-                                    e.stopPropagation(); 
-                                    onActionClick(project.id);
-                                }} 
-                                className="p-1 text-gray-400 dark:text-gray-500 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors"
-                            >
-                                <MoreVertical size={20} />
-                            </button>
                         </div>
                         <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-1">
                             {project.name}
@@ -156,7 +147,7 @@ export default function ProjectList({ projects, view, onActionClick }: ProjectLi
 
                         <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between transition-colors">
                             <div className="flex items-center">
-                                {project.team && project.team.length > 0 ? (
+                                {project.team && project.team.length > 0 && (
                                     <div className="flex -space-x-2">
                                         {project.team.slice(0, 3).map((avatar, i) => (
                                             <img key={i} src={avatar} className="w-8 h-8 rounded-full border-2 border-white dark:border-gray-900 object-cover bg-gray-50 dark:bg-gray-800 shadow-sm dark:shadow-none transition-colors" alt="team member" />
@@ -166,10 +157,6 @@ export default function ProjectList({ projects, view, onActionClick }: ProjectLi
                                                 +{project.team.length - 3}
                                             </div>
                                         )}
-                                    </div>
-                                ) : (
-                                    <div className="flex items-center gap-1.5 text-xs font-medium text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-gray-800/50 px-2 py-1 rounded-md transition-colors">
-                                        <Users size={12} /> Unassigned
                                     </div>
                                 )}
                             </div>
