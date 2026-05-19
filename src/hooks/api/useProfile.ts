@@ -1,13 +1,23 @@
-// src/hooks/api/useProfile.ts
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { employeeService } from '@/services/employeeService';
+import apiClient from '@/services/apiClient';
 
-export function useEmployeeProfile(employeeId: string | undefined) {
+export function useEmployeeProfile(employeeId: string) {
     return useQuery({
-        queryKey: ['profile', employeeId],
-        queryFn: () => employeeService.getById(employeeId as string),
+        queryKey: ['employee', employeeId],
+        queryFn: async () => {
+            if (!employeeId) throw new Error("Employee ID is required");
+
+            const { data } = await apiClient.get(`/employees/${employeeId}`);
+
+            if (data.user) {
+                return data.user;
+            }
+
+            return data.data ? data.data : data;
+        },
         enabled: !!employeeId,
-        staleTime: 5 * 60 * 1000, // 5 mins
+        staleTime: 5 * 60 * 1000,
     });
 }
 
@@ -27,6 +37,16 @@ export function useUploadDocument(employeeId: string) {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['profile', employeeId] });
         }
+    });
+}
+
+export function useUploadCertificate(employeeId: string) {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (formData: FormData) => employeeService.uploadCertificate(employeeId, formData),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['profile', employeeId] });
+        },
     });
 }
 

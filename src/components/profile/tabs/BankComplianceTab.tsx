@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input'; 
 import { employeeService } from '@/services/employeeService';
 import { cn } from '@/utils/cn';
+import { toast } from 'sonner';
 
 export type VerificationStatus = 'Verified' | 'Pending' | 'Rejected';
 
@@ -105,8 +106,9 @@ export default function BankComplianceTab({
             });
             setIsEditingBank(false);
             onRefresh(); 
+            toast.success('Bank details saved successfully!');
         } catch (error) {
-            alert('Failed to save bank details.');
+            toast.error('Failed to save bank details.');
         } finally {
             setIsSaving(false);
         }
@@ -120,8 +122,9 @@ export default function BankComplianceTab({
             });
             setIsEditingStat(false);
             onRefresh();
+            toast.success('Statutory details saved successfully!');
         } catch (error) {
-            alert('Failed to save statutory details.');
+            toast.error('Failed to save statutory details.');
         } finally {
             setIsSaving(false);
         }

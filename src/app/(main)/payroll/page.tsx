@@ -11,6 +11,7 @@ import PayslipModal from '@/components/payroll/PayslipModal';
 import { useAppSelector } from '@/store/hooks';
 import { usePayrollData, useRunPayroll } from '@/hooks/api/usePayroll';
 import { cn } from '@/utils/cn';
+import { toast } from 'sonner';
 
 export interface PayrollStatsData {
     totalPayroll: number; 
@@ -55,14 +56,14 @@ export default function PayrollPage() {
         if (!window.confirm("Are you sure you want to run payroll for this month?")) return;
         try {
             await runPayrollMutation.mutateAsync();
-            alert("Payroll run initiated successfully!");
+            toast.success("Payroll run initiated successfully!");
         } catch (error) {
-            alert("Failed to run payroll.");
+            toast.error("Failed to run payroll.");
         }
     };
 
     const handleExportReport = () => {
-        if (records.length === 0) return alert("No records to export.");
+        if (records.length === 0) return toast.info("No records to export.");
         
         const headers = ['Employee ID', 'Name', 'Department', 'Basic Salary', 'Gross Salary', 'Net Payable', 'Status'];
         const csvRows = records.map(rec => [
@@ -85,14 +86,15 @@ export default function PayrollPage() {
         link.click();
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
+        toast.success("Payroll report exported successfully!");
     };
 
     const handleSlipGenerator = async () => {
-        if (records.length === 0) return alert("No payroll records found to generate slips for.");
+        if (records.length === 0) return toast.info("No payroll records found to generate slips for.");
         setIsGeneratingSlips(true);
         setTimeout(() => {
             setIsGeneratingSlips(false);
-            alert(`Successfully generated ${records.length} payslips. They have been emailed to the employees.`);
+            toast.success(`Successfully generated ${records.length} payslips. They have been emailed to the employees.`);
         }, 2000);
     };
 

@@ -1,8 +1,7 @@
-// src/hooks/api/useProjects.ts
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { projectService } from '@/services/projectService';
-import { employeeService } from '@/services/employeeService';
 import { ProjectFormData } from '@/components/projects/AddProjectModal';
+import { fetchProjectManagers } from '@/lib/projectManagers';
 
 export function useProjectsData() {
     return useQuery({
@@ -13,11 +12,13 @@ export function useProjectsData() {
                 id: p._id,
                 name: p.name,
                 description: p.description,
-                manager: p.managerName || 'Unassigned',
-                dueDate: p.dueDate ? new Date(p.dueDate).toISOString().split('T')[0] : 'No Date',
+                manager: p.manager || 'Unassigned',
+                managerName: p.manager?.name || p.managerName || 'Unassigned',
+                dueDate: p.targetEndDate ? new Date(p.targetEndDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : 'No Date',
+                targetEndDate: p.targetEndDate ? new Date(p.targetEndDate).toISOString().split('T')[0] : 'No Date',
                 progress: p.progress || 0,
                 status: p.status,
-                team: p.teamAvatars || [],
+                team: p.teamMembers?.map((m: any) => m.profile?.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${m.name || 'avatar'}`) || [],
                 tasks: p.tasks || { total: 0, open: 0 }
             }));
         },
@@ -28,12 +29,7 @@ export function useProjectsData() {
 export function useProjectManagers(enabled: boolean) {
     return useQuery({
         queryKey: ['projects', 'managers'],
-        queryFn: async () => {
-            const empResponse = await employeeService.getAll(1, 100);
-            return empResponse.employees
-                .filter((emp: any) => emp.role === 'Manager' || emp.role === 'Admin')
-                .map((emp: any) => ({ name: emp.name, id: emp.id }));
-        },
+        queryFn: fetchProjectManagers,
         enabled,
         staleTime: 10 * 60 * 1000,
     });
@@ -42,7 +38,18 @@ export function useProjectManagers(enabled: boolean) {
 export function useCreateProject() {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: (data: ProjectFormData) => projectService.create(data),
+        mutationFn: (data: ProjectFormData) => {
+            const { dueDate, manager, progress, status, ...rest } = data;
+            return projectService.create({
+                name: rest.name,
+                description: rest.description,
+                manager,
+                managerId: manager,
+                progress,
+                status,
+                targetEndDate: dueDate,
+            });
+        },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['projects', 'all'] });
         }

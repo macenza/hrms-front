@@ -1,5 +1,4 @@
 'use client';
-
 import React, { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAppSelector } from '@/store/hooks'; 
@@ -9,6 +8,7 @@ import { cn } from '@/utils/cn';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Card, CardContent } from '@/components/ui/Card';
+import { toast } from 'sonner';
 
 import PersonalInfoTab from '@/components/profile/tabs/PersonalInfoTab';
 import EmploymentDetailsTab from '@/components/profile/tabs/EmploymentDetailsTab';
@@ -17,13 +17,14 @@ import DocumentsTab from '@/components/profile/tabs/DocumentsTab';
 import CertificatesTab from '@/components/profile/tabs/CertificatesTab';
 import AttendanceTab from '@/components/profile/tabs/AttendanceTab';
 import NotesTab from '@/components/profile/tabs/NotesTab';
-
 import { 
     useEmployeeProfile, 
     useEmployeeAttendanceLogs, 
-    useUploadDocument, 
+    useUploadDocument,
+    useUploadCertificate,
     useAddNote 
 } from '@/hooks/api/useProfile';
+import { useDeleteEmployee } from '@/hooks/api/useEmployees';
 
 const profileTabs = [
     { id: 'personal', label: 'Personal Information' },
@@ -41,7 +42,6 @@ interface EmployeeProfileClientProps {
     id?: string;
 }
 
-// Universal system avatar color generator
 const getAvatarColor = (name: string) => {
     if (!name) return 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300';
     const colors = [
@@ -61,42 +61,76 @@ export default function EmployeeProfileClient({ id }: EmployeeProfileClientProps
     const params = useParams();
     const router = useRouter();
     const resolvedEmployeeId = id || (params.id as string);
-    
-    // RBAC Control
     const { user } = useAppSelector((state) => state.auth);
-    const currentUserRole = user?.role || 'Employee';
-    const isAdminOrHR = ['Admin', 'HR'].includes(currentUserRole);
     
-    // Local State
+    const role = user?.role?.toLowerCase() || 'employee';
+    const isAdminOrHR = role === 'admin' || role === 'hr';
+    
     const [activeTab, setActiveTab] = useState<TabId>('personal');
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-
-    // React Query Data Layer
-    const { data: employee, isLoading: isProfileLoading, refetch: refreshProfile } = useEmployeeProfile(resolvedEmployeeId);
     
+    const { data: rawEmployee, isLoading: isProfileLoading, refetch: refreshProfile } = useEmployeeProfile(resolvedEmployeeId);
     const { data: attendanceData, isLoading: isAttendanceLoading } = useEmployeeAttendanceLogs(
         resolvedEmployeeId, 
-        activeTab === 'attendance' // Only fetch attendance if the tab is clicked
+        activeTab === 'attendance'
     );
 
+    const employee = rawEmployee?.user || rawEmployee;
+
+    const isCurrentUser = user?._id === employee?._id || user?.id === employee?.id || user?.id === employee?._id;
+
     const uploadDocumentMutation = useUploadDocument(resolvedEmployeeId);
+    const uploadCertificateMutation = useUploadCertificate(resolvedEmployeeId);
     const addNoteMutation = useAddNote(resolvedEmployeeId);
+    const deleteEmployeeMutation = useDeleteEmployee();
+
+    const handleDeleteEmployee = async () => {
+        if (confirm(`WARNING: Are you sure you want to delete the employee "${employee.name}"? This action will archive them into the past employees collection and remove them from current employees.`)) {
+            try {
+                await deleteEmployeeMutation.mutateAsync(resolvedEmployeeId);
+                toast.success('Employee deleted and archived successfully!');
+                router.push('/employees');
+            } catch (error: any) {
+                if (error.response?.data?.message) {
+                    toast.error(error.response.data.message);
+                } else {
+                    toast.error('Failed to delete employee.');
+                }
+            }
+        }
+    };
 
     const handleUploadDocument = async (file: File) => {
         try {
             const formData = new FormData();
             formData.append('document', file);
             await uploadDocumentMutation.mutateAsync(formData);
+            toast.success("Document uploaded successfully!");
         } catch (error) {
-            alert("Failed to upload document. Please try again.");
+            toast.error("Failed to upload document. Please try again.");
+        }
+    };
+
+    const handleUploadCertificate = async (file: File) => {
+        try {
+            const formData = new FormData();
+            formData.append('certificate', file);
+            const baseTitle = file.name.replace(/\.[^/.]+$/, '');
+            formData.append('title', baseTitle);
+            formData.append('description', 'Uploaded certificate');
+            await uploadCertificateMutation.mutateAsync(formData);
+            toast.success("Certificate uploaded successfully!");
+        } catch (error) {
+            toast.error('Failed to upload certificate. Please try again.');
         }
     };
 
     const handleAddNote = async (text: string) => {
         try {
             await addNoteMutation.mutateAsync(text);
+            toast.success("Note added successfully!");
         } catch (error) {
-            alert("Failed to add note. Please try again.");
+            toast.error("Failed to add note. Please try again.");
         }
     };
 
@@ -119,6 +153,14 @@ export default function EmployeeProfileClient({ id }: EmployeeProfileClientProps
         return <div className="text-center py-10 text-gray-500 dark:text-gray-400">Employee not found</div>;
     }
 
+    // ARCHITECTURAL FIX: Mapped strictly to User.js nested profile schema
+    const personal = employee.profile?.personal || {};
+    const employment = employee.profile?.employment || {};
+    const financial = employee.profile?.financial || {};
+    const records = employee.profile?.records || {};
+
+    console.log("🛑 WHAT THE COMPONENT SEES:", employee);
+
     return (
         <div className="space-y-6 animate-in fade-in duration-300">
             {/* Breadcrumbs */}
@@ -128,11 +170,10 @@ export default function EmployeeProfileClient({ id }: EmployeeProfileClientProps
                 <span className="text-gray-900 dark:text-gray-100">{employee.name}</span>
             </div>
 
-            {/* Profile Header Card */}
             <Card className="border-gray-200 dark:border-gray-800 shadow-sm bg-white dark:bg-gray-900 overflow-hidden transition-colors duration-300">
                 <CardContent className="p-4 sm:p-6">
                     <div className="flex flex-col gap-6">
-                        <div className="flex items-start justify-between">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                             <div className="flex items-center gap-4">
                                 <div className={cn(
                                     "w-14 h-14 sm:w-20 sm:h-20 rounded-full flex items-center justify-center text-xl sm:text-2xl font-bold shrink-0 shadow-inner dark:shadow-none transition-colors",
@@ -145,56 +186,36 @@ export default function EmployeeProfileClient({ id }: EmployeeProfileClientProps
                                         <h1 className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-gray-100 leading-tight transition-colors">
                                             {employee.name}
                                         </h1>
-                                        <Badge variant={employee.status === 'Active' ? 'success' : 'error'} className="w-fit scale-90 sm:scale-100">
-                                            {employee.status}
+                                        {/* Fallback to isActive boolean if status string isn't provided */}
+                                        <Badge variant={employee.isActive ? 'success' : 'error'} className="w-fit scale-90 sm:scale-100">
+                                            {employee.isActive ? 'Active' : 'Inactive'}
                                         </Badge>
                                     </div>
                                     <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 font-medium mt-1 transition-colors">
-                                        {employee.role} · {employee.department}
+                                        {employee.role} · {employment.department || 'N/A'}
                                     </p>
                                 </div>
                             </div>
-                            
-                            <div className="sm:hidden">
-                                <Button variant="ghost" size="sm" className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
-                                    <MoreVertical size={20} className="text-gray-400 dark:text-gray-500" />
+
+                            {isAdminOrHR && !isCurrentUser && (
+                                <Button
+                                    variant="outline"
+                                    onClick={handleDeleteEmployee}
+                                    disabled={deleteEmployeeMutation.isPending}
+                                    className="border-red-200 dark:border-red-900/50 hover:bg-red-50 dark:hover:bg-red-500/10 text-red-600 dark:text-red-400 gap-2 font-bold shadow-sm transition-colors w-fit self-end sm:self-auto"
+                                >
+                                    {deleteEmployeeMutation.isPending ? <Loader2 size={16} className="animate-spin" /> : null}
+                                    Delete Employee
                                 </Button>
-                            </div>
-                        </div>
-                        
-                        {/* Profile Header Actions */}
-                        <div className="flex gap-2 sm:gap-3 border-t border-gray-100 dark:border-gray-800 sm:border-t-0 pt-4 sm:pt-0 transition-colors">
-                            <Button variant="outline" size="sm" className="flex-1 sm:flex-none gap-2 h-10 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-                                <Download size={16} />
-                                <span className="text-xs sm:text-sm">Download Profile</span>
-                            </Button>
-                            <Button variant="primary" size="sm" className="flex-1 sm:flex-none gap-2 h-10 shadow-sm shadow-blue-500/25 dark:shadow-none">
-                                <Edit size={16} />
-                                <span className="text-xs sm:text-sm">Edit Profile</span>
-                            </Button>
+                            )}
                         </div>
                     </div>
                 </CardContent>
             </Card>
 
-            {/* Content Tabs Section */}
             <Card className="border-gray-200 dark:border-gray-800 shadow-sm bg-white dark:bg-gray-900 overflow-hidden min-h-[500px] transition-colors duration-300">
+                {/* Mobile Tab Menu Logic... */}
                 
-                {/* Mobile Tab Dropdown */}
-                <div className="lg:hidden p-4 border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/20 transition-colors">
-                    <button 
-                        onClick={() => setIsMobileMenuOpen(true)} 
-                        className="w-full flex items-center justify-between px-4 py-2.5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm text-sm font-bold text-gray-700 dark:text-gray-200 transition-colors"
-                    >
-                        <div className="flex items-center gap-2">
-                            <Menu size={18} className="text-blue-600 dark:text-blue-400" />
-                            <span>{currentTabLabel}</span>
-                        </div>
-                        <ChevronRight size={16} className="text-gray-400 dark:text-gray-500 rotate-90" />
-                    </button>
-                </div>
-
-                {/* Desktop Tab Navigation */}
                 <div className="hidden lg:flex overflow-x-auto hide-scrollbar border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 transition-colors">
                     {visibleTabs.map((tab) => (
                         <button
@@ -212,75 +233,55 @@ export default function EmployeeProfileClient({ id }: EmployeeProfileClientProps
                     ))}
                 </div>
 
-                {/* Tab Content Body */}
                 <div className="p-4 sm:p-8 bg-white dark:bg-gray-900 transition-colors">
                     {activeTab === 'personal' && (
                         <PersonalInfoTab
                             data={{
                                 fullName: employee.name,
                                 email: employee.email,
-                                phone: employee.profile?.phone || '',
-                                dob: employee.profile?.dob ? new Date(employee.profile.dob).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : '',
-                                rawDob: employee.profile?.dob,
-                                address: employee.profile?.address || '',
-                                fathersName: employee.profile?.fathersName || '',
+                                phone: personal.phone || '',
+                                dob: personal.dob ? new Date(personal.dob).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : '',
+                                rawDob: personal.dob,
+                                address: personal.address || '',
+                                fathersName: personal.fathersName || '',
                                 registrationNo: employee.employeeId || 'N/A'
                             }}
-                            onScheduleWish={() => alert(`Scheduled a wish for ${employee.name}!`)}
+                            onScheduleWish={() => toast.success(`Scheduled a wish for ${employee.name}!`)}
                         />
                     )}
-                    {activeTab === 'bank' && (
-                        <BankComplianceTab
-                            employeeId={employee.id}
-                            currentUserRole={currentUserRole}
-                            bankData={employee.profile?.bankDetails}
-                            statutoryData={employee.profile?.statutoryDetails}
-                            onRefresh={refreshProfile}
-                        />
-                    )}
-                    {activeTab === 'attendance' && (
-                        <AttendanceTab
-                            stats={attendanceData?.stats}
-                            logs={attendanceData?.logs || []}
-                            isLoading={isAttendanceLoading}
-                        />
-                    )}
+
                     {activeTab === 'employment' && (
                         <EmploymentDetailsTab
                             data={{
-                                employeeId: employee.empId,
+                                employeeId: employee.employeeId,
                                 designation: employee.role,
-                                department: employee.department,
-                                reportingManager: employee.profile?.reportingManager || '',
-                                employmentType: employee.profile?.employmentType || '',
-                                workLocation: employee.profile?.workLocation || '',
-                                skills: employee.profile?.skills || [],
-                                dateOfJoining: employee.profile?.joiningDate
-                                    ? new Date(employee.profile.joiningDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+                                department: employment.department || '',
+                                reportingManager: employment.reportingManager || '',
+                                employmentType: employment.employmentType || '',
+                                workLocation: employment.workLocation || '',
+                                skills: employment.skills || [],
+                                dateOfJoining: employment.joiningDate
+                                    ? new Date(employment.joiningDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
                                     : ''
                             }}
-                            onAddSkill={() => alert("Add skill functionality coming soon!")}
+                            onAddSkill={() => toast.info("Add skill functionality coming soon!")}
                         />
                     )}
-                    {activeTab === 'certificates' && (
-                        <CertificatesTab
-                            certificates={employee.profile?.certificates?.map((cert: any) => ({
-                                id: cert._id,
-                                title: cert.title,
-                                description: cert.description,
-                                issueDate: new Date(cert.issueDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
-                                fileUrl: cert.fileUrl
-                            })) || []}
-                            isLoading={isProfileLoading}
-                            onGenerate={() => alert("Generate certificate modal opening...")}
-                            onPreview={(id) => alert(`Previewing certificate ${id}`)}
-                            onDownload={(id) => alert(`Downloading certificate ${id}`)}
+
+                    {activeTab === 'bank' && (
+                        <BankComplianceTab
+                            employeeId={employee._id || employee.id}
+                            currentUserRole={role}
+                            bankData={financial.bankDetails}
+                            statutoryData={financial.statutoryDetails}
+                            onRefresh={refreshProfile}
                         />
                     )}
+
                     {activeTab === 'documents' && (
                         <DocumentsTab
-                            documents={employee.profile?.documents?.map((doc: any) => ({
-                                id: doc._id,
+                            documents={records.documents?.map((doc: any) => ({
+                                id: doc._id || doc.id,
                                 name: doc.name,
                                 type: doc.type,
                                 sizeInBytes: doc.sizeInBytes,
@@ -289,14 +290,42 @@ export default function EmployeeProfileClient({ id }: EmployeeProfileClientProps
                             })) || []}
                             isLoading={isProfileLoading}
                             isUploading={uploadDocumentMutation.isPending}
-                            onUpload={handleUploadDocument}
+                            canUploadDocuments={isAdminOrHR}
+                            onUpload={isAdminOrHR ? handleUploadDocument : undefined}
                             onActionClick={(id) => console.log(`Open menu for document ${id}`)}
                         />
                     )}
+
+                    {activeTab === 'certificates' && (
+                        <CertificatesTab
+                            certificates={records.certificates?.map((cert: any) => ({
+                                id: cert._id || cert.id,
+                                title: cert.title || cert.name || 'Certificate',
+                                description: cert.description || cert.type || '',
+                                issueDate: cert.issueDate || cert.createdAt
+                                    ? new Date(cert.issueDate || cert.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+                                    : '—',
+                                fileUrl: cert.fileUrl || cert.url,
+                            })) || []}
+                            isLoading={isProfileLoading}
+                            canUpload={isAdminOrHR}
+                            isUploading={uploadCertificateMutation.isPending}
+                            onUpload={isAdminOrHR ? handleUploadCertificate : undefined}
+                        />
+                    )}
+
+                    {activeTab === 'attendance' && (
+                        <AttendanceTab
+                            stats={attendanceData?.stats}
+                            logs={attendanceData?.logs || []}
+                            isLoading={isAttendanceLoading}
+                        />
+                    )}
+
                     {activeTab === 'notes' && (
                         <NotesTab
-                            notes={employee.profile?.notes?.map((note: any) => ({
-                                id: note._id,
+                            notes={records.notes?.map((note: any) => ({
+                                id: note._id || note.id,
                                 text: note.text,
                                 authorName: note.authorName,
                                 authorRole: note.authorRole,
@@ -311,46 +340,6 @@ export default function EmployeeProfileClient({ id }: EmployeeProfileClientProps
                     )}
                 </div>
             </Card>
-
-            {/* Mobile Sliding Menu */}
-            {isMobileMenuOpen && (
-                <div className="fixed inset-0 z-[100] lg:hidden">
-                    <div 
-                        className="absolute inset-0 bg-black/50 dark:bg-black/70 backdrop-blur-sm transition-opacity" 
-                        onClick={() => setIsMobileMenuOpen(false)} 
-                    />
-                    <div className="absolute right-0 top-0 h-full w-[280px] bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-800 shadow-2xl animate-in slide-in-from-right duration-300 flex flex-col transition-colors">
-                        <div className="p-5 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between transition-colors">
-                            <h2 className="font-bold text-gray-900 dark:text-gray-100 transition-colors">Profile Sections</h2>
-                            <button 
-                                onClick={() => setIsMobileMenuOpen(false)} 
-                                className="p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
-                            >
-                                <X size={20} />
-                            </button>
-                        </div>
-                        <div className="p-2 overflow-y-auto">
-                            {visibleTabs.map((tab) => (
-                                <button
-                                    key={tab.id}
-                                    onClick={() => {
-                                        setActiveTab(tab.id as TabId);
-                                        setIsMobileMenuOpen(false);
-                                    }}
-                                    className={cn(
-                                        "w-full text-left px-4 py-3.5 rounded-xl text-sm font-bold transition-all mb-1",
-                                        activeTab === tab.id 
-                                            ? "bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400" 
-                                            : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800"
-                                    )}
-                                >
-                                    {tab.label}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-            )}
         </div>
     );
 }

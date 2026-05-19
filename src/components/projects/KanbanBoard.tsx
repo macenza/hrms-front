@@ -1,21 +1,30 @@
 'use client';
-
 import React, { useState, useEffect } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
-import { Plus, MoreHorizontal, Calendar, Loader2 } from 'lucide-react';
+import { Plus, Calendar, Loader2 } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import { Button } from '@/components/ui/Button';
-import TaskModal from './TaskModal'; 
+import TaskModal from './TaskModal';
+import {
+    collectKnownApiStatuses,
+    resolveApiTaskStatus,
+    toUiTaskStatus,
+    UI_COLUMN_ORDER,
+    type TaskStatus,
+} from '@/lib/taskStatus';
 
-export type TaskStatus = 'To Do' | 'In Progress' | 'Completed' | 'Blocked';
+export type { TaskStatus };
 export type TaskPriority = 'Low' | 'Medium' | 'High' | 'Critical';
 
 export interface TaskRecord {
     id: string;
     title: string;
     status: TaskStatus;
+    /** Raw status string from the API (used when moving cards). */
+    apiStatus?: string;
     priority: TaskPriority;
     tag: string;
+    description?: string;
     dueDate: string;
     assigneeName: string;
     assigneeAvatar?: string;
@@ -33,26 +42,20 @@ interface KanbanBoardProps {
     projectId: string;
     tasks?: TaskRecord[];
     isLoading?: boolean;
-    onTaskMove?: (taskId: string, newStatus: TaskStatus) => Promise<void>;
+    onTaskMove?: (taskId: string, apiStatus: string) => Promise<void>;
     onTaskAdd?: (task: Partial<TaskRecord>) => Promise<void>;
+    onTaskUpdate?: (taskId: string, task: Partial<TaskRecord>) => Promise<void>;
+    onTaskDelete?: (taskId: string) => Promise<void>;
+    team?: any[];
 }
 
-const getTagColor = (tag: string) => {
-    switch (tag?.toLowerCase()) {
-        case 'design': return 'bg-purple-50 dark:bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-100 dark:border-purple-500/20';
-        case 'development': return 'bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-100 dark:border-blue-500/20';
-        case 'research': return 'bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-100 dark:border-orange-500/20';
-        case 'meeting': return 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-500/20';
-        default: return 'bg-gray-100 dark:bg-gray-800/50 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700';
-    }
-};
+
 
 const getInitials = (name: string) => {
     if (!name) return '??';
     return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
 };
 
-// Universal system avatar color generator
 const getAvatarColor = (name: string) => {
     if (!name) return 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300';
     const colors = [
@@ -71,7 +74,10 @@ export default function KanbanBoard({
     tasks = [],
     isLoading = false,
     onTaskMove,
-    onTaskAdd
+    onTaskAdd,
+    onTaskUpdate,
+    onTaskDelete,
+    team = []
 }: KanbanBoardProps) {
     const [isMounted, setIsMounted] = useState(false);
     const [columns, setColumns] = useState<KanbanBoardData>({});
@@ -82,47 +88,47 @@ export default function KanbanBoard({
         setIsMounted(true);
     }, []);
 
-    useEffect(() => {
-        const grouped: KanbanBoardData = {
-            'To Do': { id: 'To Do', title: 'To Do', items: [] },
-            'In Progress': { id: 'In Progress', title: 'In Progress', items: [] },
-            'Completed': { id: 'Completed', title: 'Completed', items: [] },
-            'Blocked': { id: 'Blocked', title: 'Blocked', items: [] },
-        };
+    const buildColumnsFromTasks = (taskList: TaskRecord[]): KanbanBoardData => {
+        const grouped: KanbanBoardData = Object.fromEntries(
+            UI_COLUMN_ORDER.map((id) => [id, { id, title: id, items: [] as TaskRecord[] }])
+        ) as KanbanBoardData;
 
-        tasks.forEach(task => {
-            if (grouped[task.status]) {
-                grouped[task.status].items.push(task);
-            } else {
-                grouped['To Do'].items.push(task);
-            }
+        taskList.forEach((task) => {
+            const columnId = toUiTaskStatus(task.apiStatus ?? task.status);
+            grouped[columnId].items.push({ ...task, status: columnId });
         });
 
-        setColumns(grouped);
+        return grouped;
+    };
+
+    useEffect(() => {
+        setColumns(buildColumnsFromTasks(tasks));
     }, [tasks]);
 
     const onDragEnd = async (result: DropResult) => {
         if (!result.destination) return;
         const { source, destination, draggableId } = result;
-
+        
         if (source.droppableId === destination.droppableId && source.index === destination.index) {
             return;
         }
 
-        const sourceColumnId = source.droppableId as TaskStatus;
-        const destColumnId = destination.droppableId as TaskStatus;
+        const sourceColumnId = toUiTaskStatus(source.droppableId);
+        const destColumnId = toUiTaskStatus(destination.droppableId);
 
         const sourceColumn = columns[sourceColumnId];
         const destColumn = columns[destColumnId];
-
+        if (!sourceColumn || !destColumn) return;
+        
         const sourceItems = [...sourceColumn.items];
         const destItems = sourceColumnId === destColumnId ? sourceItems : [...destColumn.items];
-
+        
         const [removed] = sourceItems.splice(source.index, 1);
-        removed.status = destColumnId;
-
-        destItems.splice(destination.index, 0, removed);
-
+        
+        // THE FIX: Create a new object instead of mutating state directly!
+        const movedTask = { ...removed, status: destColumnId };
+        destItems.splice(destination.index, 0, movedTask);
+        
         setColumns({
             ...columns,
             [sourceColumnId]: { ...sourceColumn, items: sourceItems },
@@ -130,22 +136,39 @@ export default function KanbanBoard({
         });
 
         if (sourceColumnId !== destColumnId && onTaskMove) {
+            const knownStatuses = collectKnownApiStatuses(tasks);
+            const apiStatus = resolveApiTaskStatus(destColumnId, knownStatuses);
+            const previousColumns = columns;
+
             try {
-                await onTaskMove(draggableId, destColumnId);
+                await onTaskMove(draggableId, apiStatus);
             } catch (error) {
-                console.error("Failed to move task on backend");
+                console.error('Failed to move task on backend', error);
+                setColumns(previousColumns);
             }
         }
     };
 
     const handleAddTask = async (taskData: any) => {
-        if (onTaskAdd) {
-            await onTaskAdd(taskData);
+        if (editingTask) {
+            if (onTaskUpdate) {
+                await onTaskUpdate(editingTask.id, taskData);
+            }
+        } else {
+            if (onTaskAdd) {
+                await onTaskAdd(taskData);
+            }
         }
         setIsTaskModalOpen(false);
     };
 
-    // Client-side hydration safety + Skeleton
+    const handleTaskDelete = async (taskId: string) => {
+        if (onTaskDelete) {
+            await onTaskDelete(taskId);
+        }
+        setIsTaskModalOpen(false);
+    };
+
     if (!isMounted) {
         return (
             <div className="flex gap-6 animate-pulse h-[60vh] w-full">
@@ -178,13 +201,11 @@ export default function KanbanBoard({
                     Add Task
                 </Button>
             </div>
-
+            
             <DragDropContext onDragEnd={onDragEnd}>
                 <div className="flex gap-6 overflow-x-auto pb-4 hide-scrollbar flex-1 items-start">
                     {Object.entries(columns).map(([columnId, column]) => (
                         <div key={columnId} className="w-[320px] shrink-0 bg-gray-100/80 dark:bg-gray-800/40 rounded-2xl flex flex-col max-h-[75vh] border border-gray-200/50 dark:border-gray-800 transition-colors">
-                            
-                            {/* Column Header */}
                             <div className="p-4 flex items-center justify-between border-b border-gray-200/50 dark:border-gray-800/50 transition-colors">
                                 <div className="flex items-center gap-2">
                                     <h3 className="font-bold text-gray-800 dark:text-gray-200 transition-colors">{column.title}</h3>
@@ -192,12 +213,8 @@ export default function KanbanBoard({
                                         {column.items.length}
                                     </span>
                                 </div>
-                                <button className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-md text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors">
-                                    <MoreHorizontal size={18} />
-                                </button>
                             </div>
-
-                            {/* Droppable Area */}
+                            
                             <Droppable droppableId={columnId}>
                                 {(provided, snapshot) => (
                                     <div
@@ -227,22 +244,10 @@ export default function KanbanBoard({
                                                                 setIsTaskModalOpen(true);
                                                             }}
                                                         >
-                                                            {/* Card Header (Tag) */}
-                                                            <div className="flex justify-between items-start mb-3">
-                                                                <span className={cn(
-                                                                    "px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border transition-colors",
-                                                                    getTagColor(item.tag)
-                                                                )}>
-                                                                    {item.tag}
-                                                                </span>
-                                                            </div>
-
-                                                            {/* Card Body (Title) */}
                                                             <h4 className="font-bold text-gray-900 dark:text-gray-100 mb-4 leading-snug transition-colors">
                                                                 {item.title}
                                                             </h4>
-
-                                                            {/* Card Footer (Date & Avatar) */}
+                                                            
                                                             <div className="flex items-center justify-between pt-3 border-t border-gray-50 dark:border-gray-800/50 transition-colors">
                                                                 <div className={cn(
                                                                     "flex items-center gap-1 text-xs font-medium transition-colors",
@@ -280,13 +285,14 @@ export default function KanbanBoard({
                     ))}
                 </div>
             </DragDropContext>
-
-            {/* Task Modal */}
+            
             <TaskModal
                 isOpen={isTaskModalOpen}
                 onClose={() => { setIsTaskModalOpen(false); setEditingTask(null); }}
                 onSubmit={handleAddTask}
+                onDelete={handleTaskDelete}
                 task={editingTask}
+                team={team}
             />
         </div>
     );

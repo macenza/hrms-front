@@ -6,6 +6,7 @@ import { X, Download, Printer, IndianRupee, FileText, Loader2 } from 'lucide-rea
 import { Button } from '@/components/ui/Button';
 import { PayrollRecord } from './PayrollTable';
 import { cn } from '@/utils/cn';
+import { toast } from 'sonner';
 
 interface PayslipModalProps {
     isOpen: boolean;
@@ -107,9 +108,10 @@ export default function PayslipModal({ isOpen, record, onClose }: PayslipModalPr
                 jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' as 'portrait' }
             };
             await html2pdf().set(opt).from(pdfHtmlString).save();
+            toast.success('Payslip downloaded successfully!');
         } catch (error) {
             console.error("Failed to generate PDF:", error);
-            alert("Failed to generate PDF. Please try again.");
+            toast.error("Failed to generate PDF. Please try again.");
         } finally {
             setIsDownloading(false);
         }

@@ -1,16 +1,12 @@
-// src/components/employees/AddEmployeeModal.tsx
 'use client';
-
 import React, { useState } from 'react';
-import { Check, UploadCloud, FileText, Loader2 } from 'lucide-react';
+import { Check, Loader2 } from 'lucide-react';
 import { cn } from '@/utils/cn';
-
-// UI Components
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import ProfilePhotoUploadStep from '@/components/employees/ProfilePhotoUploadStep';
 
-// 1. Flattened UI State (Easier for React to manage)
 export interface EmployeeFormData {
     firstName: string;
     lastName: string;
@@ -19,17 +15,20 @@ export interface EmployeeFormData {
     address: string;
     employeeId: string;
     department: string;
-    role: 'Employee' | 'Manager' | 'HR' | 'Admin'; // Fixed to match MongoDB Enum
+    role: 'Employee' | 'Manager' | 'HR' | 'Admin';
     salary: string;
     joiningDate: string;
+}
+
+export interface AddEmployeeSubmitMeta {
+    profilePhoto: File | null;
 }
 
 interface AddEmployeeModalProps {
     isOpen: boolean;
     onClose: () => void;
-    // We expect the parent to handle the API call so we can keep this component pure
-    onSubmit?: (apiPayload: any) => void; 
-    isSubmitting?: boolean; // Added to handle React Query mutation state
+    onSubmit?: (apiPayload: Record<string, unknown>, meta: AddEmployeeSubmitMeta) => void;
+    isSubmitting?: boolean;
 }
 
 const initialFormState: EmployeeFormData = {
@@ -38,9 +37,9 @@ const initialFormState: EmployeeFormData = {
     email: '',
     phone: '',
     address: '',
-    employeeId: `EMP-${Math.floor(1000 + Math.random() * 9000)}`, // Simple auto-gen for UI
+    employeeId: `EMP-${Math.floor(1000 + Math.random() * 9000)}`,
     department: 'Engineering',
-    role: 'Employee', // Default to base role
+    role: 'Employee',
     salary: '',
     joiningDate: new Date().toISOString().split('T')[0] // Default to today
 };
@@ -48,6 +47,7 @@ const initialFormState: EmployeeFormData = {
 export default function AddEmployeeModal({ isOpen, onClose, onSubmit, isSubmitting = false }: AddEmployeeModalProps) {
     const [step, setStep] = useState(1);
     const [formData, setFormData] = useState<EmployeeFormData>(initialFormState);
+    const [profilePhoto, setProfilePhoto] = useState<File | null>(null);
     const [error, setError] = useState('');
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -57,14 +57,14 @@ export default function AddEmployeeModal({ isOpen, onClose, onSubmit, isSubmitti
     };
 
     const handleClose = () => {
-        if (isSubmitting) return; // Prevent closing while saving
+        if (isSubmitting) return; 
         setStep(1);
         setFormData(initialFormState);
+        setProfilePhoto(null);
         setError('');
         onClose();
     };
 
-    // Lightweight step validation before moving forward
     const validateStep = () => {
         if (step === 1) {
             if (!formData.firstName || !formData.lastName || !formData.email) {
@@ -83,20 +83,17 @@ export default function AddEmployeeModal({ isOpen, onClose, onSubmit, isSubmitti
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-
         if (!validateStep()) return;
-
+        
         if (step < 3) {
             setStep(prev => prev + 1);
             return;
         }
 
-        // 2. Data Transformation Layer
-        // Transform the flat UI state into the nested structure the backend expects
         const apiPayload = {
             name: `${formData.firstName.trim()} ${formData.lastName.trim()}`,
             email: formData.email,
-            password: 'TempPassword123!', // Standard practice: Set temp password, force change on login
+            password: 'TempPassword123!',
             employeeId: formData.employeeId,
             role: formData.role,
             profile: {
@@ -109,36 +106,43 @@ export default function AddEmployeeModal({ isOpen, onClose, onSubmit, isSubmitti
                     joiningDate: formData.joiningDate,
                 }
             }
-            // Note: Salary and Documents would typically have their own specific endpoints 
-            // or schema definitions, but this aligns with what we have in User.js so far.
         };
 
         if (onSubmit) {
-            onSubmit(apiPayload);
+            onSubmit(apiPayload, { profilePhoto });
         }
     };
 
     return (
         <Modal isOpen={isOpen} onClose={handleClose} title="Add New Employee" className="max-w-3xl">
             <form onSubmit={handleSubmit} className="flex flex-col">
-                {/* Stepper Header */}
+                {/* --- PROGRESS BAR --- */}
                 <div className="px-4 pt-2 pb-6">
                     <div className="relative flex items-center justify-between w-full">
-                        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-0.5 bg-gray-200 z-0"></div>
+                        {/* Background track */}
+                        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-0.5 bg-gray-200 dark:bg-gray-800 z-0 transition-colors duration-300"></div>
+                        
+                        {/* Active track */}
                         <div
                             className="absolute left-0 top-1/2 -translate-y-1/2 h-0.5 bg-blue-600 z-0 transition-all duration-300"
                             style={{ width: step === 1 ? '0%' : step === 2 ? '50%' : '100%' }}
                         ></div>
                         
+                        {/* Steps */}
                         {[1, 2, 3].map((num) => (
-                            <div key={num} className="relative z-10 flex flex-col items-center gap-2 bg-white px-2">
+                            <div key={num} className="relative z-10 flex flex-col items-center gap-2 bg-white dark:bg-gray-900 px-2 transition-colors duration-300">
                                 <div className={cn(
                                     "w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-colors border-2",
-                                    step >= num ? "bg-blue-600 border-blue-600 text-white" : "bg-white border-gray-300 text-gray-400"
+                                    step >= num 
+                                        ? "bg-blue-600 border-blue-600 text-white" 
+                                        : "bg-white border-gray-300 text-gray-400 dark:bg-gray-900 dark:border-gray-700 dark:text-gray-500"
                                 )}>
                                     {step > num ? <Check size={16} /> : num}
                                 </div>
-                                <span className={cn("text-xs font-semibold uppercase tracking-wider", step >= num ? "text-blue-600" : "text-gray-400")}>
+                                <span className={cn(
+                                    "text-xs font-semibold uppercase tracking-wider", 
+                                    step >= num ? "text-blue-600" : "text-gray-400 dark:text-gray-500"
+                                )}>
                                     {num === 1 ? 'Personal Info' : num === 2 ? 'Job Details' : 'Documents'}
                                 </span>
                             </div>
@@ -146,10 +150,10 @@ export default function AddEmployeeModal({ isOpen, onClose, onSubmit, isSubmitti
                     </div>
                 </div>
 
-                {/* Form Body */}
+                {/* --- FORM CONTENT --- */}
                 <div className="flex-1 p-2 min-h-[250px]">
                     {error && (
-                        <div className="mb-4 p-3 bg-red-50 text-red-600 text-sm border border-red-200 rounded-md">
+                        <div className="mb-4 p-3 bg-red-50 text-red-600 border border-red-200 rounded-md text-sm dark:bg-red-900/20 dark:border-red-800/50 dark:text-red-400 transition-colors">
                             {error}
                         </div>
                     )}
@@ -168,11 +172,24 @@ export default function AddEmployeeModal({ isOpen, onClose, onSubmit, isSubmitti
 
                     {step === 2 && (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-5 animate-in fade-in slide-in-from-right-4 duration-300">
-                            <Input label="Employee ID" name="employeeId" value={formData.employeeId} readOnly className="bg-gray-50 text-gray-500" />
+                            {/* Note: The Input component should ideally handle its own disabled/readOnly dark mode styling, but we pass custom classes here just in case */}
+                            <Input 
+                                label="Employee ID" 
+                                name="employeeId" 
+                                value={formData.employeeId} 
+                                readOnly 
+                                className="bg-gray-50 text-gray-500 dark:bg-gray-800/50 dark:text-gray-400 border-gray-200 dark:border-gray-800" 
+                            />    
                             
                             <div className="flex flex-col gap-1.5">
-                                <label className="text-sm font-medium text-gray-700">Department</label>
-                                <select disabled={isSubmitting} name="department" value={formData.department} onChange={handleChange} className="h-10 px-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-600 text-sm bg-white">
+                                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors">Department</label>
+                                <select 
+                                    disabled={isSubmitting} 
+                                    name="department" 
+                                    value={formData.department} 
+                                    onChange={handleChange} 
+                                    className="h-10 px-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-600 text-sm bg-white dark:bg-gray-950 dark:border-gray-800 dark:text-gray-100 dark:focus:ring-blue-500 transition-colors"
+                                >
                                     <option value="Engineering">Engineering</option>
                                     <option value="Design">Design</option>
                                     <option value="Product">Product</option>
@@ -181,8 +198,14 @@ export default function AddEmployeeModal({ isOpen, onClose, onSubmit, isSubmitti
                             </div>
 
                             <div className="flex flex-col gap-1.5">
-                                <label className="text-sm font-medium text-gray-700">System Role</label>
-                                <select disabled={isSubmitting} name="role" value={formData.role} onChange={handleChange} className="h-10 px-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-600 text-sm bg-white">
+                                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors">System Role</label>
+                                <select 
+                                    disabled={isSubmitting} 
+                                    name="role" 
+                                    value={formData.role} 
+                                    onChange={handleChange} 
+                                    className="h-10 px-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-600 text-sm bg-white dark:bg-gray-950 dark:border-gray-800 dark:text-gray-100 dark:focus:ring-blue-500 transition-colors"
+                                >
                                     <option value="Employee">Employee (Standard Access)</option>
                                     <option value="Manager">Manager</option>
                                     <option value="HR">HR Professional</option>
@@ -191,10 +214,18 @@ export default function AddEmployeeModal({ isOpen, onClose, onSubmit, isSubmitti
                             </div>
 
                             <div className="flex flex-col gap-1.5">
-                                <label className="text-sm font-medium text-gray-700">Salary</label>
+                                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors">Salary</label>
                                 <div className="relative">
-                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">$</span>
-                                    <input disabled={isSubmitting} type="number" name="salary" value={formData.salary} onChange={handleChange} placeholder="50000" className="w-full h-10 pl-7 pr-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-600 text-sm" />
+                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 text-sm">$</span>
+                                    <input 
+                                        disabled={isSubmitting} 
+                                        type="number" 
+                                        name="salary" 
+                                        value={formData.salary} 
+                                        onChange={handleChange} 
+                                        placeholder="50000" 
+                                        className="w-full h-10 pl-7 pr-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-600 text-sm bg-white dark:bg-gray-950 dark:border-gray-800 dark:text-gray-100 dark:focus:ring-blue-500 transition-colors" 
+                                    />
                                 </div>
                             </div>
 
@@ -205,20 +236,21 @@ export default function AddEmployeeModal({ isOpen, onClose, onSubmit, isSubmitti
                     )}
 
                     {step === 3 && (
-                        <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
-                            <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 flex flex-col items-center justify-center text-center hover:bg-gray-50 transition-colors cursor-pointer group">
-                                <div className="p-3 bg-blue-50 text-blue-600 rounded-full mb-3 group-hover:scale-110 transition-transform">
-                                    <UploadCloud size={24} />
-                                </div>
-                                <p className="text-sm font-semibold text-gray-900">Upload Profile Photo</p>
-                                <p className="text-xs text-gray-500 mt-1">Files will be processed after profile creation.</p>
-                            </div>
+                        <div className="space-y-2 animate-in fade-in slide-in-from-right-4 duration-300">
+                            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 transition-colors">
+                                Optional: add a headshot now. It uploads right after the employee account is created.
+                            </p>
+                            <ProfilePhotoUploadStep
+                                disabled={isSubmitting}
+                                file={profilePhoto}
+                                onFileChange={setProfilePhoto}
+                            />
                         </div>
                     )}
                 </div>
 
-                {/* Footer Controls */}
-                <div className="pt-6 mt-6 border-t border-gray-100 flex items-center justify-between">
+                {/* --- FOOTER --- */}
+                <div className="pt-6 mt-6 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between transition-colors">
                     {step === 1 ? (
                         <Button type="button" variant="ghost" onClick={handleClose} disabled={isSubmitting}>
                             Cancel

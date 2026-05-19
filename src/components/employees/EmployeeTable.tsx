@@ -88,7 +88,6 @@ const TableRowSkeleton = () => (
         <td className="px-6 py-4"><div className="h-4 w-24 bg-gray-200 dark:bg-gray-800 rounded"></div></td>
         <td className="px-6 py-4"><div className="h-4 w-24 bg-gray-200 dark:bg-gray-800 rounded"></div></td>
         <td className="px-6 py-4"><div className="h-6 w-16 bg-gray-200 dark:bg-gray-800 rounded-full"></div></td>
-        <td className="px-6 py-4 text-center"><div className="h-8 w-8 bg-gray-200 dark:bg-gray-800 rounded-full mx-auto"></div></td>
     </tr>
 );
 
@@ -123,7 +122,6 @@ export default function EmployeeTable({
                             <th className="px-6 py-4 tracking-wider text-xs uppercase">Phone</th>
                             <th className="px-6 py-4 tracking-wider text-xs uppercase">Joining Date</th>
                             <th className="px-6 py-4 tracking-wider text-xs uppercase">Status</th>
-                            <th className="px-6 py-4 tracking-wider text-xs uppercase text-center">Actions</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
@@ -131,7 +129,7 @@ export default function EmployeeTable({
                             Array.from({ length: 5 }).map((_, idx) => <TableRowSkeleton key={idx} />)
                         ) : data.length === 0 ? (
                             <tr>
-                                <td colSpan={8} className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
+                                <td colSpan={7} className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
                                     No employees found matching your criteria.
                                 </td>
                             </tr>
@@ -165,20 +163,6 @@ export default function EmployeeTable({
                                         <Badge variant={getStatusBadgeVariant(employee.status)}>
                                             {employee.status}
                                         </Badge>
-                                    </td>
-                                    <td className="px-6 py-4 text-center">
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            className="p-2 h-8 w-8 rounded-full text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all"
-                                            onClick={(e) => {
-                                                e.stopPropagation(); 
-                                                console.log('Action menu clicked for', employee.id);
-                                            }}
-                                            aria-label="More actions"
-                                        >
-                                            <MoreVertical size={18} />
-                                        </Button>
                                     </td>
                                 </tr>
                             ))

@@ -10,13 +10,14 @@ export type ProjectStatus = 'In Progress' | 'Completed' | 'On Hold';
 export interface ProjectSettingsPayload {
     id: string;
     projectName: string;
-    managerName: string; 
+    managerId: string;
     description: string;
     status: ProjectStatus;
     dueDate: string;
 }
 
 export interface ManagerOption {
+    id: string;
     name: string;
 }
 
@@ -40,7 +41,7 @@ export default function ProjectSettingsTab({
     const [formData, setFormData] = useState<ProjectSettingsPayload>({
         id: '',
         projectName: '',
-        managerName: '',
+        managerId: '',
         description: '',
         status: 'In Progress',
         dueDate: ''
@@ -120,18 +121,23 @@ export default function ProjectSettingsTab({
                             <div className="space-y-1.5">
                                 <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 transition-colors">Project Manager</label>
                                 <select
-                                    name="managerName"
-                                    value={formData.managerName}
+                                    name="managerId"
+                                    value={formData.managerId}
                                     onChange={handleChange}
                                     required
                                     className="w-full h-10 px-3 rounded-md border border-gray-300 dark:border-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-600 dark:focus:ring-blue-500/40 focus:border-transparent text-sm font-medium bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 transition-all shadow-sm dark:shadow-none cursor-pointer"
                                 >
                                     <option value="" disabled>Select Manager...</option>
-                                    {formData.managerName && !managers.find(m => m.name === formData.managerName) && (
-                                        <option value={formData.managerName}>{formData.managerName}</option>
-                                    )}
-                                    {managers.map((manager, idx) => (
-                                        <option key={idx} value={manager.name}>{manager.name}</option>
+                                    {formData.managerId &&
+                                        !managers.find((m) => m.id === formData.managerId) && (
+                                            <option value={formData.managerId}>
+                                                Current manager
+                                            </option>
+                                        )}
+                                    {managers.map((manager) => (
+                                        <option key={manager.id} value={manager.id}>
+                                            {manager.name}
+                                        </option>
                                     ))}
                                 </select>
                             </div>

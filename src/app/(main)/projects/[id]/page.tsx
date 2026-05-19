@@ -1,9 +1,7 @@
-// src/app/(main)/projects/[id]/page.tsx
 'use client';
-
 import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ChevronLeft, Calendar, User, Users, Clock, CheckCircle2, Loader2, Edit, Settings, LayoutDashboard, CheckSquare, LayoutGrid, List } from 'lucide-react';
+import { ChevronLeft, Calendar, User, Users, CheckCircle2, Loader2, Settings, LayoutDashboard, CheckSquare, LayoutGrid, List, CheckCircle } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
@@ -13,7 +11,6 @@ import ProjectSettingsTab, { ProjectSettingsPayload } from '@/components/project
 import TeamTab from '@/components/projects/tabs/TeamTab';
 import TaskListTab from '@/components/projects/tabs/TaskListTab';
 import KanbanBoard from '@/components/projects/KanbanBoard'; 
-
 import { useAppSelector } from '@/store/hooks';
 import { useProjectManagers } from '@/hooks/api/useProjects';
 import { 
@@ -22,10 +19,12 @@ import {
     useUpdateProject, 
     useDeleteProject,
     useUpdateTaskStatus,
-    useCreateTask
+    useCreateTask,
+    useUpdateTask,
+    useDeleteTask
 } from '@/hooks/api/useProjectDetails';
+import { toast } from 'sonner';
 
-// Premium Skeleton for the Header
 const ProjectHeaderSkeleton = () => (
     <div className="bg-white dark:bg-gray-900 p-6 sm:p-8 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm transition-colors animate-pulse">
         <div className="h-8 bg-gray-200 dark:bg-gray-800 rounded w-1/3 mb-4" />
@@ -43,13 +42,11 @@ export default function ProjectDetailsPage() {
     const router = useRouter();
     const projectId = params.id as string;
     
-    // 1. RBAC Enforcement
     const { user, isAuthenticated } = useAppSelector((state) => state.auth);
     const role = user?.role?.toLowerCase() || 'employee';
     const canEdit = ['admin', 'manager', 'hr'].includes(role);
-
-    // 2. React Query Data Layer
-    const { data: project, isLoading: isProjectLoading } = useProjectDetails(projectId);
+    
+    const { data: project, isLoading: isProjectLoading, isError, error } = useProjectDetails(projectId);
     const { data: tasks = [], isLoading: isTasksLoading } = useProjectTasks(projectId);
     const { data: availableManagers = [] } = useProjectManagers(isAuthenticated && canEdit);
     
@@ -57,47 +54,31 @@ export default function ProjectDetailsPage() {
     const deleteProjectMutation = useDeleteProject();
     const updateTaskStatusMutation = useUpdateTaskStatus(projectId);
     const createTaskMutation = useCreateTask(projectId);
-
-    // 3. Local UI State
+    const updateTaskMutation = useUpdateTask(projectId);
+    const deleteTaskMutation = useDeleteTask(projectId);
+    
     const [activeTab, setActiveTab] = useState('overview');
     const [taskView, setTaskView] = useState<'list' | 'kanban'>('kanban');
-    const [isUpdatingProgress, setIsUpdatingProgress] = useState(false);
-    const [newProgress, setNewProgress] = useState(0);
 
-    // Sync local progress state when project loads
-    useEffect(() => {
-        if (project) setNewProgress(project.progress);
-    }, [project]);
-
-    // Kick unauthorized users back
     useEffect(() => {
         if (!isAuthenticated && typeof window !== 'undefined') {
             router.replace('/login');
         }
     }, [isAuthenticated, router]);
 
-    const handleSaveProgress = async () => {
-        try {
-            await updateProjectMutation.mutateAsync({ progress: newProgress });
-            setIsUpdatingProgress(false);
-        } catch (error) {
-            alert('Failed to update progress');
-        }
-    };
-
     const handleSaveSettings = async (settingsData: ProjectSettingsPayload) => {
         try {
             await updateProjectMutation.mutateAsync({
                 name: settingsData.projectName,
-                managerName: settingsData.managerName,
+                manager: settingsData.managerId,
                 description: settingsData.description,
                 status: settingsData.status,
-                dueDate: settingsData.dueDate
+                targetEndDate: settingsData.dueDate,
             });
-            alert('Settings updated successfully!');
+            toast.success('Settings updated successfully!');
             setActiveTab('overview');
         } catch (error) {
-            alert('Failed to update project settings.');
+            toast.error('Failed to update project settings.');
         }
     };
 
@@ -105,16 +86,18 @@ export default function ProjectDetailsPage() {
         try {
             await deleteProjectMutation.mutateAsync(id);
             router.push('/projects');
+            toast.success('Project deleted successfully!');
         } catch (error) {
-            alert('Failed to delete project.');
+            toast.error('Failed to delete project.');
         }
     };
 
-    const handleTaskMove = async (taskId: string, newStatus: string) => {
+    // THE FIX: Strict parameter types to prevent [object Object] payload
+    const handleTaskMove = async (taskId: string, apiStatus: string) => {
         try {
-            await updateTaskStatusMutation.mutateAsync({ taskId, status: newStatus });
+            await updateTaskStatusMutation.mutateAsync({ taskId, status: apiStatus });
         } catch (error) {
-            alert("Failed to move task");
+            toast.error("Failed to move task");
         }
     };
 
@@ -128,14 +111,42 @@ export default function ProjectDetailsPage() {
         );
     }
 
+    if (isError) {
+        const errMsg = (error as any)?.response?.data?.message || 'Access Denied: You do not have permission to view this project.';
+        return (
+            <div className="min-h-[calc(100vh-4rem)] bg-gray-50/50 dark:bg-[#0a0a0a] flex flex-col justify-center items-center p-6 transition-colors duration-300">
+                <div className="max-w-md w-full bg-white dark:bg-gray-900 rounded-2xl border border-red-100 dark:border-red-950/30 p-8 shadow-sm text-center animate-in fade-in zoom-in-95 duration-300">
+                    <div className="w-16 h-16 bg-red-50 dark:bg-red-500/10 rounded-full flex items-center justify-center text-red-600 dark:text-red-400 mx-auto mb-4">
+                        <ChevronLeft size={32} className="rotate-180" />
+                    </div>
+                    <h2 className="text-xl font-bold text-red-600 dark:text-red-400 mb-2">Access Denied</h2>
+                    <p className="text-gray-500 dark:text-gray-400 text-sm mb-6 leading-relaxed">
+                        {errMsg}
+                    </p>
+                    <Button 
+                        variant="primary" 
+                        onClick={() => router.push('/projects')}
+                        className="w-full font-semibold shadow-sm"
+                    >
+                        Back to Projects
+                    </Button>
+                </div>
+            </div>
+        );
+    }
+
     if (!project) {
         return (
-            <div className="text-center py-20">
+            <div className="min-h-[calc(100vh-4rem)] bg-gray-50/50 dark:bg-[#0a0a0a] flex flex-col justify-center items-center p-6 text-center">
                 <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">Project Not Found</h2>
                 <Button variant="outline" className="mt-4" onClick={() => router.push('/projects')}>Go Back</Button>
             </div>
         );
     }
+
+    const completedTasks = tasks.filter((t: any) => t.status === 'Completed').length;
+    const totalTasks = tasks.length;
+    const derivedProgress = totalTasks === 0 ? 0 : Math.round((completedTasks / totalTasks) * 100);
 
     return (
         <div className="min-h-[calc(100vh-4rem)] bg-gray-50/50 dark:bg-[#0a0a0a] p-6 lg:p-8 transition-colors duration-300">
@@ -147,19 +158,19 @@ export default function ProjectDetailsPage() {
                 >
                     <ChevronLeft size={16} /> Back to Projects
                 </button>
-                
-                {/* Project Header */}
+
                 <div className="bg-white dark:bg-gray-900 p-6 sm:p-8 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm flex flex-col sm:flex-row justify-between items-start gap-4 transition-colors">
                     <div>
                         <div className="flex items-center gap-3 mb-2">
                             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100 tracking-tight transition-colors">{project.name}</h1>
                             <Badge variant={project.status === 'Completed' ? 'success' : 'default'} className="text-sm px-3 py-1">
-                                {project.status}
+                                {project.status || 'Planning'}
                             </Badge>
                         </div>
                         <p className="text-gray-600 dark:text-gray-400 text-sm sm:text-base leading-relaxed max-w-3xl transition-colors">
                             {project.description}
                         </p>
+                        
                         <div className="mt-6 flex flex-wrap gap-6 text-sm">
                             <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300 transition-colors">
                                 <User size={18} className="text-gray-400 dark:text-gray-500" />
@@ -167,13 +178,12 @@ export default function ProjectDetailsPage() {
                             </div>
                             <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300 transition-colors">
                                 <Calendar size={18} className="text-gray-400 dark:text-gray-500" />
-                                Due: <span className="font-semibold text-gray-900 dark:text-gray-100">{project.dueDate}</span>
+                                Due: <span className="font-semibold text-gray-900 dark:text-gray-100">{project.dueDateDisplay ?? project.dueDate}</span>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                {/* Tabs Navigation */}
                 <div className="flex overflow-x-auto hide-scrollbar border-b border-gray-200 dark:border-gray-800 bg-transparent transition-colors">
                     {[
                         { id: 'overview', icon: LayoutDashboard, label: 'Overview' },
@@ -196,52 +206,29 @@ export default function ProjectDetailsPage() {
                     ))}
                 </div>
 
-                {/* Tab Content */}
                 <div className="pt-2">
+                    {/* THE FIX: Visual Progress Bar Removed. Task Stats Only. */}
                     {activeTab === 'overview' && (
                         <Card className="border-gray-200 dark:border-gray-800 shadow-sm bg-white dark:bg-gray-900 transition-colors">
                             <CardContent className="p-6 sm:p-8">
-                                <div className="flex justify-between items-center mb-4">
-                                    <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2 transition-colors">
-                                        <Clock size={20} className="text-blue-500 dark:text-blue-400" /> Project Progress
-                                    </h2>
-                                    {canEdit && !isUpdatingProgress && project.status !== 'Completed' && (
-                                        <Button variant="ghost" size="sm" onClick={() => setIsUpdatingProgress(true)} className="text-blue-600 dark:text-blue-400 gap-2 hover:bg-blue-50 dark:hover:bg-blue-500/10">
-                                            <Edit size={14} /> Update Progress
-                                        </Button>
-                                    )}
+                                <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2 transition-colors mb-6">
+                                    <CheckCircle size={20} className="text-blue-500 dark:text-blue-400" /> Project Summary
+                                </h2>
+                                
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                    <div className="p-5 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-800">
+                                        <p className="text-sm font-semibold text-gray-500 dark:text-gray-400">Total Tasks</p>
+                                        <p className="text-3xl font-bold text-gray-900 dark:text-gray-100 mt-1">{totalTasks}</p>
+                                    </div>
+                                    <div className="p-5 bg-emerald-50 dark:bg-emerald-500/5 rounded-xl border border-emerald-100 dark:border-emerald-900/30">
+                                        <p className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">Completed</p>
+                                        <p className="text-3xl font-bold text-emerald-700 dark:text-emerald-300 mt-1">{completedTasks}</p>
+                                    </div>
+                                    <div className="p-5 bg-blue-50 dark:bg-blue-500/5 rounded-xl border border-blue-100 dark:border-blue-900/30">
+                                        <p className="text-sm font-semibold text-blue-600 dark:text-blue-400">Completion Rate</p>
+                                        <p className="text-3xl font-bold text-blue-700 dark:text-blue-300 mt-1">{derivedProgress}%</p>
+                                    </div>
                                 </div>
-                                {isUpdatingProgress ? (
-                                    <div className="bg-blue-50/50 dark:bg-blue-500/5 border border-blue-100 dark:border-blue-900/50 rounded-xl p-6 animate-in zoom-in-95 duration-200 transition-colors">
-                                        <div className="flex justify-between text-sm font-bold text-gray-700 dark:text-gray-300 mb-4 transition-colors">
-                                            <span>0%</span>
-                                            <span className="text-blue-600 dark:text-blue-400 text-lg">{newProgress}%</span>
-                                            <span>100%</span>
-                                        </div>
-                                        <input
-                                            type="range" min="0" max="100"
-                                            value={newProgress}
-                                            onChange={(e) => setNewProgress(Number(e.target.value))}
-                                            className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-600 dark:accent-blue-500"
-                                        />
-                                        <div className="flex justify-end gap-3 mt-6">
-                                            <Button variant="ghost" size="sm" onClick={() => { setIsUpdatingProgress(false); setNewProgress(project.progress); }} className="text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">Cancel</Button>
-                                            <Button variant="primary" size="sm" onClick={handleSaveProgress} disabled={updateProjectMutation.isPending}>
-                                                {updateProjectMutation.isPending ? <Loader2 className="animate-spin" size={16} /> : 'Save Progress'}
-                                            </Button>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <div>
-                                        <div className="flex justify-between items-end mb-2">
-                                            <span className="text-3xl font-bold text-gray-900 dark:text-gray-100 transition-colors">{project.progress}%</span>
-                                            {project.progress === 100 && <CheckCircle2 className="text-emerald-500 dark:text-emerald-400 mb-1" />}
-                                        </div>
-                                        <div className="h-3 w-full bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden transition-colors">
-                                            <div className={cn("h-full rounded-full transition-all duration-1000", project.progress === 100 ? "bg-emerald-500" : "bg-blue-600 dark:bg-blue-500")} style={{ width: `${project.progress}%` }} />
-                                        </div>
-                                    </div>
-                                )}
                             </CardContent>
                         </Card>
                     )}
@@ -251,7 +238,7 @@ export default function ProjectDetailsPage() {
                             projectId={project.id}
                             teamAvatars={project.team}
                             onUpdateTeam={async (newTeamArray) => {
-                                await updateProjectMutation.mutateAsync({ teamAvatars: newTeamArray });
+                                await updateProjectMutation.mutateAsync({ teamMembers: newTeamArray });
                             }}
                         />
                     )}
@@ -264,7 +251,6 @@ export default function ProjectDetailsPage() {
                                         variant="ghost" size="sm"
                                         onClick={() => setTaskView('kanban')}
                                         className={cn("p-1.5 h-8 w-8 rounded-md transition-all", taskView === 'kanban' ? "bg-gray-100 dark:bg-gray-800 text-blue-600 dark:text-blue-400 shadow-sm dark:shadow-none" : "text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300")}
-                                        title="Board View"
                                     >
                                         <LayoutGrid size={16} />
                                     </Button>
@@ -272,13 +258,12 @@ export default function ProjectDetailsPage() {
                                         variant="ghost" size="sm"
                                         onClick={() => setTaskView('list')}
                                         className={cn("p-1.5 h-8 w-8 rounded-md transition-all", taskView === 'list' ? "bg-gray-100 dark:bg-gray-800 text-blue-600 dark:text-blue-400 shadow-sm dark:shadow-none" : "text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300")}
-                                        title="List View"
                                     >
                                         <List size={16} />
                                     </Button>
                                 </div>
-                            </div>
-                            
+                            </div> 
+
                             {isTasksLoading ? (
                                 <div className="py-20 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-blue-500" /></div>
                             ) : taskView === 'list' ? (
@@ -290,9 +275,16 @@ export default function ProjectDetailsPage() {
                                 <KanbanBoard 
                                     projectId={projectId}
                                     tasks={tasks}
+                                    team={project.team}
                                     onTaskMove={handleTaskMove}
                                     onTaskAdd={async (newTask) => {
                                         await createTaskMutation.mutateAsync(newTask);
+                                    }}
+                                    onTaskUpdate={async (taskId, updatedTask) => {
+                                        await updateTaskMutation.mutateAsync({ taskId, taskData: updatedTask });
+                                    }}
+                                    onTaskDelete={async (taskId) => {
+                                        await deleteTaskMutation.mutateAsync(taskId);
                                     }}
                                 />
                             )}
@@ -304,12 +296,15 @@ export default function ProjectDetailsPage() {
                             data={{
                                 id: project.id,
                                 projectName: project.name,
-                                managerName: project.manager,
+                                managerId: project.managerId,
                                 description: project.description,
-                                status: project.status as any,
-                                dueDate: project.dueDate
+                                status: project.status as ProjectSettingsPayload['status'],
+                                dueDate: project.dueDate,
                             }}
-                            managers={availableManagers}
+                            managers={availableManagers.map((m) => ({
+                                id: m.id,
+                                name: m.name,
+                            }))}
                             onSave={handleSaveSettings}
                             onDelete={handleDeleteProject}
                             isSubmitting={updateProjectMutation.isPending}

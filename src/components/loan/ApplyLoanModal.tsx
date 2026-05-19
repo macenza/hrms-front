@@ -2,13 +2,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { AlignLeft, IndianRupee, Calendar, Loader2 } from 'lucide-react';
-
-// UI Components
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 
-// Data Contract for Backend Integration
 export interface SelectOption {
     id: string;
     label: string;
@@ -26,8 +23,9 @@ export interface LoanApplicationPayload {
 interface ApplyLoanModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onSubmit: (data: LoanApplicationPayload) => Promise<void>; // Updated to expect a Promise
+    onSubmit: (data: LoanApplicationPayload) => Promise<void>; 
     employees?: SelectOption[];
+    isSubmitting?: boolean; // Controlled by the parent's React Query mutation
 }
 
 const initialFormState: LoanApplicationPayload = {
@@ -43,16 +41,17 @@ export default function ApplyLoanModal({
     isOpen,
     onClose,
     onSubmit,
-    employees = []
+    employees = [],
+    isSubmitting = false
 }: ApplyLoanModalProps) {
-
     const [formData, setFormData] = useState<LoanApplicationPayload>(initialFormState);
-    const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // Auto-select employee if there is only 1 (Role-Based: Standard Employees applying for themselves)
     useEffect(() => {
-        if (isOpen && employees.length === 1) {
-            setFormData(prev => ({ ...prev, employeeId: employees[0].id }));
+        if (isOpen) {
+            setFormData(initialFormState);
+            if (employees.length === 1) {
+                setFormData(prev => ({ ...prev, employeeId: employees[0].id }));
+            }
         }
     }, [isOpen, employees]);
 
@@ -65,21 +64,16 @@ export default function ApplyLoanModal({
 
     const handleClose = () => {
         setFormData(initialFormState);
-        setIsSubmitting(false);
         onClose();
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setIsSubmitting(true);
         try {
             await onSubmit(formData);
-            handleClose(); // Close and reset only on success
+            // Closure is handled by parent on success
         } catch (error) {
             console.error('Submission failed:', error);
-            // Modal stays open so the user can fix errors
-        } finally {
-            setIsSubmitting(false);
         }
     };
 
@@ -87,17 +81,17 @@ export default function ApplyLoanModal({
         <Modal isOpen={isOpen} onClose={handleClose} title="New Loan Request" className="max-w-lg">
             <form id="loan-form" onSubmit={handleSubmit} className="flex flex-col h-full">
                 <div className="flex-1 space-y-5 p-2">
-
+                    
                     {/* Employee Selection */}
                     <div className="space-y-1.5">
-                        <label className="text-sm font-semibold text-gray-700">Select Employee</label>
+                        <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 transition-colors">Select Employee</label>
                         <select
                             name="employeeId"
                             value={formData.employeeId}
                             onChange={handleChange}
                             required
                             disabled={employees.length === 1 || isSubmitting}
-                            className="w-full h-10 px-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent text-sm bg-white disabled:bg-gray-100 disabled:text-gray-500"
+                            className="w-full h-10 px-3 rounded-md border border-gray-300 dark:border-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-600 dark:focus:ring-blue-500/40 focus:border-transparent text-sm bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 disabled:bg-gray-100 dark:disabled:bg-gray-900/50 disabled:text-gray-500 dark:disabled:text-gray-600 transition-all shadow-sm dark:shadow-none cursor-pointer"
                         >
                             <option value="" disabled>Search employee...</option>
                             {employees.map((emp, index) => (
@@ -106,17 +100,17 @@ export default function ApplyLoanModal({
                         </select>
                     </div>
 
+                    {/* Loan Type & Amount Grid */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        {/* Loan Type */}
                         <div className="space-y-1.5">
-                            <label className="text-sm font-semibold text-gray-700">Loan Type</label>
+                            <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 transition-colors">Loan Type</label>
                             <select
                                 name="loanType"
                                 value={formData.loanType}
                                 onChange={handleChange}
                                 required
                                 disabled={isSubmitting}
-                                className="w-full h-10 px-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent text-sm bg-white"
+                                className="w-full h-10 px-3 rounded-md border border-gray-300 dark:border-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-600 dark:focus:ring-blue-500/40 focus:border-transparent text-sm bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 disabled:opacity-50 transition-all shadow-sm dark:shadow-none cursor-pointer"
                             >
                                 <option value="" disabled>Select type...</option>
                                 <option value="advance">Salary Advance</option>
@@ -124,14 +118,12 @@ export default function ApplyLoanModal({
                                 <option value="medical">Medical Emergency</option>
                             </select>
                         </div>
-
-                        {/* Amount */}
                         <div className="space-y-1.5">
-                            <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                                <IndianRupee size={16} className="text-gray-400" /> Amount
+                            <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 transition-colors">
+                                <IndianRupee size={16} className="text-gray-400 dark:text-gray-500" /> Amount
                             </label>
                             <div className="relative">
-                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">₹</span>
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 text-sm font-medium">₹</span>
                                 <input
                                     type="number"
                                     name="amount"
@@ -141,17 +133,17 @@ export default function ApplyLoanModal({
                                     disabled={isSubmitting}
                                     placeholder="50000"
                                     min="1000"
-                                    className="w-full h-10 pl-7 pr-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent text-sm disabled:bg-gray-50"
+                                    className="w-full h-10 pl-7 pr-3 rounded-md border border-gray-300 dark:border-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-600 dark:focus:ring-blue-500/40 focus:border-transparent text-sm bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-600 disabled:bg-gray-50 dark:disabled:bg-gray-900/50 transition-all shadow-sm dark:shadow-none"
                                 />
                             </div>
                         </div>
                     </div>
 
+                    {/* Tenure & Deduction Start Grid */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        {/* Tenure */}
                         <div className="space-y-1.5">
-                            <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                                <Calendar size={16} className="text-gray-400" /> Repayment Tenure
+                            <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 transition-colors">
+                                <Calendar size={16} className="text-gray-400 dark:text-gray-500" /> Repayment Tenure
                             </label>
                             <select
                                 name="tenure"
@@ -159,7 +151,7 @@ export default function ApplyLoanModal({
                                 onChange={handleChange}
                                 required
                                 disabled={isSubmitting}
-                                className="w-full h-10 px-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent text-sm bg-white"
+                                className="w-full h-10 px-3 rounded-md border border-gray-300 dark:border-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-600 dark:focus:ring-blue-500/40 focus:border-transparent text-sm bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 disabled:opacity-50 transition-all shadow-sm dark:shadow-none cursor-pointer"
                             >
                                 <option value="" disabled>Select tenure...</option>
                                 <option value="1">1 Month (Next Payroll)</option>
@@ -168,10 +160,8 @@ export default function ApplyLoanModal({
                                 <option value="12">12 Months</option>
                             </select>
                         </div>
-
-                        {/* Start Date */}
                         <div className="space-y-1.5">
-                            <label className="text-sm font-semibold text-gray-700">Deduction Start</label>
+                            <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 transition-colors">Deduction Start</label>
                             <Input
                                 type="month"
                                 name="deductionStart"
@@ -179,14 +169,15 @@ export default function ApplyLoanModal({
                                 onChange={handleChange}
                                 disabled={isSubmitting}
                                 required
+                                className="text-gray-900 dark:text-gray-100 [color-scheme:light] dark:[color-scheme:dark]"
                             />
                         </div>
                     </div>
 
                     {/* Reason / Notes */}
                     <div className="space-y-1.5">
-                        <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                            <AlignLeft size={16} className="text-gray-400" /> Reason / Notes
+                        <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 transition-colors">
+                            <AlignLeft size={16} className="text-gray-400 dark:text-gray-500" /> Reason / Notes
                         </label>
                         <textarea
                             name="reason"
@@ -194,21 +185,27 @@ export default function ApplyLoanModal({
                             onChange={handleChange}
                             disabled={isSubmitting}
                             placeholder="Add any specific details regarding this request..."
-                            className="w-full px-3 py-2 text-sm rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent min-h-[100px] resize-y bg-white disabled:bg-gray-50"
+                            className="w-full px-3 py-2 text-sm rounded-md border border-gray-300 dark:border-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-600 dark:focus:ring-blue-500/40 focus:border-transparent min-h-[100px] resize-y bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-600 disabled:bg-gray-50 dark:disabled:bg-gray-900/50 transition-all shadow-sm dark:shadow-none"
                         />
                     </div>
                 </div>
 
-                {/* Footer Controls */}
-                <div className="pt-6 mt-2 border-t border-gray-100 flex justify-end gap-3 px-2 pb-2 shrink-0">
-                    <Button type="button" variant="ghost" onClick={handleClose} disabled={isSubmitting}>
+                {/* Footer Actions */}
+                <div className="pt-6 mt-2 border-t border-gray-100 dark:border-gray-800 flex justify-end gap-3 px-2 pb-2 shrink-0 transition-colors">
+                    <Button 
+                        type="button" 
+                        variant="ghost" 
+                        onClick={handleClose} 
+                        disabled={isSubmitting}
+                        className="text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                    >
                         Cancel
                     </Button>
                     <Button
                         type="submit"
                         variant="primary"
                         disabled={isSubmitting || !formData.employeeId || !formData.amount}
-                        className="min-w-[140px] gap-2"
+                        className="min-w-[140px] gap-2 font-semibold shadow-sm shadow-blue-500/25 dark:shadow-none"
                     >
                         {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : null}
                         {isSubmitting ? 'Submitting...' : 'Submit Request'}

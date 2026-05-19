@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google';
 import './globals.css';
 
 
+
 import { ThemeProvider } from '@/components/theme/ThemeProvider';
 import StoreProvider from '@/store/StoreProvider';
 import AuthInitializer from '@/components/auth/AuthInitializer';
@@ -21,16 +22,18 @@ export default function RootLayout({
 }) {
     return (
         // suppressHydrationWarning is REQUIRED here for next-themes to work properly
-        <html lang="en" suppressHydrationWarning> 
+        <html lang="en" suppressHydrationWarning>
             <body className={inter.className}>
                 <ThemeProvider>
-                        <StoreProvider>
-                            <AuthInitializer>
-                                {children}
-                            </AuthInitializer>
-                        </StoreProvider>
+                    <StoreProvider>
+                        <AuthInitializer>
+                            {children}
+                        </AuthInitializer>
+                    </StoreProvider>
                 </ThemeProvider>
+               
             </body>
+
         </html>
     );
 }

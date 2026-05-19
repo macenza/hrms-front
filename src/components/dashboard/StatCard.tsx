@@ -1,4 +1,3 @@
-// src/components/dashboard/StatCard.tsx
 "use client";
 
 import React, { useMemo } from "react";
@@ -73,14 +72,45 @@ export default function StatCard({
             case "new-employee":
                 return statsData?.newUsers ?? 0;
             case "today-attendance":
-                // Assuming todayPresent comes from attendance overview if passed, else fallback
-                return attendanceData?.todayPresent ?? statsData?.activeUsers ?? 0; 
+                return attendanceData?.todayPresent ?? 0; 
             case "total-applicant":
-                return 24; // Static placeholder until recruitment module is built
+                return 0; // Static placeholder until recruitment module is built
             default:
                 return card.value;
         }
     }, [statsData, attendanceData, card.id, card.value, isAuthorized]);
+
+    const trendValue = useMemo(() => {
+        if (!isAuthorized) return "0%";
+        if (!statsData && !attendanceData) return card.change;
+
+        if (card.id === "today-attendance") {
+            const total = statsData?.totalUsers || 0;
+            const present = attendanceData?.todayPresent ?? 0;
+            if (total > 0) {
+                return `${Math.round((present / total) * 100)}% rate`;
+            }
+            return "0% rate";
+        }
+        
+        if (card.id === "total-employee") {
+            const total = statsData?.totalUsers || 0;
+            const active = statsData?.activeUsers || 0;
+            if (total > 0) {
+                return `${Math.round((active / total) * 100)}% active`;
+            }
+        }
+
+        if (card.id === "new-employee") {
+            const total = statsData?.totalUsers || 0;
+            const newUsers = statsData?.newUsers || 0;
+            if (total > 0) {
+                return `+${Math.round((newUsers / total) * 100)}% growth`;
+            }
+        }
+        
+        return card.change;
+    }, [statsData, attendanceData, card.id, card.change, isAuthorized]);
 
     if (!isAuthorized) {
         return (
@@ -123,7 +153,7 @@ export default function StatCard({
                 
                 <div className={cn("flex items-center gap-1.5 px-2.5 py-1 rounded-md transition-colors", colors.trendBg)}>
                     <span className={cn("text-xs font-bold", colors.text)}>
-                        {card.change}
+                        {trendValue}
                     </span>
                     {isUp ? (
                         <TrendingUp className={cn("w-3.5 h-3.5", colors.text)} />

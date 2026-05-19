@@ -22,6 +22,8 @@ interface DocumentsTabProps {
     isUploading?: boolean;
     onUpload?: (file: File) => void;
     onActionClick?: (documentId: string) => void;
+    /** Admin and HR can upload; employees only see the list. */
+    canUploadDocuments?: boolean;
 }
 
 const formatBytes = (bytes: number, decimals = 1) => {
@@ -69,19 +71,22 @@ export default function DocumentsTab({
     isLoading = false,
     isUploading = false,
     onUpload,
-    onActionClick
+    onActionClick,
+    canUploadDocuments = true,
 }: DocumentsTabProps) {
     const [isDragging, setIsDragging] = useState(false);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files.length > 0 && onUpload) {
+        if (!canUploadDocuments || !onUpload) return;
+        if (e.target.files && e.target.files.length > 0) {
             onUpload(e.target.files[0]);
         }
     };
 
     const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
         e.preventDefault();
-        if (!isUploading) setIsDragging(true);
+        if (!canUploadDocuments || isUploading) return;
+        setIsDragging(true);
     };
 
     const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
@@ -92,17 +97,21 @@ export default function DocumentsTab({
     const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
         e.preventDefault();
         setIsDragging(false);
-        if (isUploading) return;
-        if (e.dataTransfer.files && e.dataTransfer.files.length > 0 && onUpload) {
+        if (!canUploadDocuments || isUploading || !onUpload) return;
+        if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
             onUpload(e.dataTransfer.files[0]);
         }
     };
 
     return (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-in fade-in duration-300">
-            
+        <div
+            className={cn(
+                'grid gap-8 animate-in fade-in duration-300',
+                canUploadDocuments ? 'grid-cols-1 lg:grid-cols-3' : 'grid-cols-1'
+            )}
+        >
             {/* Document List */}
-            <div className="lg:col-span-2">
+            <div className={cn(canUploadDocuments ? 'lg:col-span-2' : '')}>
                 <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4 transition-colors">Uploaded Documents</h2>
                 
                 {isLoading ? (
@@ -115,7 +124,11 @@ export default function DocumentsTab({
                             <File size={24} />
                         </div>
                         <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 transition-colors">No documents uploaded yet.</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 transition-colors">Drag and drop a file to upload securely.</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 transition-colors">
+                            {canUploadDocuments
+                                ? 'Drag and drop a file in the upload panel, or ask HR to add documents for this profile.'
+                                : 'Documents will appear here once an administrator or HR uploads them.'}
+                        </p>
                     </div>
                 ) : (
                     <div className="space-y-3">
@@ -155,7 +168,8 @@ export default function DocumentsTab({
                 )}
             </div>
 
-            {/* Upload Zone */}
+            {/* Upload Zone — Admin & HR only */}
+            {canUploadDocuments && onUpload && (
             <div>
                 <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4 transition-colors">Upload New</h2>
                 <div
@@ -209,6 +223,7 @@ export default function DocumentsTab({
                     )}
                 </div>
             </div>
+            )}
         </div>
     );
 }

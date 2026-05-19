@@ -1,5 +1,46 @@
-import EmployeeProfileClient from "@/components/profile/EmployeeProfileClient";
+'use client';
 
-export default function Page() {
-  return <EmployeeProfileClient />;
+import React from 'react';
+import { useParams } from 'next/navigation';
+import { useEmployeeDetails } from '@/hooks/api/useEmployeeDetails';
+import EmployeeProfileClient from '@/components/profile/EmployeeProfileClient';
+import { Loader2 } from 'lucide-react';
+
+export default function EmployeeProfilePage() {
+    // 1. Grab the ID from the Next.js URL parameters
+    const params = useParams();
+    const employeeId = params.id as string;
+
+    // 2. Fetch the data using our new hook
+    const { data: employee, isLoading, isError } = useEmployeeDetails(employeeId);
+
+    // 3. Handle the loading state gracefully (No blank screens!)
+    if (isLoading) {
+        return (
+            <div className="flex h-[calc(100vh-4rem)] items-center justify-center bg-gray-50 dark:bg-[#0a0a0a]">
+                <Loader2 className="w-8 h-8 animate-spin text-blue-600 dark:text-blue-500" />
+            </div>
+        );
+    }
+
+    // 4. Handle invalid IDs or network errors
+    if (isError || !employee) {
+        return (
+            <div className="p-8 text-center bg-gray-50 dark:bg-[#0a0a0a] min-h-screen">
+                <div className="inline-block p-4 rounded-md bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400">
+                    Failed to load employee profile. They may have been deleted, or the ID is invalid.
+                </div>
+            </div>
+        );
+    }
+
+    // 5. Pass the cleanly fetched data to your client component tabs
+    return (
+        <div className="min-h-screen bg-gray-50/50 dark:bg-[#0a0a0a] transition-colors duration-300">
+            {/* Ensure EmployeeProfileClient expects an 'employee' prop 
+               and maps it to PersonalInfoTab, EmploymentDetailsTab, etc.
+            */}
+            <EmployeeProfileClient id={employeeId} />
+        </div>
+    );
 }

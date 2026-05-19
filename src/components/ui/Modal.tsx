@@ -24,29 +24,30 @@ export function Modal({ isOpen, onClose, title, children, className }: ModalProp
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-in fade-in duration-200 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in duration-200 bg-black/50 backdrop-blur-sm dark:bg-black/70">
             <div
                 className={cn(
-                    "bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh] border border-gray-100", 
+                    "rounded-xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh] transition-colors duration-300",
+                    "bg-white border border-gray-100", // Light mode panel
+                    "dark:bg-gray-900 dark:border-gray-800 dark:shadow-none", // Dark mode panel
                     className
                 )}
                 role="dialog"
                 aria-modal="true"
             >
-                <div className="flex items-center justify-between p-5 border-b border-gray-100">
-                    <h2 className="text-xl font-bold text-gray-900 tracking-tight">{title}</h2>
+                <div className="flex items-center justify-between p-5 border-b border-gray-100 dark:border-gray-800">
+                    <h2 className="text-xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
+                        {title}
+                    </h2>
                     <button
                         onClick={onClose}
-                        className="p-1 text-gray-400 hover:text-gray-900 hover:bg-gray-100 transition-all rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
+                        className="p-1 transition-all rounded-lg focus:outline-none focus:ring-2 text-gray-400 hover:text-gray-900 hover:bg-gray-100 focus:ring-blue-600 dark:hover:text-gray-100 dark:hover:bg-gray-800 dark:focus:ring-blue-500"
                         aria-label="Close modal"
                     >
                         <span className="text-xl leading-none">✕</span>
                     </button>
                 </div>
-                {/* Added text-gray-900 here to force dark text 
-                   Added antialiased for better font rendering
-                */}
-                <div className="p-6 overflow-y-auto text-gray-900 antialiased">
+                <div className="p-6 overflow-y-auto antialiased text-gray-900 dark:text-gray-100">
                     {children}
                 </div>
             </div>

@@ -10,7 +10,6 @@ export interface AuthResponse {
     success: boolean;
     message: string;
     user: User;
-    // Note: No tokens here! The HttpOnly cookie handles them securely in the background.
 }
 
 interface ApiErrorResponse { 

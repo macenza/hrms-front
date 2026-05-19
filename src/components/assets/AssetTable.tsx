@@ -1,8 +1,5 @@
-// src/components/assets/AssetTable.tsx
-'use client';
-
 import React from 'react';
-import { MoreVertical, Monitor, Smartphone, Laptop as LaptopIcon, Headphones, Loader2, PackageOpen } from 'lucide-react';
+import { Eye, Trash2, UserPlus, UserMinus, Monitor, Smartphone, Laptop as LaptopIcon, Headphones, Loader2, PackageOpen } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/utils/cn';
@@ -17,12 +14,24 @@ export interface Asset {
     date: string | null;
     status: AssetStatus;
     dbId: string; // MongoDB Document ID
+    serialNumber?: string;
+    manufacturer?: string;
+    model?: string;
+    cost?: number;
+    condition?: string;
+    notes?: string;
+    expectedReturnDate?: string | null;
+    assignedBy?: string | null;
 }
 
 interface AssetTableProps {
     assets?: Asset[];
     isLoading?: boolean;
     onEdit?: (record: Asset) => void;
+    onAssign?: (record: Asset) => void;
+    onUnassign?: (record: Asset) => void;
+    onView?: (record: Asset) => void;
+    onDelete?: (record: Asset) => void;
 }
 
 const getCategoryIcon = (category: string) => {
@@ -65,7 +74,11 @@ const TableRowSkeleton = () => (
 export default function AssetTable({ 
     assets = [], 
     isLoading = false,
-    onEdit 
+    onEdit,
+    onAssign,
+    onUnassign,
+    onView,
+    onDelete
 }: AssetTableProps) {
 
     const isInitialLoad = isLoading && assets.length === 0;
@@ -137,15 +150,53 @@ export default function AssetTable({
                                     </Badge>
                                 </td>
                                 <td className="px-6 py-4 text-center">
-                                    <Button 
-                                        variant="ghost" 
-                                        size="sm" 
-                                        className="p-2 rounded-full h-8 w-8 text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-colors" 
-                                        aria-label="More actions"
-                                        onClick={() => onEdit && onEdit(record)}
-                                    >
-                                        <MoreVertical size={18} />
-                                    </Button>
+                                    <div className="flex items-center justify-center gap-1">
+                                        {onView && (
+                                            <Button 
+                                                variant="ghost" 
+                                                size="sm" 
+                                                className="p-1.5 rounded-full text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-colors" 
+                                                title="View Details"
+                                                onClick={() => onView(record)}
+                                            >
+                                                <Eye size={16} />
+                                            </Button>
+                                        )}
+                                        {onAssign && (
+                                            <Button 
+                                                variant="ghost" 
+                                                size="sm" 
+                                                disabled={record.status !== 'Available'}
+                                                className="p-1.5 rounded-full text-gray-400 dark:text-gray-500 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-gray-400 dark:disabled:hover:text-gray-500 transition-colors" 
+                                                title={record.status === 'Available' ? 'Assign Asset' : 'Already Assigned'}
+                                                onClick={() => onAssign(record)}
+                                            >
+                                                <UserPlus size={16} />
+                                            </Button>
+                                        )}
+                                        {onUnassign && record.status === 'Assigned' && (
+                                            <Button 
+                                                variant="ghost" 
+                                                size="sm" 
+                                                className="p-1.5 rounded-full text-gray-400 dark:text-gray-500 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-500/10 transition-colors" 
+                                                title="Unassign Asset"
+                                                onClick={() => onUnassign(record)}
+                                            >
+                                                <UserMinus size={16} />
+                                            </Button>
+                                        )}
+                                        {onDelete && (
+                                            <Button 
+                                                variant="ghost" 
+                                                size="sm" 
+                                                className="p-1.5 rounded-full text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors" 
+                                                title="Delete Asset"
+                                                onClick={() => onDelete(record)}
+                                            >
+                                                <Trash2 size={16} />
+                                            </Button>
+                                        )}
+                                    </div>
                                 </td>
                             </tr>
                         ))

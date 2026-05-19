@@ -7,9 +7,31 @@ import EmployeeHeader from '@/components/employees/EmployeeHeader';
 import EmployeeFilters, { EmployeeFilterState } from '@/components/employees/EmployeeFilters';
 import EmployeeTable, { Employee, PaginationState } from '@/components/employees/EmployeeTable';
 import EmployeeDrawer from '@/components/employees/EmployeeDrawer';
-import AddEmployeeModal, { EmployeeFormData } from '@/components/employees/AddEmployeeModal';
+import AddEmployeeModal, { AddEmployeeSubmitMeta } from '@/components/employees/AddEmployeeModal';
 import { useEmployees, useCreateEmployee } from '@/hooks/api/useEmployees';
+import { employeeService } from '@/services/employeeService';
 import { useDebounce } from '@/hooks/useDebounce';
+import { toast } from 'sonner';
+
+function resolveCreatedEmployeeId(data: unknown): string | undefined {
+    if (!data || typeof data !== 'object') return undefined;
+    const row = data as Record<string, unknown>;
+    if (typeof row._id === 'string') return row._id;
+    if (typeof row.id === 'string') return row.id;
+    const nested = row.data;
+    if (nested && typeof nested === 'object') {
+        const d = nested as Record<string, unknown>;
+        if (typeof d._id === 'string') return d._id;
+        if (typeof d.id === 'string') return d.id;
+    }
+    const user = row.user;
+    if (user && typeof user === 'object') {
+        const u = user as Record<string, unknown>;
+        if (typeof u._id === 'string') return u._id;
+        if (typeof u.id === 'string') return u.id;
+    }
+    return undefined;
+}
 
 export default function EmployeesPage() {
     const router = useRouter();
@@ -53,18 +75,37 @@ export default function EmployeesPage() {
         setIsDrawerOpen(true);
     };
 
-    const handleAddEmployee = async (formData: EmployeeFormData) => {
+    const handleAddEmployee = async (
+        payload: Record<string, unknown>,
+        meta: AddEmployeeSubmitMeta
+    ) => {
         try {
-            await createEmployeeMutation.mutateAsync(formData);
+            const created = await createEmployeeMutation.mutateAsync(payload);
+            const newId = resolveCreatedEmployeeId(created);
+            if (meta.profilePhoto && newId) {
+                try {
+                    const fd = new FormData();
+                    fd.append('document', meta.profilePhoto);
+                    await employeeService.uploadDocument(newId, fd);
+                    toast.success('Employee created and profile photo uploaded successfully!');
+                } catch (uploadErr) {
+                    console.error('Profile photo upload failed:', uploadErr);
+                    toast.warning(
+                        'Employee was created, but the profile photo could not be uploaded. You can add documents from their profile page.'
+                    );
+                }
+            } else {
+                toast.success('Employee created successfully!');
+            }
             setIsModalOpen(false);
         } catch (error) {
             console.error('Failed to add employee:', error);
-            alert('An error occurred while creating the employee.');
+            toast.error('An error occurred while creating the employee.');
         }
     };
 
     const handleExport = () => {
-        if (employees.length === 0) return alert("No data to export");
+        if (employees.length === 0) return toast.info("No data to export");
         const headers = ["ID", "Name", "Department", "Role", "Email", "Phone", "Status"];
         const csvContent = [
             headers.join(","),
@@ -75,6 +116,7 @@ export default function EmployeesPage() {
         link.href = URL.createObjectURL(blob);
         link.download = `Employees_Export_${new Date().toLocaleDateString()}.csv`;
         link.click();
+        toast.success('Employee list exported successfully!');
     };
 
     if (isError) {
@@ -126,6 +168,7 @@ export default function EmployeesPage() {
                     isOpen={isModalOpen}
                     onClose={() => setIsModalOpen(false)}
                     onSubmit={handleAddEmployee}
+                    isSubmitting={createEmployeeMutation.isPending}
                 />
             </div>
         </div>

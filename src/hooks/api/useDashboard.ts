@@ -1,26 +1,32 @@
-// src/hooks/api/useDashboard.ts
 import { useQuery } from '@tanstack/react-query';
 import apiClient from '@/services/apiClient';
 import { ENDPOINTS } from '@/constants/endpoints';
+import {
+    normalizeDashboardAttendance,
+    normalizeDashboardStats,
+} from '@/lib/dashboard';
+import type { DashboardAttendance, DashboardStats } from '@/store/dashboardSlice';
 
 export function useDashboardStats(enabled: boolean) {
-    return useQuery({
+    return useQuery<DashboardStats>({
         queryKey: ['dashboard', 'stats'],
         queryFn: async () => {
-            const { data } = await apiClient.get(ENDPOINTS.DASHBOARD?.STATS || '/dashboard/stats');
-            return data;
+            const { data } = await apiClient.get(ENDPOINTS.DASHBOARD.STATS);
+            return normalizeDashboardStats(data);
         },
-        enabled, // RBAC Gate: Only runs if the user is HR/Admin
-        staleTime: 5 * 60 * 1000, // Cache for 5 minutes to prevent spamming the backend
+        enabled,
+        staleTime: 5 * 60 * 1000,
     });
 }
 
-export function useDashboardAttendance(timeframe: string) {
-    return useQuery({
+export function useDashboardAttendance(timeframe: 'week' | 'month') {
+    return useQuery<DashboardAttendance>({
         queryKey: ['dashboard', 'attendance', timeframe],
         queryFn: async () => {
-            const { data } = await apiClient.get(`${ENDPOINTS.DASHBOARD?.ATTENDANCE || '/dashboard/attendance'}?timeframe=${timeframe}`);
-            return data;
+            const { data } = await apiClient.get(ENDPOINTS.DASHBOARD.ATTENDANCE, {
+                params: { timeframe },
+            });
+            return normalizeDashboardAttendance(data);
         },
         staleTime: 5 * 60 * 1000,
     });
