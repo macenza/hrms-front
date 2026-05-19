@@ -1,5 +1,4 @@
 'use client';
-
 import React, { useState, useEffect } from 'react';
 import { X, Calendar, User, FileText, Target, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
@@ -8,7 +7,7 @@ import { Input } from '@/components/ui/Input';
 export interface ProjectFormData {
     name: string;
     description: string;
-    managerName: string;
+    manager: string;
     dueDate: string;
     progress: number;
     status: 'In Progress' | 'On Hold' | 'Completed';
@@ -16,16 +15,16 @@ export interface ProjectFormData {
 
 interface AddProjectModalProps {
     isOpen: boolean;
-    managers?: { name: string }[]; 
+    managers?: { id: string; name: string }[]; 
     onClose: () => void;
     onSubmit: (data: ProjectFormData) => Promise<void>;
-    isSubmitting?: boolean; // Managed by parent React Query mutation
+    isSubmitting?: boolean; 
 }
 
 const initialFormState: ProjectFormData = {
     name: '',
     description: '',
-    managerName: '',
+    manager: '',
     dueDate: '',
     progress: 0,
     status: 'In Progress'
@@ -38,7 +37,6 @@ export default function AddProjectModal({
     onSubmit, 
     isSubmitting = false 
 }: AddProjectModalProps) {
-    
     const [formData, setFormData] = useState<ProjectFormData>(initialFormState);
 
     useEffect(() => {
@@ -60,10 +58,7 @@ export default function AddProjectModal({
 
     return (
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/50 dark:bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
-            {/* Modal Container */}
             <div className="bg-white dark:bg-gray-900 border border-transparent dark:border-gray-800 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh] transition-colors">
-                
-                {/* Header */}
                 <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between bg-gray-50/50 dark:bg-gray-800/50 shrink-0 transition-colors">
                     <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 transition-colors">Create New Project</h2>
                     <button 
@@ -74,11 +69,8 @@ export default function AddProjectModal({
                         <X size={20} />
                     </button>
                 </div>
-                
-                {/* Body / Form */}
                 <div className="overflow-y-auto p-6">
                     <form id="project-form" onSubmit={handleSubmit} className="space-y-5">
-                        
                         <Input
                             label="Project Name"
                             placeholder="e.g. Q4 Growth Strategy"
@@ -88,7 +80,6 @@ export default function AddProjectModal({
                             disabled={isSubmitting}
                             className="text-gray-900 dark:text-gray-100"
                         />
-                        
                         <div className="space-y-1.5">
                             <label className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase transition-colors">Description</label>
                             <textarea
@@ -99,24 +90,33 @@ export default function AddProjectModal({
                                 disabled={isSubmitting}
                             />
                         </div>
-                        
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-1.5">
                                 <label className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase transition-colors">Project Manager</label>
                                 <select
-                                    value={formData.managerName}
-                                    onChange={(e) => setFormData({ ...formData, managerName: e.target.value })}
+                                    value={formData.manager}
+                                    onChange={(e) => setFormData({ ...formData, manager: e.target.value })}
                                     required
-                                    disabled={isSubmitting}
+                                    disabled={isSubmitting || managers.length === 0}
                                     className="w-full h-10 px-3 rounded-md border border-gray-300 dark:border-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-600 dark:focus:ring-blue-500/40 focus:border-transparent text-sm bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 font-medium cursor-pointer disabled:opacity-50 transition-all"
                                 >
-                                    <option value="" disabled>Select Manager...</option>
-                                    {managers.map((manager, idx) => (
-                                        <option key={idx} value={manager.name}>{manager.name}</option>
+                                    <option value="" disabled>
+                                        {managers.length === 0
+                                            ? 'No managers available'
+                                            : 'Select Manager...'}
+                                    </option>
+                                    {managers.map((manager) => (
+                                        <option key={manager.id} value={manager.id}>
+                                            {manager.name}
+                                        </option>
                                     ))}
                                 </select>
+                                {managers.length === 0 && (
+                                    <p className="text-xs text-amber-600 dark:text-amber-400">
+                                        No Admin, HR, or Manager employees found. Add employees with those roles first.
+                                    </p>
+                                )}
                             </div>
-                            
                             <Input
                                 label="Due Date"
                                 type="date"
@@ -127,7 +127,6 @@ export default function AddProjectModal({
                                 className="text-gray-900 dark:text-gray-100 [color-scheme:light] dark:[color-scheme:dark]"
                             />
                         </div>
-                        
                         <div className="space-y-3 pt-2">
                             <div className="flex justify-between items-center">
                                 <label className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase transition-colors">Initial Progress</label>
@@ -144,8 +143,6 @@ export default function AddProjectModal({
                         </div>
                     </form>
                 </div>
-                
-                {/* Footer Actions */}
                 <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 flex justify-end gap-3 shrink-0 transition-colors">
                     <Button 
                         variant="outline" 
@@ -160,7 +157,7 @@ export default function AddProjectModal({
                         variant="primary"
                         type="submit"
                         form="project-form" 
-                        disabled={isSubmitting || !formData.name || !formData.managerName || !formData.dueDate}
+                        disabled={isSubmitting || !formData.name || !formData.manager || !formData.dueDate}
                         className="min-w-[140px] gap-2 font-semibold shadow-sm shadow-blue-500/25 dark:shadow-none"
                     >
                         {isSubmitting ? <Loader2 className="animate-spin" size={16} /> : null}

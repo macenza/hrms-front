@@ -12,12 +12,12 @@ export function useNoticeStats() {
     });
 }
 
-export function useNotices(categoryFilter: string) {
+export function useNotices(categoryFilter: string, page: number = 1, limit: number = 10) {
     return useQuery({
-        queryKey: ['notices', 'feed', categoryFilter],
+        queryKey: ['notices', 'feed', categoryFilter, page, limit],
         queryFn: async () => {
-            const payload = await noticeService.getNotices({ category: categoryFilter });
-            return payload.data || [];
+            const payload = await noticeService.getNotices({ category: categoryFilter, page, limit });
+            return payload;
         },
         staleTime: 5 * 60 * 1000,
     });

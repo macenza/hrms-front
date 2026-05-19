@@ -37,7 +37,7 @@ export default function RecentLeaves() {
     } = useLeaveRequests(isHrOrAdmin ? undefined : user?.id);
 
     // Safely extract the array regardless of backend payload structure
-    const leaves: Leave[] = Array.isArray(rawData) ? rawData : (rawData?.data || rawData?.leaves || rawData?.results || []);
+    const leaves: Leave[] = rawData || [];
 
     const getStatusBadge = (status: string) => {
         switch (status) {

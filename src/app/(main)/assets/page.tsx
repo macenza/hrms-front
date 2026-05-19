@@ -1,8 +1,8 @@
 // src/app/(main)/assets/page.tsx
 'use client';
 
-import React, { useState, useMemo } from 'react';
-import { Download, Plus, Loader2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Download, Plus, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import AssetStats from '@/components/assets/AssetStats';
@@ -10,7 +10,8 @@ import AssetTable, { Asset } from '@/components/assets/AssetTable';
 import AssignAssetModal, { AssignAssetPayload } from '@/components/assets/AssignAssetModal';
 import AddAssetModal, { AddAssetPayload } from '@/components/assets/AddAssetModal';
 import { useAppSelector } from '@/store/hooks';
-import { useAssetData, useAssetFormOptions, useCreateAsset, useAssignAsset } from '@/hooks/api/useAssets';
+import { useAssetData, useAssetFormOptions, useAvailableAssets, useCreateAsset, useAssignAsset } from '@/hooks/api/useAssets';
+import { assetService } from '@/services/assetService';
 
 export default function AssetsPage() {
     // 1. Strict RBAC Enforcement
@@ -18,30 +19,34 @@ export default function AssetsPage() {
     const role = user?.role?.toLowerCase() || 'employee';
     const isManagerial = role === 'admin' || role === 'hr';
 
-    // 2. React Query Data Layer
-    const { data: assetData, isLoading: isAssetsLoading } = useAssetData();
+    // 2. Pagination State
+    const [currentPage, setCurrentPage] = useState(1);
+    const [entriesPerPage, setEntriesPerPage] = useState(10);
+
+    // 3. React Query Data Layer
+    const { data: assetData, isLoading: isAssetsLoading } = useAssetData(currentPage, entriesPerPage);
     const { data: employeesData = [], isLoading: isEmpLoading } = useAssetFormOptions(isAuthenticated && isManagerial);
+    const { data: availableAssets = [] } = useAvailableAssets(isAuthenticated && isManagerial);
     
     const createAssetMutation = useCreateAsset();
     const assignAssetMutation = useAssignAsset();
 
     const stats = assetData?.stats || null;
     const records: Asset[] = assetData?.records || [];
+    const pagination = assetData?.pagination || { currentPage: 1, totalPages: 1, totalEntries: 0 };
+    const totalPages = pagination.totalPages || 1;
+    const totalEntries = pagination.totalEntries || 0;
+
     const isLoading = isAssetsLoading || createAssetMutation.isPending || assignAssetMutation.isPending;
 
-    // 3. Local UI State
+    // Reset pagination when page size changes
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [entriesPerPage]);
+
+    // 4. Local UI State
     const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-
-    // Derived state for the Assign Modal
-    const availableAssets = useMemo(() => {
-        return records
-            .filter((rec) => rec.status === 'Available')
-            .map((rec) => ({
-                id: rec.dbId,
-                label: `${rec.name} (${rec.id})`
-            }));
-    }, [records]);
 
     const handleAddAsset = async (payload: AddAssetPayload) => {
         try {
@@ -65,25 +70,40 @@ export default function AssetsPage() {
         }
     };
 
-    const handleExportInventory = () => {
-        if (records.length === 0) return alert("No records to export.");
-        
-        const headers = ['Asset Tag', 'Name', 'Category', 'Assignee', 'Assigned Date', 'Status'];
-        const csvRows = records.map(rec => [
-            rec.id,
-            `"${rec.name}"`,
-            rec.category,
-            `"${rec.assignee || 'Unassigned'}"`,
-            rec.date || '-',
-            rec.status
-        ].join(','));
-        
-        const csvContent = [headers.join(','), ...csvRows].join('\n');
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = `Asset_Inventory_${new Date().toISOString().split('T')[0]}.csv`;
-        link.click();
+    const handleExportInventory = async () => {
+        try {
+            // Fetch all assets (up to 1000) for a full inventory export
+            const data = await assetService.getDashboardData(1, 1000);
+            const allRecords = data.records.map((rec: any) => ({
+                id: rec.assetTag,
+                name: rec.name,
+                category: rec.category,
+                assignee: rec.assignee?.name || 'Unassigned',
+                date: rec.assignedDate ? new Date(rec.assignedDate).toLocaleDateString() : '-',
+                status: rec.status
+            }));
+
+            if (allRecords.length === 0) return alert("No records to export.");
+            
+            const headers = ['Asset Tag', 'Name', 'Category', 'Assignee', 'Assigned Date', 'Status'];
+            const csvRows = allRecords.map((rec: any) => [
+                rec.id,
+                `"${rec.name}"`,
+                rec.category,
+                `"${rec.assignee}"`,
+                rec.date,
+                rec.status
+            ].join(','));
+            
+            const csvContent = [headers.join(','), ...csvRows].join('\n');
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `Asset_Inventory_${new Date().toISOString().split('T')[0]}.csv`;
+            link.click();
+        } catch (error) {
+            alert('Failed to export full inventory.');
+        }
     };
 
     if (!isAuthenticated) return null;
@@ -144,7 +164,7 @@ export default function AssetsPage() {
                 {isManagerial && <AssetStats data={stats} isLoading={isAssetsLoading} />}
 
                 {/* Data Table */}
-                <Card className="border-gray-200 dark:border-gray-800 shadow-sm bg-white dark:bg-gray-900 transition-colors duration-300">
+                <Card className="border-gray-200 dark:border-gray-800 shadow-sm bg-white dark:bg-gray-900 transition-colors duration-300 overflow-hidden">
                     <CardHeader className="pb-4 border-b border-gray-100 dark:border-gray-800 mb-2 transition-colors">
                         <CardTitle className="text-lg text-gray-900 dark:text-gray-100 transition-colors">
                             {isManagerial ? 'Company Assets List' : 'My Assigned Assets'}
@@ -157,6 +177,50 @@ export default function AssetsPage() {
                             onEdit={(record) => alert(`Edit asset: ${record.name}`)}
                         />
                     </CardContent>
+
+                    {/* Pagination Toolbar */}
+                    {!isAssetsLoading && records.length > 0 && (
+                        <div className="p-4 border-t border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-950/20 flex flex-col sm:flex-row justify-between items-center gap-4 transition-colors font-medium">
+                            <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 transition-colors">
+                                <span>Show</span>
+                                <select 
+                                    value={entriesPerPage} 
+                                    onChange={(e) => setEntriesPerPage(Number(e.target.value))}
+                                    className="border border-gray-300 dark:border-gray-700 rounded px-2 py-1 bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 outline-none focus:ring-2 focus:ring-blue-500/40 transition-all shadow-sm dark:shadow-none cursor-pointer font-semibold"
+                                >
+                                    <option value={5}>5</option>
+                                    <option value={10}>10</option>
+                                    <option value={20}>20</option>
+                                    <option value={50}>50</option>
+                                </select>
+                                <span>entries</span>
+                            </div>
+                            <div className="text-sm text-gray-500 dark:text-gray-400 transition-colors">
+                                Showing <span className="font-semibold text-gray-900 dark:text-gray-100">{totalEntries === 0 ? 0 : (currentPage - 1) * entriesPerPage + 1}</span> to <span className="font-semibold text-gray-900 dark:text-gray-100">{Math.min(currentPage * entriesPerPage, totalEntries)}</span> of <span className="font-semibold text-gray-900 dark:text-gray-100">{totalEntries}</span> entries
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <button 
+                                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                    disabled={currentPage === 1 || isAssetsLoading}
+                                    className="p-1.5 rounded-lg border border-gray-300 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors bg-white dark:bg-gray-900 shadow-sm"
+                                    aria-label="Previous Page"
+                                >
+                                    <ChevronLeft size={18} />
+                                </button>
+                                <span className="text-sm font-semibold text-gray-700 dark:text-gray-300 px-2 transition-colors">
+                                    Page {currentPage} of {totalPages}
+                                </span>
+                                <button 
+                                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                                    disabled={currentPage === totalPages || isAssetsLoading}
+                                    className="p-1.5 rounded-lg border border-gray-300 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors bg-white dark:bg-gray-900 shadow-sm"
+                                    aria-label="Next Page"
+                                >
+                                    <ChevronRight size={18} />
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </Card>
 
                 {/* Modals */}

@@ -1,5 +1,4 @@
 'use client';
-
 import React from 'react';
 import { Calendar, CheckCircle2, MoreVertical, Timer, Users } from 'lucide-react';
 import { cn } from '@/utils/cn';
@@ -9,12 +8,15 @@ export interface Project {
     id: string;
     name: string;
     description: string;
-    manager: string;
-    dueDate: string;
-    progress: number;
-    status: 'In Progress' | 'Completed' | 'On Hold';
-    team: string[]; 
-    tasks: { total: number; open: number };
+    // THE FIX: Flexible manager typing to accept any envelope structure
+    manager?: any; 
+    managerName?: string;
+    // THE FIX: Safe date fallbacks
+    dueDate?: string;
+    deadline?: string; 
+    status: string;
+    team?: string[]; 
+    tasks?: { total: number; open: number };
 }
 
 interface ProjectListProps {
@@ -24,6 +26,15 @@ interface ProjectListProps {
 }
 
 export default function ProjectList({ projects, view, onActionClick }: ProjectListProps) {
+    
+    // THE FIX: Universal safe extractor for Manager Name
+    const getManagerName = (p: Project) => {
+        if (p.managerName) return p.managerName;
+        if (typeof p.manager === 'object' && p.manager?.name) return p.manager.name;
+        if (typeof p.manager === 'string') return p.manager;
+        return 'Unassigned';
+    };
+
     if (view === 'list') {
         return (
             <Card className="border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 overflow-hidden shadow-sm dark:shadow-none animate-in fade-in duration-300 transition-colors">
@@ -33,7 +44,7 @@ export default function ProjectList({ projects, view, onActionClick }: ProjectLi
                             <tr>
                                 <th className="px-6 py-4">Project</th>
                                 <th className="px-6 py-4">Manager</th>
-                                <th className="px-6 py-4">Progress</th>
+                                {/* PROGRESS BAR REMOVED */}
                                 <th className="px-6 py-4">Due Date</th>
                                 <th className="px-6 py-4">Status</th>
                                 <th className="px-6 py-4"></th>
@@ -50,23 +61,17 @@ export default function ProjectList({ projects, view, onActionClick }: ProjectLi
                                         {project.name}
                                     </td>
                                     <td className="px-6 py-4 text-gray-600 dark:text-gray-300 transition-colors">
-                                        {project.manager}
+                                        {/* THE FIX: Safe Manager Name Mapping */}
+                                        {getManagerName(project)}
                                     </td>
-                                    <td className="px-6 py-4 w-48">
-                                        <div className="flex items-center gap-3">
-                                            <div className="flex-1 h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden transition-colors">
-                                                <div 
-                                                    className={cn("h-full rounded-full transition-all duration-500", project.progress === 100 ? "bg-emerald-500" : "bg-blue-600 dark:bg-blue-500")} 
-                                                    style={{ width: `${project.progress}%` }} 
-                                                />
-                                            </div>
-                                            <span className="text-xs font-bold text-gray-500 dark:text-gray-400 w-8 transition-colors">{project.progress}%</span>
-                                        </div>
-                                    </td>
+                                    
+                                    {/* PROGRESS BAR REMOVED */}
+
                                     <td className="px-6 py-4 text-gray-600 dark:text-gray-400 transition-colors">
                                         <div className="flex items-center gap-2">
                                             <Calendar size={14} className="text-gray-400 dark:text-gray-500" />
-                                            {project.dueDate}
+                                            {/* THE FIX: Date mapping fallback */}
+                                            {project.dueDate || project.deadline || 'No Set Date'}
                                         </div>
                                     </td>
                                     <td className="px-6 py-4">
@@ -76,7 +81,7 @@ export default function ProjectList({ projects, view, onActionClick }: ProjectLi
                                             project.status === 'On Hold' ? "bg-orange-100 dark:bg-orange-500/10 text-orange-700 dark:text-orange-400" : 
                                             "bg-blue-100 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400"
                                         )}>
-                                            {project.status}
+                                            {project.status || 'Active'}
                                         </span>
                                     </td>
                                     <td className="px-6 py-4 text-right">
@@ -85,7 +90,7 @@ export default function ProjectList({ projects, view, onActionClick }: ProjectLi
                                                 e.stopPropagation();
                                                 onActionClick(project.id);
                                             }} 
-                                            className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded text-gray-400 dark:text-gray-500 hover:text-gray-900 dark:hover:text-gray-100 transition-colors"
+                                            className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors"
                                         >
                                             <MoreVertical size={16} />
                                         </button>
@@ -105,9 +110,9 @@ export default function ProjectList({ projects, view, onActionClick }: ProjectLi
                 <Card 
                     key={project.id} 
                     onClick={() => onActionClick(project.id)}
-                    className="group border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm dark:shadow-none hover:border-blue-300 dark:hover:border-blue-900/50 hover:shadow-md dark:hover:shadow-none cursor-pointer transition-all duration-300"
+                    className="group flex flex-col border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm dark:shadow-none hover:border-blue-300 dark:hover:border-blue-900/50 hover:shadow-md dark:hover:shadow-none cursor-pointer transition-all duration-300"
                 >
-                    <CardContent className="p-6 flex flex-col h-full">
+                    <CardContent className="p-6 flex flex-col flex-1">
                         <div className="flex justify-between items-start mb-4">
                             <div className={cn(
                                 "p-2.5 rounded-xl shadow-sm dark:shadow-none transition-colors",
@@ -127,30 +132,29 @@ export default function ProjectList({ projects, view, onActionClick }: ProjectLi
                                 <MoreVertical size={20} />
                             </button>
                         </div>
-
                         <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-1">
                             {project.name}
                         </h3>
                         <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 line-clamp-2 min-h-[40px] transition-colors">
                             {project.description}
-                        </p>
+                        </p> 
                         
                         <div className="flex-grow" /> 
                         
-                        <div className="mt-6 space-y-3">
-                            <div className="flex items-center justify-between text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider transition-colors">
-                                <span>Progress</span>
-                                <span>{project.progress}%</span>
-                            </div>
-                            <div className="h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden transition-colors">
-                                <div 
-                                    className={cn("h-full rounded-full transition-all duration-500", project.progress === 100 ? "bg-emerald-500" : "bg-blue-600 dark:bg-blue-500")} 
-                                    style={{ width: `${project.progress}%` }} 
-                                />
+                        {/* THE FIX: Removed Progress Bar, Inserted Manager Identity Row */}
+                        <div className="mt-6 pt-4 border-t border-gray-100 dark:border-gray-800 transition-colors">
+                            <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Project Manager</p>
+                            <div className="flex items-center gap-2">
+                                <div className="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center text-[10px] font-bold shadow-sm dark:shadow-none">
+                                    {getManagerName(project).charAt(0).toUpperCase()}
+                                </div>
+                                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    {getManagerName(project)}
+                                </span>
                             </div>
                         </div>
 
-                        <div className="mt-6 pt-5 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between transition-colors">
+                        <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between transition-colors">
                             <div className="flex items-center">
                                 {project.team && project.team.length > 0 ? (
                                     <div className="flex -space-x-2">
@@ -171,7 +175,7 @@ export default function ProjectList({ projects, view, onActionClick }: ProjectLi
                             </div>
                             <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400 font-medium text-sm transition-colors">
                                 <Calendar size={14} />
-                                <span>{project.dueDate}</span>
+                                <span>{project.dueDate || project.deadline || 'No Set Date'}</span>
                             </div>
                         </div>
                     </CardContent>

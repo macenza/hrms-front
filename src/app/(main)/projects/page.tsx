@@ -1,6 +1,4 @@
-// src/app/(main)/projects/page.tsx
 'use client';
-
 import React, { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Plus, LayoutGrid, List, Search, Loader2, FolderKanban } from 'lucide-react';
@@ -12,7 +10,6 @@ import AddProjectModal, { ProjectFormData } from '@/components/projects/AddProje
 import { useAppSelector } from '@/store/hooks';
 import { useProjectsData, useProjectManagers, useCreateProject } from '@/hooks/api/useProjects';
 
-// Premium Skeleton Loader for Projects
 const ProjectsSkeleton = ({ view }: { view: 'grid' | 'list' }) => (
     <div className={cn(
         "animate-pulse",
@@ -28,7 +25,6 @@ const ProjectsSkeleton = ({ view }: { view: 'grid' | 'list' }) => (
                     <div className="h-3 bg-gray-100 dark:bg-gray-800/50 rounded w-full" />
                     <div className="h-3 bg-gray-100 dark:bg-gray-800/50 rounded w-4/5" />
                 </div>
-                <div className="h-2 bg-gray-200 dark:bg-gray-800 rounded-full w-full mb-4" />
                 <div className="flex justify-between items-center pt-4 border-t border-gray-100 dark:border-gray-800">
                     <div className="flex -space-x-2">
                         {[1, 2, 3].map(j => <div key={j} className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-800 border-2 border-white dark:border-gray-900" />)}
@@ -42,18 +38,15 @@ const ProjectsSkeleton = ({ view }: { view: 'grid' | 'list' }) => (
 
 export default function ProjectsPage() {
     const router = useRouter(); 
-    
-    // 1. RBAC & Auth State
     const { user, isAuthenticated } = useAppSelector((state) => state.auth);
+    
     const role = user?.role?.toLowerCase() || 'employee';
     const canCreateProject = ['admin', 'hr', 'manager'].includes(role);
-
-    // 2. React Query Data Layer
+    
     const { data: projects = [], isLoading: isProjectsLoading } = useProjectsData();
     const { data: managers = [], isLoading: isManagersLoading } = useProjectManagers(isAuthenticated && canCreateProject);
     const createProjectMutation = useCreateProject();
-
-    // 3. Local UI State
+    
     const [view, setView] = useState<'grid' | 'list'>('grid');
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
@@ -76,13 +69,24 @@ export default function ProjectsPage() {
 
     const filteredProjects = useMemo(() => {
         return projects.filter((project: Project) => {
+            const projName = project.name || '';
+            const projManager = project.managerName || (typeof project.manager === 'string' ? project.manager : project.manager?.name) || '';
+            
             const matchesSearch =
-                project.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                project.manager.toLowerCase().includes(searchQuery.toLowerCase());
-            const matchesStatus = statusFilter === 'all' || project.status.toLowerCase() === statusFilter.toLowerCase();
+                projName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                projManager.toLowerCase().includes(searchQuery.toLowerCase());
+            
+            // THE FIX: Database uses 'Active', UI filter uses 'in progress'. Treat them as equal.
+            const rawStatus = (project.status || 'Active').toLowerCase();
+            const normalizedStatus = rawStatus === 'active' ? 'in progress' : rawStatus;
+            const matchesStatus = statusFilter === 'all' || normalizedStatus === statusFilter.toLowerCase();
+            
             return matchesSearch && matchesStatus;
         });
     }, [projects, searchQuery, statusFilter]);
+
+    // THE FIX: Map the raw backend Mongoose _id to the UI's expected id property
+    const mappedManagers = managers;
 
     if (!isAuthenticated) return null;
 
@@ -90,7 +94,7 @@ export default function ProjectsPage() {
         <div className="min-h-[calc(100vh-4rem)] bg-gray-50/50 dark:bg-[#0a0a0a] text-gray-900 dark:text-gray-100 p-6 lg:p-8 transition-colors duration-300">
             <div className="max-w-7xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
                 
-                {/* Header Section */}
+                {/* --- HEADER CONTROLS --- */}
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
                         <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 tracking-tight transition-colors">Projects</h1>
@@ -98,39 +102,15 @@ export default function ProjectsPage() {
                             Manage deliverables and track team progress
                         </p>
                     </div>
-                    
                     <div className="flex items-center gap-3">
-                        {/* View Toggles */}
                         <div className="hidden sm:flex items-center p-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg shadow-sm dark:shadow-none transition-colors">
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => setView('grid')}
-                                className={cn(
-                                    "p-1.5 h-8 w-8 rounded-md transition-all",
-                                    view === 'grid' 
-                                        ? "bg-gray-100 dark:bg-gray-800 text-blue-600 dark:text-blue-400 shadow-sm dark:shadow-none" 
-                                        : "text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-transparent"
-                                )}
-                            >
+                            <Button variant="ghost" size="sm" onClick={() => setView('grid')} className={cn("p-1.5 h-8 w-8 rounded-md transition-all", view === 'grid' ? "bg-gray-100 dark:bg-gray-800 text-blue-600 dark:text-blue-400 shadow-sm dark:shadow-none" : "text-gray-400 hover:text-gray-600")}>
                                 <LayoutGrid size={18} />
                             </Button>
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => setView('list')}
-                                className={cn(
-                                    "p-1.5 h-8 w-8 rounded-md transition-all",
-                                    view === 'list' 
-                                        ? "bg-gray-100 dark:bg-gray-800 text-blue-600 dark:text-blue-400 shadow-sm dark:shadow-none" 
-                                        : "text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-transparent"
-                                )}
-                            >
+                            <Button variant="ghost" size="sm" onClick={() => setView('list')} className={cn("p-1.5 h-8 w-8 rounded-md transition-all", view === 'list' ? "bg-gray-100 dark:bg-gray-800 text-blue-600 dark:text-blue-400 shadow-sm dark:shadow-none" : "text-gray-400 hover:text-gray-600")}>
                                 <List size={18} />
                             </Button>
                         </div>
-                        
-                        {/* Add Project Button (RBAC Protected) */}
                         {canCreateProject && (
                             <Button
                                 variant="primary"
@@ -145,13 +125,13 @@ export default function ProjectsPage() {
                     </div>
                 </div>
 
-                {/* Filters Section */}
-                <div className="flex flex-col sm:flex-row gap-4 items-center justify-between bg-white dark:bg-gray-900 p-4 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm dark:shadow-none transition-colors">
+                {/* --- FILTERS --- */}
+                <div className="flex flex-col sm:flex-row gap-4 items-center justify-between bg-white dark:bg-gray-900 p-4 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm transition-colors">
                     <div className="relative w-full sm:max-w-xs group">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 group-focus-within:text-blue-500 transition-colors" size={18} />
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-500 transition-colors" size={18} />
                         <Input
                             placeholder="Search projects or managers..."
-                            className="pl-10 h-10 border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-950 focus:bg-white dark:focus:bg-gray-900 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-600 transition-all shadow-sm dark:shadow-none"
+                            className="pl-10 h-10 border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-950 focus:bg-white dark:focus:bg-gray-900 shadow-sm"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
@@ -160,7 +140,7 @@ export default function ProjectsPage() {
                         <select
                             value={statusFilter}
                             onChange={(e) => setStatusFilter(e.target.value)}
-                            className="flex-1 sm:w-44 h-10 px-3 rounded-lg border border-gray-200 dark:border-gray-800 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-950 hover:bg-white dark:hover:bg-gray-900 cursor-pointer outline-none focus:ring-2 focus:ring-blue-600/20 dark:focus:ring-blue-500/40 transition-all shadow-sm dark:shadow-none"
+                            className="flex-1 sm:w-44 h-10 px-3 rounded-lg border border-gray-200 dark:border-gray-800 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-950 hover:bg-white dark:hover:bg-gray-900 cursor-pointer outline-none focus:ring-2 focus:ring-blue-600/20 transition-all shadow-sm"
                         >
                             <option value="all">All Statuses</option>
                             <option value="in progress">In Progress</option>
@@ -170,16 +150,16 @@ export default function ProjectsPage() {
                     </div>
                 </div>
 
-                {/* Content Section */}
+                {/* --- CONTENT --- */}
                 {isProjectsLoading ? (
                     <ProjectsSkeleton view={view} />
                 ) : filteredProjects.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-24 bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 border-dashed shadow-sm dark:shadow-none transition-colors">
-                        <div className="w-16 h-16 bg-gray-50 dark:bg-gray-800/50 rounded-full flex items-center justify-center text-gray-400 dark:text-gray-500 mb-4 shadow-inner dark:shadow-none transition-colors">
+                    <div className="flex flex-col items-center justify-center py-24 bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 border-dashed shadow-sm transition-colors">
+                        <div className="w-16 h-16 bg-gray-50 dark:bg-gray-800/50 rounded-full flex items-center justify-center text-gray-400 mb-4 shadow-inner">
                             <FolderKanban size={32} />
                         </div>
-                        <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-1 transition-colors">No projects found</h3>
-                        <p className="text-gray-500 dark:text-gray-400 text-sm max-w-sm text-center transition-colors">
+                        <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-1">No projects found</h3>
+                        <p className="text-gray-500 dark:text-gray-400 text-sm max-w-sm text-center">
                             {searchQuery || statusFilter !== 'all'
                                 ? "Try adjusting your search or filters to find what you're looking for."
                                 : "There are no active projects right now. Create a new one to get started."}
@@ -193,10 +173,9 @@ export default function ProjectsPage() {
                     />
                 )}
 
-                {/* Add Project Modal */}
                 <AddProjectModal
                     isOpen={isModalOpen}
-                    managers={managers}
+                    managers={mappedManagers} // PASSING THE FIX
                     onClose={() => setIsModalOpen(false)}
                     onSubmit={handleAddProject}
                     isSubmitting={createProjectMutation.isPending}

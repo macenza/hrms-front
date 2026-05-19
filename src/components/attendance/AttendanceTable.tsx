@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { Search, ChevronDown, MoreVertical, Loader2, Calendar } from 'lucide-react';
+import { Search, ChevronDown, MoreVertical, Loader2, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -88,6 +88,10 @@ export default function AttendanceTable({
     const [selectedDept, setSelectedDept] = useState('All');
     const [selectedStatus, setSelectedStatus] = useState('All');
 
+    // Pagination State - minimum 50 entries
+    const [currentPage, setCurrentPage] = useState(1);
+    const [entriesPerPage, setEntriesPerPage] = useState(50);
+
     const filteredData = useMemo(() => {
         return data.filter((record) => {
             const matchesSearch = record.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -97,6 +101,19 @@ export default function AttendanceTable({
             return matchesSearch && matchesDept && matchesStatus;
         });
     }, [data, searchTerm, selectedDept, selectedStatus]);
+
+    // Reset page to 1 on filter or page size changes
+    React.useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, selectedDept, selectedStatus, entriesPerPage, selectedDate]);
+
+    const paginatedData = useMemo(() => {
+        const startIndex = (currentPage - 1) * entriesPerPage;
+        return filteredData.slice(startIndex, startIndex + entriesPerPage);
+    }, [filteredData, currentPage, entriesPerPage]);
+
+    const totalPages = Math.max(Math.ceil(filteredData.length / entriesPerPage), 1);
+    const totalEntries = filteredData.length;
 
     const departments = ['All', ...Array.from(new Set(data.map(d => d.dept).filter(Boolean)))];
     
@@ -187,7 +204,7 @@ export default function AttendanceTable({
                     <tbody className="divide-y divide-gray-100 dark:divide-gray-800 bg-white dark:bg-gray-900 transition-colors">
                         {isInitialLoad ? (
                             Array.from({ length: 5 }).map((_, idx) => <TableRowSkeleton key={idx} />)
-                        ) : filteredData.length === 0 ? (
+                        ) : paginatedData.length === 0 ? (
                             <tr>
                                 <td colSpan={8} className="px-6 py-16 text-center text-gray-500 dark:text-gray-400 transition-colors">
                                     <div className="flex flex-col items-center justify-center">
@@ -200,7 +217,7 @@ export default function AttendanceTable({
                                 </td>
                             </tr>
                         ) : (
-                            filteredData.map((record) => (
+                            paginatedData.map((record) => (
                                 <tr key={record.dbId} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors group">
                                     <td className="px-6 py-4 flex items-center gap-3">
                                         <div className={cn(
@@ -252,6 +269,49 @@ export default function AttendanceTable({
                     </tbody>
                 </table>
             </div>
+
+            {/* Pagination Toolbar */}
+            {!isInitialLoad && filteredData.length > 0 && (
+                <div className="p-4 border-t border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-950/20 flex flex-col sm:flex-row justify-between items-center gap-4 transition-colors font-medium">
+                    <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 transition-colors">
+                        <span>Show</span>
+                        <select 
+                            value={entriesPerPage} 
+                            onChange={(e) => setEntriesPerPage(Number(e.target.value))}
+                            className="border border-gray-300 dark:border-gray-700 rounded px-2 py-1 bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 outline-none focus:ring-2 focus:ring-blue-500/40 transition-all shadow-sm dark:shadow-none cursor-pointer font-semibold"
+                        >
+                            <option value={50}>50</option>
+                            <option value={100}>100</option>
+                            <option value={200}>200</option>
+                        </select>
+                        <span>entries</span>
+                    </div>
+                    <div className="text-sm text-gray-500 dark:text-gray-400 transition-colors">
+                        Showing <span className="font-semibold text-gray-900 dark:text-gray-100">{totalEntries === 0 ? 0 : (currentPage - 1) * entriesPerPage + 1}</span> to <span className="font-semibold text-gray-900 dark:text-gray-100">{Math.min(currentPage * entriesPerPage, totalEntries)}</span> of <span className="font-semibold text-gray-900 dark:text-gray-100">{totalEntries}</span> entries
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <button 
+                            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                            disabled={currentPage === 1 || isLoading}
+                            className="p-1.5 rounded-lg border border-gray-300 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors bg-white dark:bg-gray-900 shadow-sm"
+                            aria-label="Previous Page"
+                        >
+                            <ChevronLeft size={18} />
+                        </button>
+                        <span className="text-sm font-semibold text-gray-700 dark:text-gray-300 px-2 transition-colors">
+                            Page {currentPage} of {totalPages}
+                        </span>
+                        <button 
+                            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                            disabled={currentPage === totalPages || isLoading}
+                            className="p-1.5 rounded-lg border border-gray-300 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors bg-white dark:bg-gray-900 shadow-sm"
+                            aria-label="Next Page"
+                        >
+                            <ChevronRight size={18} />
+                        </button>
+                    </div>
+                </div>
+            )}
         </Card>
     );
 }

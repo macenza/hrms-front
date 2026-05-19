@@ -25,7 +25,7 @@ interface CreateNoticeModalProps {
 
 const initialFormState: NoticePayload = {
     title: '',
-    category: 'general',
+    category: 'General',
     isPinned: false,
     content: '',
     attachment: null
@@ -131,10 +131,10 @@ export default function CreateNoticeModal({ isOpen, onClose, onSuccess }: Create
                                 disabled={createNoticeMutation.isPending}
                                 className="w-full h-10 px-3 rounded-md border border-gray-300 dark:border-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-600 dark:focus:ring-blue-500/40 focus:border-transparent text-sm bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 disabled:bg-gray-100 dark:disabled:bg-gray-900/50 disabled:cursor-not-allowed transition-all shadow-sm dark:shadow-none cursor-pointer"
                             >
-                                <option value="general">General</option>
-                                <option value="hr">HR & Policy</option>
-                                <option value="events">Events</option>
-                                <option value="it">IT Updates</option>
+                                <option value="General">General</option>
+                                <option value="HR">HR & Policy</option>
+                                <option value="Events">Events</option>
+                                <option value="IT">IT Updates</option>
                             </select>
                         </div>
                         <div className="space-y-1.5 flex flex-col justify-center pt-6">

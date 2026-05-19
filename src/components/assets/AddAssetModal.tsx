@@ -2,13 +2,14 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Tag, Laptop, AlignLeft, Loader2 } from 'lucide-react';
+import { Tag, Laptop, AlignLeft, Loader2, Hash } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 
 export interface AddAssetPayload {
     assetTag: string;
+    serialNumber: string;
     name: string;
     category: string;
     notes: string;
@@ -23,6 +24,7 @@ interface AddAssetModalProps {
 
 const initialFormState: AddAssetPayload = {
     assetTag: '',
+    serialNumber: '',
     name: '',
     category: '',
     notes: ''
@@ -81,7 +83,25 @@ export default function AddAssetModal({
                             className="uppercase text-gray-900 dark:text-gray-100"
                         />
                     </div>
-                    
+
+                    {/* SERIAL NUMBER */}
+                    <div className="space-y-1.5">
+                        <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 transition-colors">
+                            <Hash size={16} className="text-gray-400 dark:text-gray-500" /> 
+                            Serial Number
+                        </label>
+                        <Input
+                            type="text"
+                            name="serialNumber"
+                            value={formData.serialNumber}
+                            onChange={handleChange}
+                            required
+                            disabled={isSubmitting}
+                            placeholder="e.g., 5CG1234567"
+                            className="uppercase text-gray-900 dark:text-gray-100"
+                        />
+                    </div>
+
                     {/* Device Name */}
                     <div className="space-y-1.5">
                         <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 transition-colors">

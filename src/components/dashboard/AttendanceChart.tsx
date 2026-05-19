@@ -4,7 +4,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { Loader2 } from "lucide-react";
-import { type DailyAttendance } from "@/store/dashboardSlice";
+import type { DailyAttendance, DashboardAttendance } from "@/store/dashboardSlice";
 
 const LEGEND = [
     { label: "Present", color: "#60A5FA", key: "present" },
@@ -15,16 +15,16 @@ interface AttendanceChartProps {
     timeframe?: 'week' | 'month';
     isEmployee?: boolean;
     disableAnimations?: boolean;
-    chartData?: {
-        overviewChart?: DailyAttendance[]
-    };
+    isLoading?: boolean;
+    chartData?: Pick<DashboardAttendance, 'overviewChart'> | null;
 }
 
 const AttendanceChart = ({ 
     timeframe = 'week', 
     isEmployee = false,
     disableAnimations = false,
-    chartData: dataFromApi
+    isLoading = false,
+    chartData: dataFromApi,
 }: AttendanceChartProps) => {
     
     // Required to prevent hydration mismatch with Recharts
@@ -61,7 +61,7 @@ const AttendanceChart = ({
         });
     }, [dataFromApi?.overviewChart, timeframe]);
 
-    if (!mounted) {
+    if (!mounted || (isLoading && !dataFromApi?.overviewChart?.length)) {
         return (
             <div className="rounded-xl p-5 min-w-0 h-[360px] md:h-[400px] flex items-center justify-center bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-sm dark:shadow-none transition-colors duration-300">
                 <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
@@ -71,7 +71,12 @@ const AttendanceChart = ({
 
     return (
         <div className="rounded-xl p-5 flex flex-col gap-5 min-w-0 transition-colors duration-300 relative border bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 shadow-sm dark:shadow-none">
-            
+            {isLoading && (
+                <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-white/40 dark:bg-black/20 backdrop-blur-[1px]">
+                    <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
+                </div>
+            )}
+
             <div className="flex items-center justify-between flex-wrap gap-3">
                 <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 transition-colors">
                     {isEmployee ? "My Monthly Attendance" : "Attendance Overview"}

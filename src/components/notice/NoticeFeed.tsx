@@ -13,8 +13,9 @@ export interface Notice {
     category: string;
     author: {
         _id: string;
-        firstName: string; 
-        lastName: string;
+        name?: string;
+        firstName?: string; 
+        lastName?: string;
     };
     createdAt: string; 
     isPinned: boolean;
@@ -131,7 +132,9 @@ export default function NoticeFeed({
                     <div className="flex flex-wrap items-center gap-4 text-xs font-medium text-gray-500 dark:text-gray-400 pt-4 border-t border-gray-200/60 dark:border-gray-800 mt-auto transition-colors">
                         <div className="flex items-center gap-1.5">
                             <User size={14} className="text-gray-400 dark:text-gray-500 transition-colors" />
-                            {notice.author ? `${notice.author.firstName} ${notice.author.lastName}` : 'Unknown User'}
+                            {notice.author 
+                                ? (notice.author.name || `${notice.author.firstName || ''} ${notice.author.lastName || ''}`.trim() || 'Unknown User') 
+                                : 'Unknown User'}
                         </div>
                         <div className="flex items-center gap-1.5">
                             <Calendar size={14} className="text-gray-400 dark:text-gray-500 transition-colors" />

@@ -1,4 +1,3 @@
-// src/hooks/api/useEmployees.ts
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { employeeService } from '@/services/employeeService';
 import { EmployeeFilterState } from '@/components/employees/EmployeeFilters';
@@ -12,8 +11,6 @@ interface UseEmployeesParams {
 
 export function useEmployees(params: UseEmployeesParams) {
     return useQuery({
-        // The queryKey uniquely identifies this specific request. 
-        // If any of these values change, React Query automatically refetches.
         queryKey: ['employees', params.page, params.limit, params.searchTerm, params.filters],
         queryFn: () => employeeService.getAll(
             params.page, 

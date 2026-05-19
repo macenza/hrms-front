@@ -15,7 +15,7 @@ export interface AttendanceLog {
         profile?: { avatar?: string } 
     };
     checkInTime: string;
-    checkOutTime?: string;
+    checkOutTime?: string | null;
 }
 
 interface AttendanceListProps {

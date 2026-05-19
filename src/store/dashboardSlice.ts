@@ -8,7 +8,7 @@ export interface EmployeeSummaryRow {
     avatar?: string;
     jobTitle: string;
     netSalary: number;
-    status: 'PAID' | 'PENDING' | 'OVERDUE';
+    status?: string;
 }
 
 export interface DashboardStats {
