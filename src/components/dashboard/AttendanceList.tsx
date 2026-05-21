@@ -139,7 +139,13 @@ export default function AttendanceList({
                                             getAvatarColor(userName)
                                         )}>
                                             {row.user?.profile?.avatar ? (
-                                                <img src={row.user.profile.avatar} alt={userName} className="w-full h-full rounded-full object-cover" />
+                                                <img 
+                                                    src={row.user.profile.avatar.startsWith('http') 
+                                                        ? row.user.profile.avatar 
+                                                        : `${process.env.NEXT_PUBLIC_API_URL ? process.env.NEXT_PUBLIC_API_URL.replace('/api', '') : 'http://localhost:4000'}${row.user.profile.avatar}`} 
+                                                    alt={userName} 
+                                                    className="w-full h-full rounded-full object-cover" 
+                                                />
                                             ) : (
                                                 initial
                                             )}

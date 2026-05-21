@@ -19,10 +19,17 @@ function mapUserToProfile(authUser: User | null): UserProfile {
     if (!authUser) {
         return { name: 'User', role: '', unreadNotifications: 0 };
     }
+    const avatar = authUser.profile?.avatar;
+    const avatarUrl = avatar
+        ? (avatar.startsWith('http')
+            ? avatar
+            : `${process.env.NEXT_PUBLIC_API_URL ? process.env.NEXT_PUBLIC_API_URL.replace('/api', '') : 'http://localhost:4000'}${avatar}`)
+        : undefined;
+
     return {
         name: authUser.name,
         role: authUser.role,
-        avatarUrl: undefined,
+        avatarUrl,
         unreadNotifications: 0,
     };
 }

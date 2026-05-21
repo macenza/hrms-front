@@ -7,10 +7,10 @@ import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/Button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import NoticeStats from '@/components/notice/NoticeStats';
-import NoticeFeed from '@/components/notice/NoticeFeed';
+import NoticeFeed, { Notice } from '@/components/notice/NoticeFeed';
 import CreateNoticeModal from '@/components/notice/CreateNoticeModal';
 import { useAppSelector } from '@/store/hooks';
-import { useNoticeStats, useNotices } from '@/hooks/api/useNotices';
+import { useNoticeStats, useNotices, useDeleteNotice } from '@/hooks/api/useNotices';
 
 export default function NoticePage() {
     const router = useRouter();
@@ -25,10 +25,12 @@ export default function NoticePage() {
     const [categoryFilter, setCategoryFilter] = useState('all');
     const [currentPage, setCurrentPage] = useState(1);
     const [entriesPerPage, setEntriesPerPage] = useState(10);
+    const [editNotice, setEditNotice] = useState<Notice | null>(null);
 
     // 3. React Query Data Layer
     const { data: stats, isLoading: isLoadingStats } = useNoticeStats();
     const { data: responsePayload, isLoading: isLoadingNotices } = useNotices(categoryFilter, currentPage, entriesPerPage);
+    const deleteNoticeMutation = useDeleteNotice();
 
     const notices = responsePayload?.data || [];
     const pagination = responsePayload?.pagination || { currentPage: 1, totalPages: 1, totalEntries: 0 };
@@ -50,7 +52,25 @@ export default function NoticePage() {
     // Notice Success Handler
     const handleNoticeSuccess = () => {
         setIsModalOpen(false);
-        toast.success('Announcement published successfully!');
+        setEditNotice(null);
+        toast.success(editNotice ? 'Announcement updated successfully!' : 'Announcement published successfully!');
+    };
+
+    const handleEditClick = (notice: Notice) => {
+        setEditNotice(notice);
+        setIsModalOpen(true);
+    };
+
+    const handleDeleteClick = async (noticeId: string) => {
+        if (window.confirm('Are you sure you want to delete this notice? This action cannot be undone.')) {
+            try {
+                await deleteNoticeMutation.mutateAsync(noticeId);
+                toast.success('Announcement deleted successfully!');
+            } catch (error: any) {
+                console.error('Delete Error:', error);
+                toast.error(error?.response?.data?.message || 'Failed to delete announcement. Please try again.');
+            }
+        }
     };
 
     if (!isAuthenticated) {
@@ -79,7 +99,10 @@ export default function NoticePage() {
                         <div className="flex items-center gap-3">
                             <Button
                                 variant="primary"
-                                onClick={() => setIsModalOpen(true)}
+                                onClick={() => {
+                                    setEditNotice(null);
+                                    setIsModalOpen(true);
+                                }}
                                 className="gap-2 shadow-sm shadow-blue-500/25 dark:shadow-none font-bold"
                             >
                                 <Megaphone size={18} strokeWidth={2.5} />
@@ -119,7 +142,8 @@ export default function NoticePage() {
                         <NoticeFeed 
                             notices={notices} 
                             isLoading={isLoadingNotices}
-                            onActionClick={(id) => console.log('Action menu for:', id)}
+                            onEditClick={handleEditClick}
+                            onDeleteClick={handleDeleteClick}
                         />
                     </CardContent>
 
@@ -168,14 +192,16 @@ export default function NoticePage() {
                     )}
                 </Card>
 
-                {/* Create Modal */}
-                {isManagerial && (
-                    <CreateNoticeModal
-                        isOpen={isModalOpen}
-                        onClose={() => setIsModalOpen(false)}
-                        onSuccess={handleNoticeSuccess} 
-                    />
-                )}
+                {/* Create/Edit Modal */}
+                <CreateNoticeModal
+                    isOpen={isModalOpen}
+                    onClose={() => {
+                        setIsModalOpen(false);
+                        setEditNotice(null);
+                    }}
+                    onSuccess={handleNoticeSuccess} 
+                    editNotice={editNotice}
+                />
             </div>
         </div>
     );

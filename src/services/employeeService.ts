@@ -51,6 +51,7 @@ export const employeeService = {
                 role: user.role,
                 email: user.email,
                 phone: user.profile?.personal?.phone || 'N/A',
+                dob: user.profile?.personal?.dob || '',
                 joiningDate: user.profile?.employment?.joiningDate
                     ? new Date(user.profile.employment.joiningDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
                     : 'N/A',
@@ -137,6 +138,20 @@ export const employeeService = {
             return response.data;
         } catch (error) {
             console.error(`Error uploading document for employee ${id}:`, error);
+            throw error;
+        }
+    },
+
+    uploadPhoto: async (id: string, formData: FormData) => {
+        try {
+            const response = await apiClient.post(`/employees/${id}/photo`, formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                }
+            });
+            return response.data;
+        } catch (error) {
+            console.error(`Error uploading photo for employee ${id}:`, error);
             throw error;
         }
     },

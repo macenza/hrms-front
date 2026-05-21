@@ -55,19 +55,21 @@ const maskNumber = (num: string, visibleDigits: number = 4) => {
 };
 
 const DetailItem = ({ label, value, icon: Icon, isSensitive = false, showSensitive = false }: any) => (
-    <div className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+    <div className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors w-full overflow-hidden">
         <div className="p-2 bg-gray-100/80 dark:bg-gray-800/50 text-gray-500 dark:text-gray-400 rounded-md shrink-0 transition-colors">
             <Icon size={18} />
         </div>
-        <div>
+        <div className="min-w-0 flex-1">
             <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-0.5 transition-colors">{label}</p>
-            <p className="text-sm font-bold text-gray-900 dark:text-gray-100 font-mono tracking-tight transition-colors">
-                {value ? (
-                    isSensitive && !showSensitive ? maskNumber(value) : value
-                ) : (
-                    <span className="text-gray-400 dark:text-gray-500 font-sans italic">Not provided</span>
-                )}
-            </p>
+            <div className="min-w-0 overflow-x-auto scrollbar-thin">
+                <p className="text-sm font-bold text-gray-900 dark:text-gray-100 font-mono tracking-tight transition-colors whitespace-nowrap">
+                    {value ? (
+                        isSensitive && !showSensitive ? maskNumber(value) : value
+                    ) : (
+                        <span className="text-gray-400 dark:text-gray-500 font-sans italic font-normal">Not provided</span>
+                    )}
+                </p>
+            </div>
         </div>
     </div>
 );
@@ -88,7 +90,7 @@ export default function BankComplianceTab({
     const [bankForm, setBankForm] = useState<Partial<BankDetails>>(bankData || {});
     const [statForm, setStatForm] = useState<Partial<StatutoryDetails>>(statutoryData || {});
     
-    const canEdit = currentUserRole === 'Admin' || currentUserRole === 'HR';
+    const canEdit = currentUserRole?.toLowerCase() === 'admin' || currentUserRole?.toLowerCase() === 'hr';
 
     const handleBankChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setBankForm({ ...bankForm, [e.target.name]: e.target.value });

@@ -23,6 +23,7 @@ export interface Employee {
     phone: string;
     joiningDate: string;
     status: EmployeeStatus;
+    dob?: string;
 }
 
 export interface PaginationState {

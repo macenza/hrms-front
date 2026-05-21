@@ -4,7 +4,6 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Plus, Loader2 } from 'lucide-react';
-import LeaveStats from '@/components/leave/LeaveStats';
 import LeaveTable from '@/components/leave/LeaveTable';
 import ApplyLeaveModal from '@/components/leave/ApplyLeaveModal';
 import { Button } from '@/components/ui/Button';
@@ -55,8 +54,6 @@ export default function LeavePage() {
                     </Button>
                 </div>
                 
-                {/* Dashboard Widgets */}
-                <LeaveStats />
                 <LeaveTable />
                 
                 {/* Action Modals */}

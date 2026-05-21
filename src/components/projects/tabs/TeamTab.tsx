@@ -12,9 +12,10 @@ interface TeamTabProps {
     projectId: string;
     teamAvatars: any[]; 
     onUpdateTeam: (newTeam: string[]) => Promise<void>;
+    canManageTeam?: boolean;
 }
 
-export default function TeamTab({ projectId, teamAvatars = [], onUpdateTeam }: TeamTabProps) {
+export default function TeamTab({ projectId, teamAvatars = [], onUpdateTeam, canManageTeam = false }: TeamTabProps) {
     const teamMembers = teamAvatars;
     const [searchTerm, setSearchTerm] = useState('');
     const [showDropdown, setShowDropdown] = useState(false);
@@ -80,91 +81,93 @@ export default function TeamTab({ projectId, teamAvatars = [], onUpdateTeam }: T
                 <CardContent className="pt-6">
                     
                     {/* Add Member Search Input */}
-                    <div className="relative mb-8 bg-gray-50/50 dark:bg-gray-800/20 p-5 rounded-2xl border border-gray-100 dark:border-gray-800 transition-all">
-                        <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2.5 block transition-colors">
-                            Search and Add Employee to Team
-                        </label>
-                        <div className="relative flex items-center z-50">
-                            <Search size={18} className="absolute left-3.5 text-gray-400 dark:text-gray-500 pointer-events-none transition-colors" />
-                            <Input
-                                placeholder="Search employees by name, email, or role..."
-                                value={searchTerm}
-                                onChange={(e) => {
-                                    setSearchTerm(e.target.value);
-                                    setShowDropdown(true);
-                                }}
-                                onFocus={() => setShowDropdown(true)}
-                                className="pl-11 pr-10 text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-950 w-full shadow-sm focus:ring-blue-500/20"
-                            />
-                            {searchTerm && (
-                                <button 
-                                    onClick={() => { setSearchTerm(''); setShowDropdown(false); }}
-                                    className="absolute right-3.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-0.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-all"
-                                    type="button"
-                                >
-                                    <X size={16} />
-                                </button>
+                    {canManageTeam && (
+                        <div className="relative mb-8 bg-gray-50/50 dark:bg-gray-800/20 p-5 rounded-2xl border border-gray-100 dark:border-gray-800 transition-all">
+                            <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2.5 block transition-colors">
+                                Search and Add Employee to Team
+                            </label>
+                            <div className="relative flex items-center z-50">
+                                <Search size={18} className="absolute left-3.5 text-gray-400 dark:text-gray-500 pointer-events-none transition-colors" />
+                                <Input
+                                    placeholder="Search employees by name, email, or role..."
+                                    value={searchTerm}
+                                    onChange={(e) => {
+                                        setSearchTerm(e.target.value);
+                                        setShowDropdown(true);
+                                    }}
+                                    onFocus={() => setShowDropdown(true)}
+                                    className="pl-11 pr-10 text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-950 w-full shadow-sm focus:ring-blue-500/20"
+                                />
+                                {searchTerm && (
+                                    <button 
+                                        onClick={() => { setSearchTerm(''); setShowDropdown(false); }}
+                                        className="absolute right-3.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-0.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-all"
+                                        type="button"
+                                    >
+                                        <X size={16} />
+                                    </button>
+                                )}
+                            </div>
+
+                            {/* Autocomplete dropdown overlay */}
+                            {showDropdown && (
+                                <>
+                                    <div className="absolute left-5 right-5 mt-2 bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-xl shadow-xl z-50 max-h-60 overflow-y-auto divide-y divide-gray-100 dark:divide-gray-900 transition-all animate-in fade-in duration-150">
+                                        {isSearching ? (
+                                            <div className="p-4 text-center text-sm text-gray-500 dark:text-gray-400 flex items-center justify-center gap-2">
+                                                <Loader2 size={16} className="animate-spin text-blue-500" /> Searching...
+                                            </div>
+                                        ) : employees.length === 0 ? (
+                                            <div className="p-4 text-center text-sm text-gray-500 dark:text-gray-400">
+                                                No active employees found matching search query.
+                                            </div>
+                                        ) : (
+                                            employees.map((emp: any) => {
+                                                const empId = emp.id || emp._id;
+                                                const isAlreadyInTeam = teamMembers.some(m => (m._id === empId || m.id === empId));
+                                                return (
+                                                    <div
+                                                        key={empId}
+                                                        onClick={() => !isAlreadyInTeam && !isSaving && handleAddMember(emp)}
+                                                        className={`p-3 flex items-center justify-between cursor-pointer transition-colors ${
+                                                            isAlreadyInTeam
+                                                                ? 'bg-gray-50/50 dark:bg-gray-900/30 opacity-70 cursor-not-allowed'
+                                                                : 'hover:bg-blue-50/30 dark:hover:bg-blue-950/20'
+                                                        }`}
+                                                    >
+                                                        <div className="flex items-center gap-3">
+                                                            <img
+                                                                src={emp.profile?.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${emp.name}`}
+                                                                alt={emp.name}
+                                                                className="w-10 h-10 rounded-full object-cover border border-gray-200 dark:border-gray-800 shadow-sm transition-colors"
+                                                                onError={(e) => (e.currentTarget.src = `https://api.dicebear.com/7.x/initials/svg?seed=${emp.name}`)}
+                                                            />
+                                                            <div>
+                                                                <p className="text-sm font-bold text-gray-900 dark:text-gray-100 transition-colors">{emp.name}</p>
+                                                                <p className="text-xs text-gray-500 dark:text-gray-400 transition-colors">
+                                                                    {emp.email} • <span className="font-semibold text-blue-600 dark:text-blue-400">{emp.role}</span>
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                        {isAlreadyInTeam ? (
+                                                            <span className="text-[10px] font-bold uppercase tracking-wider bg-blue-100/70 dark:bg-blue-950 text-blue-700 dark:text-blue-400 px-2 py-1 rounded transition-colors">
+                                                                Joined
+                                                            </span>
+                                                        ) : (
+                                                            <span className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline">
+                                                                Add to Team
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })
+                                        )}
+                                    </div>
+                                    <div className="fixed inset-0 z-40 bg-transparent cursor-default" onClick={() => setShowDropdown(false)} />
+                                </>
                             )}
                         </div>
-
-                        {/* Autocomplete dropdown overlay */}
-                        {showDropdown && (
-                            <>
-                                <div className="absolute left-5 right-5 mt-2 bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-xl shadow-xl z-50 max-h-60 overflow-y-auto divide-y divide-gray-100 dark:divide-gray-900 transition-all animate-in fade-in duration-150">
-                                    {isSearching ? (
-                                        <div className="p-4 text-center text-sm text-gray-500 dark:text-gray-400 flex items-center justify-center gap-2">
-                                            <Loader2 size={16} className="animate-spin text-blue-500" /> Searching...
-                                        </div>
-                                    ) : employees.length === 0 ? (
-                                        <div className="p-4 text-center text-sm text-gray-500 dark:text-gray-400">
-                                            No active employees found matching search query.
-                                        </div>
-                                    ) : (
-                                        employees.map((emp: any) => {
-                                            const empId = emp.id || emp._id;
-                                            const isAlreadyInTeam = teamMembers.some(m => (m._id === empId || m.id === empId));
-                                            return (
-                                                <div
-                                                    key={empId}
-                                                    onClick={() => !isAlreadyInTeam && !isSaving && handleAddMember(emp)}
-                                                    className={`p-3 flex items-center justify-between cursor-pointer transition-colors ${
-                                                        isAlreadyInTeam
-                                                            ? 'bg-gray-50/50 dark:bg-gray-900/30 opacity-70 cursor-not-allowed'
-                                                            : 'hover:bg-blue-50/30 dark:hover:bg-blue-950/20'
-                                                    }`}
-                                                >
-                                                    <div className="flex items-center gap-3">
-                                                        <img
-                                                            src={emp.profile?.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${emp.name}`}
-                                                            alt={emp.name}
-                                                            className="w-10 h-10 rounded-full object-cover border border-gray-200 dark:border-gray-800 shadow-sm transition-colors"
-                                                            onError={(e) => (e.currentTarget.src = `https://api.dicebear.com/7.x/initials/svg?seed=${emp.name}`)}
-                                                        />
-                                                        <div>
-                                                            <p className="text-sm font-bold text-gray-900 dark:text-gray-100 transition-colors">{emp.name}</p>
-                                                            <p className="text-xs text-gray-500 dark:text-gray-400 transition-colors">
-                                                                {emp.email} • <span className="font-semibold text-blue-600 dark:text-blue-400">{emp.role}</span>
-                                                            </p>
-                                                        </div>
-                                                    </div>
-                                                    {isAlreadyInTeam ? (
-                                                        <span className="text-[10px] font-bold uppercase tracking-wider bg-blue-100/70 dark:bg-blue-950 text-blue-700 dark:text-blue-400 px-2 py-1 rounded transition-colors">
-                                                            Joined
-                                                        </span>
-                                                    ) : (
-                                                        <span className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline">
-                                                            Add to Team
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            );
-                                        })
-                                    )}
-                                </div>
-                                <div className="fixed inset-0 z-40 bg-transparent cursor-default" onClick={() => setShowDropdown(false)} />
-                            </>
-                        )}
-                    </div>
+                    )}
 
                     {/* Team Grid */}
                     {teamMembers.length === 0 ? (
@@ -192,13 +195,15 @@ export default function TeamTab({ projectId, teamAvatars = [], onUpdateTeam }: T
                                         {member.role || 'Team Member'}
                                     </span>
                                     
-                                    <button
-                                        onClick={() => handleRemoveMember(member._id || member.id)}
-                                        className="absolute top-2.5 right-2.5 p-1.5 bg-red-50 dark:bg-red-500/10 text-red-500 dark:text-red-400 rounded-full opacity-0 group-hover:opacity-100 transition-all hover:bg-red-100 dark:hover:bg-red-500/20 shadow-sm"
-                                        title="Remove member"
-                                    >
-                                        <X size={14} />
-                                    </button>
+                                    {canManageTeam && (
+                                        <button
+                                            onClick={() => handleRemoveMember(member._id || member.id)}
+                                            className="absolute top-2.5 right-2.5 p-1.5 bg-red-50 dark:bg-red-500/10 text-red-500 dark:text-red-400 rounded-full opacity-0 group-hover:opacity-100 transition-all hover:bg-red-100 dark:hover:bg-red-500/20 shadow-sm"
+                                            title="Remove member"
+                                        >
+                                            <X size={14} />
+                                        </button>
+                                    )}
                                 </div>
                             ))}
                         </div>

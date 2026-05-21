@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/utils/cn';
 
-export type AssetStatus = 'Assigned' | 'Available' | 'Maintenance';
+export type AssetStatus = 'Assigned' | 'Available' | 'Maintenance' | 'In Maintenance';
 
 export interface Asset {
     id: string; // Database ID or physical asset tag
@@ -48,7 +48,8 @@ const getStatusBadgeVariant = (status: AssetStatus) => {
     switch (status) {
         case 'Available': return 'success';
         case 'Assigned': return 'info';
-        case 'Maintenance': return 'warning';
+        case 'Maintenance':
+        case 'In Maintenance': return 'warning';
         default: return 'default';
     }
 };
@@ -174,12 +175,13 @@ export default function AssetTable({
                                                 <UserPlus size={16} />
                                             </Button>
                                         )}
-                                        {onUnassign && record.status === 'Assigned' && (
+                                        {onUnassign && (
                                             <Button 
                                                 variant="ghost" 
                                                 size="sm" 
-                                                className="p-1.5 rounded-full text-gray-400 dark:text-gray-500 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-500/10 transition-colors" 
-                                                title="Unassign Asset"
+                                                disabled={record.status !== 'Assigned'}
+                                                className="p-1.5 rounded-full text-gray-400 dark:text-gray-500 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-500/10 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-gray-400 dark:disabled:hover:text-gray-500 transition-colors" 
+                                                title={record.status === 'Assigned' ? 'Unassign Asset' : 'Not Assigned'}
                                                 onClick={() => onUnassign(record)}
                                             >
                                                 <UserMinus size={16} />

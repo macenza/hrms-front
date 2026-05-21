@@ -5,11 +5,11 @@ import { employeeService } from '@/services/employeeService';
 import { AddAssetPayload } from '@/components/assets/AddAssetModal';
 import { AssignAssetPayload } from '@/components/assets/AssignAssetModal';
 
-export function useAssetData(page: number = 1, limit: number = 10) {
+export function useAssetData(page: number = 1, limit: number = 10, status: string = '', search: string = '') {
     return useQuery({
-        queryKey: ['assets', 'dashboard', page, limit],
+        queryKey: ['assets', 'dashboard', page, limit, status, search],
         queryFn: async () => {
-            const data = await assetService.getDashboardData(page, limit);
+            const data = await assetService.getDashboardData(page, limit, status, search);
             
             const mappedRecords = data.records.map((rec: any) => ({
                 id: rec.assetTag,

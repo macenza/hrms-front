@@ -22,6 +22,7 @@ interface TaskModalProps {
     onDelete?: (taskId: string) => void;
     task: any | null; 
     team?: any[];
+    isReadOnly?: boolean;
 }
 
 const initialFormState: TaskFormData = {
@@ -32,7 +33,7 @@ const initialFormState: TaskFormData = {
     assignee: '',
 };
 
-export default function TaskModal({ isOpen, onClose, onSubmit, onDelete, task, team = [] }: TaskModalProps) {
+export default function TaskModal({ isOpen, onClose, onSubmit, onDelete, task, team = [], isReadOnly = false }: TaskModalProps) {
     const [formData, setFormData] = useState<TaskFormData>(initialFormState);
 
     useEffect(() => {
@@ -80,7 +81,7 @@ export default function TaskModal({ isOpen, onClose, onSubmit, onDelete, task, t
         <Modal
             isOpen={isOpen}
             onClose={handleClose}
-            title={task ? 'Edit Task' : 'Create New Task'}
+            title={task ? (isReadOnly ? 'Task Details' : 'Edit Task') : 'Create New Task'}
             className="max-w-lg"
         >
             <form onSubmit={handleSubmit} className="space-y-5 p-2">
@@ -95,6 +96,7 @@ export default function TaskModal({ isOpen, onClose, onSubmit, onDelete, task, t
                         placeholder="e.g. Design Homepage"
                         required
                         className="text-gray-900 dark:text-gray-100"
+                        disabled={isReadOnly}
                     />
                 </div>
 
@@ -107,6 +109,7 @@ export default function TaskModal({ isOpen, onClose, onSubmit, onDelete, task, t
                         onChange={handleChange}
                         className="w-full px-4 py-3 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 focus:outline-none focus:ring-2 focus:ring-blue-600/20 dark:focus:ring-blue-500/40 focus:border-blue-600 dark:focus:border-blue-500 h-24 resize-none text-gray-700 dark:text-gray-300 placeholder-gray-400 dark:placeholder-gray-600 transition-all text-sm shadow-sm dark:shadow-none"
                         placeholder="Add detailed instructions..."
+                        disabled={isReadOnly}
                     />
                 </div>
 
@@ -121,6 +124,7 @@ export default function TaskModal({ isOpen, onClose, onSubmit, onDelete, task, t
                                 value={formData.priority}
                                 onChange={handleChange}
                                 className="w-full h-10 pl-10 pr-4 rounded-md border border-gray-300 dark:border-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-600 dark:focus:ring-blue-500/40 focus:border-transparent text-sm bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 font-medium cursor-pointer appearance-none transition-all shadow-sm dark:shadow-none"
+                                disabled={isReadOnly}
                             >
                                 <option value="Low">Low</option>
                                 <option value="Medium">Medium</option>
@@ -141,6 +145,7 @@ export default function TaskModal({ isOpen, onClose, onSubmit, onDelete, task, t
                                 onChange={handleChange}
                                 className="pl-10 text-gray-900 dark:text-gray-100 [color-scheme:light] dark:[color-scheme:dark]"
                                 required
+                                disabled={isReadOnly}
                             />
                         </div>
                     </div>
@@ -154,6 +159,7 @@ export default function TaskModal({ isOpen, onClose, onSubmit, onDelete, task, t
                         value={formData.assignee}
                         onChange={handleChange}
                         className="w-full h-10 px-3 rounded-md border border-gray-300 dark:border-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-600 dark:focus:ring-blue-500/40 focus:border-transparent text-sm bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 font-medium cursor-pointer transition-all shadow-sm dark:shadow-none"
+                        disabled={isReadOnly}
                     >
                         <option value="">Unassigned</option>
                         {team.map((member: any) => (
@@ -168,33 +174,46 @@ export default function TaskModal({ isOpen, onClose, onSubmit, onDelete, task, t
 
                 {/* Footer Actions */}
                 <div className="pt-6 mt-6 border-t border-gray-100 dark:border-gray-800 flex flex-col sm:flex-row gap-3 transition-colors">
-                    {task && (
-                        <Button 
-                            variant="outline" 
-                            type="button" 
-                            onClick={handleDelete}
-                            className="border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 transition-all font-semibold"
-                        >
-                            Delete Task
-                        </Button>
-                    )}
-                    <div className="flex-1 flex gap-3">
-                        <Button
-                            variant="ghost"
-                            type="button"
-                            onClick={handleClose}
-                            className="flex-1 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                        >
-                            Cancel
-                        </Button>
+                    {isReadOnly ? (
                         <Button
                             variant="primary"
-                            type="submit"
-                            className="flex-1 shadow-md shadow-blue-500/25 dark:shadow-none font-semibold"
+                            type="button"
+                            onClick={handleClose}
+                            className="w-full font-semibold"
                         >
-                            {task ? 'Save Changes' : 'Create Task'}
+                            Close
                         </Button>
-                    </div>
+                    ) : (
+                        <>
+                            {task && (
+                                <Button 
+                                    variant="outline" 
+                                    type="button" 
+                                    onClick={handleDelete}
+                                    className="border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 transition-all font-semibold"
+                                >
+                                    Delete Task
+                                </Button>
+                            )}
+                            <div className="flex-1 flex gap-3">
+                                <Button
+                                    variant="ghost"
+                                    type="button"
+                                    onClick={handleClose}
+                                    className="flex-1 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                                >
+                                    Cancel
+                                </Button>
+                                <Button
+                                    variant="primary"
+                                    type="submit"
+                                    className="flex-1 shadow-md shadow-blue-500/25 dark:shadow-none font-semibold"
+                                >
+                                    {task ? 'Save Changes' : 'Create Task'}
+                                </Button>
+                            </div>
+                        </>
+                    )}
                 </div>
             </form>
         </Modal>

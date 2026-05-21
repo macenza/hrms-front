@@ -17,6 +17,7 @@ export type AttendanceLogStatus = 'Present' | 'Absent' | 'Late' | 'Half-Day' | '
 
 export interface AttendanceLogRecord {
     id: string;
+    _id?: string;
     date: string;
     checkIn: string;
     checkOut: string;
@@ -156,9 +157,9 @@ export default function AttendanceTab({
                                             </div>
                                         </td>
                                     </tr>
-                                ) : (
-                                    logs.map((log) => (
-                                        <tr key={log.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                                                                ) : (
+                                    logs.map((log, index) => (
+                                        <tr key={log.id || log._id || index} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
                                             <td className="px-6 py-4 text-gray-900 dark:text-gray-100 font-medium transition-colors">{log.date}</td>
                                             <td className="px-6 py-4 text-gray-600 dark:text-gray-400 transition-colors">{log.checkIn || '-'}</td>
                                             <td className="px-6 py-4 text-gray-600 dark:text-gray-400 transition-colors">{log.checkOut || '-'}</td>

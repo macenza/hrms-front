@@ -17,10 +17,11 @@ export function useUpdateCompanySettings() {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: async (data: any) => {
+            // Can accept standard JSON object or FormData for files
             const res = await apiClient.put('/settings/company', data);
             return res.data;
         },
-        onSuccess: () => {
+        onSuccess: (res) => {
             queryClient.invalidateQueries({ queryKey: ['settings', 'company'] });
         }
     });
@@ -61,10 +62,49 @@ export function useUpdatePassword() {
     });
 }
 
-export function useToggle2FA() {
+// --- Active Session Management ---
+export function useActiveSessions() {
+    return useQuery({
+        queryKey: ['settings', 'sessions'],
+        queryFn: async () => {
+            const res = await apiClient.get('/settings/sessions');
+            return res.data.data;
+        },
+        staleTime: 30 * 1000, // 30 seconds
+    });
+}
+
+export function useRevokeOtherSessions() {
+    const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: async (enable: boolean) => {
-            const res = await apiClient.post('/auth/2fa/toggle', { enable });
+        mutationFn: async () => {
+            const res = await apiClient.post('/settings/sessions/revoke-others');
+            return res.data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['settings', 'sessions'] });
+        }
+    });
+}
+
+// --- Admin Overrides ---
+export function useSearchEmployees(query: string) {
+    return useQuery({
+        queryKey: ['settings', 'admin', 'search-users', query],
+        queryFn: async () => {
+            if (!query) return [];
+            const res = await apiClient.get(`/settings/admin/search-users?q=${encodeURIComponent(query)}`);
+            return res.data.data;
+        },
+        enabled: query.trim().length >= 2,
+        staleTime: 5000,
+    });
+}
+
+export function useAdminPasswordOverride() {
+    return useMutation({
+        mutationFn: async ({ targetUserId, newPassword }: any) => {
+            const res = await apiClient.post('/settings/admin/change-password', { targetUserId, newPassword });
             return res.data;
         }
     });

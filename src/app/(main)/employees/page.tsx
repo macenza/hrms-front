@@ -33,6 +33,22 @@ function resolveCreatedEmployeeId(data: unknown): string | undefined {
     return undefined;
 }
 
+const calculateDaysToBirthday = (dobString?: string) => {
+    if (!dobString) return undefined;
+    const birthDate = new Date(dobString);
+    if (isNaN(birthDate.getTime())) return undefined;
+    const today = new Date();
+    const todayZero = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const nextBirthday = new Date(today.getFullYear(), birthDate.getMonth(), birthDate.getDate());
+    
+    if (todayZero > nextBirthday) {
+        nextBirthday.setFullYear(today.getFullYear() + 1);
+    }
+    
+    const diffTime = nextBirthday.getTime() - todayZero.getTime();
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+};
+
 export default function EmployeesPage() {
     const router = useRouter();
     
@@ -65,6 +81,12 @@ export default function EmployeesPage() {
         currentPage: page, totalPages: 1, totalEntries: 0, entriesPerPage: 10
     };
 
+    const upcomingBirthdays = employees.map(emp => {
+        const days = calculateDaysToBirthday(emp.dob);
+        return { emp, days };
+    }).filter(item => item.days !== undefined && item.days <= 10)
+      .sort((a, b) => (a.days ?? 0) - (b.days ?? 0));
+
     const handleFilterChange = (key: keyof EmployeeFilterState, value: string) => {
         setFilters(prev => ({ ...prev, [key]: value }));
         setPage(1); 
@@ -85,8 +107,8 @@ export default function EmployeesPage() {
             if (meta.profilePhoto && newId) {
                 try {
                     const fd = new FormData();
-                    fd.append('document', meta.profilePhoto);
-                    await employeeService.uploadDocument(newId, fd);
+                    fd.append('photo', meta.profilePhoto);
+                    await employeeService.uploadPhoto(newId, fd);
                     toast.success('Employee created and profile photo uploaded successfully!');
                 } catch (uploadErr) {
                     console.error('Profile photo upload failed:', uploadErr);
@@ -142,6 +164,39 @@ export default function EmployeesPage() {
                     onAddClick={() => setIsModalOpen(true)} 
                     onExportClick={handleExport} 
                 />
+
+                {upcomingBirthdays.length > 0 && (
+                    <div className="bg-gradient-to-r from-pink-500/10 via-purple-500/10 to-blue-500/10 dark:from-pink-500/20 dark:via-purple-500/20 dark:to-blue-500/20 rounded-xl p-5 border border-pink-500/20 dark:border-pink-500/30 shadow-sm animate-in slide-in-from-top duration-300">
+                        <div className="flex items-center gap-2 mb-3">
+                            <span className="text-xl">🎉</span>
+                            <h3 className="text-xs font-bold uppercase tracking-wider text-gray-800 dark:text-gray-200">
+                                Upcoming Birthdays (Within 10 Days)
+                            </h3>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                            {upcomingBirthdays.map(({ emp, days }) => {
+                                const dayText = days === 0 ? "Today! 🎂" : days === 1 ? "Tomorrow!" : `in ${days} days`;
+                                return (
+                                    <div 
+                                        key={emp.id} 
+                                        onClick={() => router.push(`/employees/${emp.id}`)}
+                                        className="flex items-center gap-3 p-3 bg-white/60 dark:bg-gray-900/60 hover:bg-white dark:hover:bg-gray-900 border border-gray-100 dark:border-gray-800/80 rounded-lg shadow-sm cursor-pointer hover:shadow transition-all duration-200"
+                                    >
+                                        <div className="w-10 h-10 rounded-full bg-pink-100 dark:bg-pink-900/30 flex items-center justify-center font-bold text-pink-600 dark:text-pink-400 text-sm shrink-0">
+                                            {emp.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <p className="text-sm font-bold text-gray-900 dark:text-gray-100 truncate">{emp.name}</p>
+                                            <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">
+                                                {emp.department} · <span className="font-bold text-pink-600 dark:text-pink-400">{dayText}</span>
+                                            </p>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                )}
                 
                 <EmployeeFilters 
                     filters={filters}

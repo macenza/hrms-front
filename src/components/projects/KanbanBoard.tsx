@@ -28,6 +28,7 @@ export interface TaskRecord {
     dueDate: string;
     assigneeName: string;
     assigneeAvatar?: string;
+    assignee?: any;
 }
 
 export interface KanbanColumn {
@@ -47,6 +48,8 @@ interface KanbanBoardProps {
     onTaskUpdate?: (taskId: string, task: Partial<TaskRecord>) => Promise<void>;
     onTaskDelete?: (taskId: string) => Promise<void>;
     team?: any[];
+    currentUserId?: string;
+    currentUserRole?: string;
 }
 
 
@@ -77,7 +80,9 @@ export default function KanbanBoard({
     onTaskAdd,
     onTaskUpdate,
     onTaskDelete,
-    team = []
+    team = [],
+    currentUserId,
+    currentUserRole
 }: KanbanBoardProps) {
     const [isMounted, setIsMounted] = useState(false);
     const [columns, setColumns] = useState<KanbanBoardData>({});
@@ -225,58 +230,69 @@ export default function KanbanBoard({
                                             snapshot.isDraggingOver ? "bg-blue-50/50 dark:bg-blue-900/10" : ""
                                         )}
                                     >
-                                        {column.items.map((item, index) => (
-                                            <Draggable key={item.id} draggableId={item.id} index={index}>
-                                                {(provided, snapshot) => {
-                                                    const isOverdue = new Date(item.dueDate) < new Date() && columnId !== 'Completed';
-                                                    
-                                                    return (
-                                                        <div
-                                                            ref={provided.innerRef}
-                                                            {...provided.draggableProps}
-                                                            {...provided.dragHandleProps}
-                                                            className={cn(
-                                                                "bg-white dark:bg-gray-900 p-4 rounded-xl shadow-sm dark:shadow-none border border-gray-100 dark:border-gray-800 group hover:shadow-md dark:hover:shadow-none hover:border-blue-300 dark:hover:border-blue-900/50 transition-all select-none cursor-grab active:cursor-grabbing",
-                                                                snapshot.isDragging ? "rotate-2 shadow-xl dark:shadow-2xl ring-2 ring-blue-500/50 dark:ring-blue-400/50 cursor-grabbing" : ""
-                                                            )}
-                                                            onClick={() => {
-                                                                setEditingTask(item);
-                                                                setIsTaskModalOpen(true);
-                                                            }}
-                                                        >
-                                                            <h4 className="font-bold text-gray-900 dark:text-gray-100 mb-4 leading-snug transition-colors">
-                                                                {item.title}
-                                                            </h4>
-                                                            
-                                                            <div className="flex items-center justify-between pt-3 border-t border-gray-50 dark:border-gray-800/50 transition-colors">
-                                                                <div className={cn(
-                                                                    "flex items-center gap-1 text-xs font-medium transition-colors",
-                                                                    isOverdue ? "text-red-500 dark:text-red-400 font-bold" : "text-gray-400 dark:text-gray-500"
-                                                                )}>
-                                                                    <Calendar size={14} /> {item.dueDate || 'No date'}
-                                                                </div>
+                                        {column.items.map((item, index) => {
+                                            const isManager = ['admin', 'manager', 'hr'].includes(currentUserRole?.toLowerCase() || '');
+                                            const isTaskAssignee = item.assignee 
+                                                ? (typeof item.assignee === 'object' 
+                                                    ? (item.assignee._id === currentUserId || item.assignee.id === currentUserId) 
+                                                    : item.assignee === currentUserId)
+                                                : false;
+                                            const isDragDisabled = !isManager && !isTaskAssignee;
+
+                                            return (
+                                                <Draggable key={item.id} draggableId={item.id} index={index} isDragDisabled={isDragDisabled}>
+                                                    {(provided, snapshot) => {
+                                                        const isOverdue = new Date(item.dueDate) < new Date() && columnId !== 'Completed';
+                                                        
+                                                        return (
+                                                            <div
+                                                                ref={provided.innerRef}
+                                                                {...provided.draggableProps}
+                                                                {...provided.dragHandleProps}
+                                                                className={cn(
+                                                                    "bg-white dark:bg-gray-900 p-4 rounded-xl shadow-sm dark:shadow-none border border-gray-100 dark:border-gray-800 group hover:shadow-md dark:hover:shadow-none hover:border-blue-300 dark:hover:border-blue-900/50 transition-all select-none",
+                                                                    isDragDisabled ? "cursor-default opacity-85" : "cursor-grab active:cursor-grabbing",
+                                                                    snapshot.isDragging ? "rotate-2 shadow-xl dark:shadow-2xl ring-2 ring-blue-500/50 dark:ring-blue-400/50 cursor-grabbing" : ""
+                                                                )}
+                                                                onClick={() => {
+                                                                    setEditingTask(item);
+                                                                    setIsTaskModalOpen(true);
+                                                                }}
+                                                            >
+                                                                <h4 className="font-bold text-gray-900 dark:text-gray-100 mb-4 leading-snug transition-colors">
+                                                                    {item.title}
+                                                                </h4>
                                                                 
-                                                                <div className="flex -space-x-2">
-                                                                    <div 
-                                                                        className={cn(
-                                                                            "relative w-6 h-6 rounded-full border-2 border-white dark:border-gray-900 flex items-center justify-center text-[10px] font-bold overflow-hidden transition-colors",
-                                                                            getAvatarColor(item.assigneeName)
-                                                                        )} 
-                                                                        title={item.assigneeName}
-                                                                    >
-                                                                        {item.assigneeAvatar ? (
-                                                                            <img src={item.assigneeAvatar} alt={item.assigneeName} className="w-full h-full object-cover" />
-                                                                        ) : (
-                                                                            getInitials(item.assigneeName)
-                                                                        )}
+                                                                <div className="flex items-center justify-between pt-3 border-t border-gray-50 dark:border-gray-800/50 transition-colors">
+                                                                    <div className={cn(
+                                                                        "flex items-center gap-1 text-xs font-medium transition-colors",
+                                                                        isOverdue ? "text-red-500 dark:text-red-400 font-bold" : "text-gray-400 dark:text-gray-500"
+                                                                    )}>
+                                                                        <Calendar size={14} /> {item.dueDate || 'No date'}
+                                                                    </div>
+                                                                    
+                                                                    <div className="flex -space-x-2">
+                                                                        <div 
+                                                                            className={cn(
+                                                                                "relative w-6 h-6 rounded-full border-2 border-white dark:border-gray-900 flex items-center justify-center text-[10px] font-bold overflow-hidden transition-colors",
+                                                                                getAvatarColor(item.assigneeName)
+                                                                            )} 
+                                                                            title={item.assigneeName}
+                                                                        >
+                                                                            {item.assigneeAvatar ? (
+                                                                                <img src={item.assigneeAvatar} alt={item.assigneeName} className="w-full h-full object-cover" />
+                                                                            ) : (
+                                                                                getInitials(item.assigneeName)
+                                                                            )}
+                                                                        </div>
                                                                     </div>
                                                                 </div>
                                                             </div>
-                                                        </div>
-                                                    );
-                                                }}
-                                            </Draggable>
-                                        ))}
+                                                        );
+                                                    }}
+                                                </Draggable>
+                                            );
+                                        })}
                                         {provided.placeholder}
                                     </div>
                                 )}
@@ -293,6 +309,16 @@ export default function KanbanBoard({
                 onDelete={handleTaskDelete}
                 task={editingTask}
                 team={team}
+                isReadOnly={
+                    editingTask
+                        ? !['admin', 'manager', 'hr'].includes(currentUserRole?.toLowerCase() || '') &&
+                          !(editingTask.assignee
+                              ? typeof editingTask.assignee === 'object'
+                                  ? editingTask.assignee._id === currentUserId || editingTask.assignee.id === currentUserId
+                                  : editingTask.assignee === currentUserId
+                              : false)
+                        : false
+                }
             />
         </div>
     );

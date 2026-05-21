@@ -26,13 +26,13 @@ interface FilterSelectProps {
 }
 
 const FilterSelect = ({ value, onChange, options, placeholder, className }: FilterSelectProps) => (
-    <div className={cn("relative w-full sm:w-auto group", className)}>
+    <div className={cn("relative w-full sm:w-44 group", className)}>
         <select
             value={value}
             onChange={(e) => onChange(e.target.value)}
             className={cn(
-                "w-full sm:w-44 h-9 appearance-none border border-gray-200 text-gray-700 pl-3 pr-9 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 cursor-pointer text-sm font-medium transition-all shadow-sm",
-                value ? "bg-blue-50/50 border-blue-200 text-blue-800" : "bg-white hover:bg-gray-50"
+                "w-full h-9 appearance-none border border-gray-200 text-gray-700 pl-3 pr-9 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 cursor-pointer text-sm font-medium transition-all shadow-sm bg-white dark:bg-gray-950 dark:border-gray-800 dark:text-gray-100 dark:focus:ring-blue-500",
+                value ? "bg-blue-50/50 border-blue-200 text-blue-800 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-400" : "bg-white hover:bg-gray-50 dark:bg-gray-950 dark:hover:bg-gray-900"
             )}
         >
             <option value="">{placeholder}</option>
@@ -45,7 +45,7 @@ const FilterSelect = ({ value, onChange, options, placeholder, className }: Filt
         <ChevronDown 
             className={cn(
                 "absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none transition-colors",
-                value ? "text-blue-500" : "text-gray-400 group-hover:text-gray-600"
+                value ? "text-blue-500" : "text-gray-400 dark:text-gray-500 group-hover:text-gray-600 dark:group-hover:text-gray-400"
             )} 
             size={16} 
         />
@@ -92,7 +92,7 @@ export default function EmployeeFilters({ filters, onFilterChange }: EmployeeFil
     };
 
     return (
-        <div className="flex flex-col sm:flex-row flex-wrap items-center gap-2.5 py-1 animate-in fade-in duration-300">
+        <div className="flex flex-col sm:flex-row flex-wrap items-center gap-3 sm:gap-4 py-1 animate-in fade-in duration-300">
             <FilterSelect
                 value={filters.department}
                 onChange={(val) => onFilterChange('department', val)}
@@ -112,14 +112,13 @@ export default function EmployeeFilters({ filters, onFilterChange }: EmployeeFil
                 onChange={(val) => onFilterChange('status', val)}
                 options={statuses}
                 placeholder="All Status"
-                className="sm:w-36" 
             />
 
             {/* Dynamic Clear Button */}
             {hasFilters && (
                 <button 
                     onClick={clearAllFilters}
-                    className="flex items-center gap-1.5 h-9 px-3 ml-1 text-sm font-semibold text-red-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors animate-in zoom-in-95"
+                    className="flex items-center gap-1.5 h-9 px-4 ml-1.5 sm:ml-2 text-sm font-semibold text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-lg transition-colors animate-in zoom-in-95 shrink-0"
                 >
                     <RotateCcw size={14} />
                     Clear

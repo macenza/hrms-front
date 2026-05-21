@@ -2,10 +2,11 @@
 
 import React, { useEffect, useState } from 'react';
 import { useAppSelector } from '@/store/hooks';
-import { useLeaveRequests } from '@/hooks/api/useLeave';
+import { useLeaveRequests, useUpdateLeaveStatus } from '@/hooks/api/useLeave';
 import { Leave } from '@/types';
 import { Loader2, CheckCircle2, XCircle, Clock, Filter, ChevronLeft, ChevronRight, Search, ArrowUpDown, RefreshCw } from 'lucide-react';
 import { cn } from '@/utils/cn';
+import { toast } from 'sonner';
 
 type SortKey = 'leaveType' | 'startDate' | 'numberOfDays' | 'status' | 'requestedAt' | 'employeeName';
 
@@ -24,15 +25,48 @@ const TableRowSkeleton = ({ isHrOrAdmin, viewMode }: { isHrOrAdmin: boolean, vie
         <td className="p-4"><div className="h-4 w-32 bg-gray-200 dark:bg-gray-800 rounded"></div></td>
         <td className="p-4"><div className="h-6 w-24 bg-gray-200 dark:bg-gray-800 rounded-full"></div></td>
         <td className="p-4"><div className="h-4 w-24 bg-gray-200 dark:bg-gray-800 rounded"></div></td>
+        {isHrOrAdmin && viewMode === 'all' && (
+            <td className="p-4"><div className="h-6 w-20 bg-gray-200 dark:bg-gray-800 rounded mx-auto"></div></td>
+        )}
     </tr>
 );
 
 export default function LeaveTable() {
     const { user } = useAppSelector((state) => state.auth);
-    const isHrOrAdmin = user?.role === 'HR' || user?.role === 'Admin';
+    const userRole = user?.role?.toLowerCase();
+    const isHrOrAdmin = userRole === 'hr' || userRole === 'admin';
     
     // View State
     const [viewMode, setViewMode] = useState<'all' | 'mine'>(isHrOrAdmin ? 'all' : 'mine');
+    
+    const updateLeaveStatusMutation = useUpdateLeaveStatus();
+
+    const handleUpdateStatus = async (leaveId: string, status: 'Approved' | 'Rejected') => {
+        let reason = '';
+        if (status === 'Rejected') {
+            const inputReason = window.prompt("Please enter a reason for rejecting this leave request:");
+            if (inputReason === null) {
+                // User cancelled the prompt
+                return;
+            }
+            if (!inputReason.trim()) {
+                toast.error("Rejection reason is mandatory!");
+                return;
+            }
+            reason = inputReason.trim();
+        } else {
+            if (!window.confirm(`Are you sure you want to approve this leave request?`)) {
+                return;
+            }
+        }
+
+        try {
+            await updateLeaveStatusMutation.mutateAsync({ leaveId, status, rejectionReason: reason });
+            toast.success(`Leave request ${status.toLowerCase()} successfully!`);
+        } catch (err: any) {
+            toast.error(err?.response?.data?.message || err.message || `Failed to update leave status.`);
+        }
+    };
     
     // Fetch Data using React Query
     const { 
@@ -63,9 +97,9 @@ export default function LeaveTable() {
     if (searchQuery.trim() !== '' && isHrOrAdmin && viewMode === 'all') {
         const query = searchQuery.toLowerCase();
         processedLeaves = processedLeaves.filter((leave) => {
-            const empData = typeof leave.userId === 'object' ? leave.userId : null;
-            const empName = (empData as any)?.name?.toLowerCase() || '';
-            const empId = (empData as any)?._id?.toLowerCase() || String(leave.userId).toLowerCase();
+            const empData = typeof (leave as any).user === 'object' ? (leave as any).user : null;
+            const empName = empData?.name?.toLowerCase() || '';
+            const empId = empData?.employeeId?.toLowerCase() || empData?._id?.toLowerCase() || String((leave as any).user).toLowerCase();
             return empName.includes(query) || empId.includes(query);
         });
     }
@@ -76,8 +110,8 @@ export default function LeaveTable() {
             let bValue: any = b[sortConfig.key as keyof Leave];
 
             if (sortConfig.key === 'employeeName') {
-                aValue = typeof a.userId === 'object' ? (a.userId as any)?.name || '' : '';
-                bValue = typeof b.userId === 'object' ? (b.userId as any)?.name || '' : '';
+                aValue = typeof (a as any).user === 'object' ? ((a as any).user as any)?.name || '' : '';
+                bValue = typeof (b as any).user === 'object' ? ((b as any).user as any)?.name || '' : '';
             }
             if (sortConfig.key === 'startDate' || sortConfig.key === 'requestedAt') {
                 aValue = new Date(aValue || a.createdAt).getTime();
@@ -252,6 +286,9 @@ export default function LeaveTable() {
                                     Requested <ArrowUpDown size={14} className="text-gray-300 dark:text-gray-600 group-hover:text-gray-500 dark:group-hover:text-gray-300 transition-colors" />
                                 </div>
                             </th>
+                            {isHrOrAdmin && viewMode === 'all' && (
+                                <th className="p-4 text-center">Actions</th>
+                            )}
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100 dark:divide-gray-800 transition-colors">
@@ -259,7 +296,7 @@ export default function LeaveTable() {
                             Array.from({ length: 5 }).map((_, idx) => <TableRowSkeleton key={idx} isHrOrAdmin={isHrOrAdmin} viewMode={viewMode} />)
                         ) : currentData.length === 0 ? (
                             <tr>
-                                <td colSpan={isHrOrAdmin && viewMode === 'all' ? 7 : 6} className="p-16 text-center text-gray-500 dark:text-gray-400 transition-colors">
+                                <td colSpan={isHrOrAdmin && viewMode === 'all' ? 8 : 6} className="p-16 text-center text-gray-500 dark:text-gray-400 transition-colors">
                                     <div className="flex flex-col items-center justify-center">
                                         <Filter size={32} className="text-gray-300 dark:text-gray-600 mb-3 transition-colors" />
                                         <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 transition-colors">No leave records found.</p>
@@ -273,10 +310,10 @@ export default function LeaveTable() {
                                     {isHrOrAdmin && viewMode === 'all' && (
                                         <td className="p-4">
                                             <div className="text-sm font-bold text-gray-900 dark:text-gray-100 transition-colors">
-                                                {typeof leave.userId === 'object' && leave.userId !== null ? (leave.userId as any).name : 'Unknown Employee'}
+                                                {typeof (leave as any).user === 'object' && (leave as any).user !== null ? ((leave as any).user as any).name : 'Unknown Employee'}
                                             </div>
                                             <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 uppercase transition-colors">
-                                                ID: {typeof leave.userId === 'object' && leave.userId !== null ? String((leave.userId as any)._id).slice(-6) : String(leave.userId).slice(-6)}
+                                                ID: {typeof (leave as any).user === 'object' && (leave as any).user !== null ? (((leave as any).user as any).employeeId || String(((leave as any).user as any)._id).slice(-6)) : String((leave as any).user).slice(-6)}
                                             </div>
                                         </td>
                                     )}
@@ -300,6 +337,32 @@ export default function LeaveTable() {
                                     <td className="p-4 text-sm text-gray-500 dark:text-gray-400 transition-colors">
                                         {new Date(leave.requestedAt || leave.createdAt).toLocaleDateString()}
                                     </td>
+                                    {isHrOrAdmin && viewMode === 'all' && (
+                                        <td className="p-4">
+                                            {leave.status === 'Pending' ? (
+                                                <div className="flex items-center justify-center gap-2">
+                                                    <button 
+                                                        onClick={() => handleUpdateStatus(leave._id, 'Approved')}
+                                                        className="px-2.5 py-1.5 text-xs font-bold text-emerald-700 dark:text-emerald-400 hover:text-white dark:hover:text-white bg-emerald-50 dark:bg-emerald-500/10 hover:bg-emerald-600 dark:hover:bg-emerald-600 rounded border border-emerald-200 dark:border-emerald-500/20 transition-all flex items-center gap-1 shadow-sm"
+                                                        title="Approve Leave"
+                                                    >
+                                                        Approve
+                                                    </button>
+                                                    <button 
+                                                        onClick={() => handleUpdateStatus(leave._id, 'Rejected')}
+                                                        className="px-2.5 py-1.5 text-xs font-bold text-red-700 dark:text-red-400 hover:text-white dark:hover:text-white bg-red-50 dark:bg-red-500/10 hover:bg-red-600 dark:hover:bg-red-600 rounded border border-red-200 dark:border-red-900/50 transition-all flex items-center gap-1 shadow-sm"
+                                                        title="Reject Leave"
+                                                    >
+                                                        Reject
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <div className="text-center">
+                                                    <span className="text-xs font-semibold text-gray-400 dark:text-gray-500">Processed</span>
+                                                </div>
+                                            )}
+                                        </td>
+                                    )}
                                 </tr>
                             ))
                         )}

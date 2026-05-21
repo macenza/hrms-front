@@ -9,10 +9,13 @@ export interface AssignAssetPayload {
 }
 
 export const assetService = {
-    getDashboardData: async (page: number = 1, limit: number = 10) => {
+    getDashboardData: async (page: number = 1, limit: number = 10, status: string = '', search: string = '') => {
         try {
             // Enforced BASE constant
-            const response = await apiClient.get(`${ENDPOINTS.ASSET.BASE}?page=${page}&limit=${limit}`);
+            let url = `${ENDPOINTS.ASSET.BASE}?page=${page}&limit=${limit}`;
+            if (status) url += `&status=${encodeURIComponent(status)}`;
+            if (search) url += `&search=${encodeURIComponent(search)}`;
+            const response = await apiClient.get(url);
             return response.data;
         } catch (error) {
             console.error("Error fetching asset data:", error);

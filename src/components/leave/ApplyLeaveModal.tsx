@@ -29,6 +29,7 @@ const initialFormState: LeaveApplicationPayload = {
 export default function ApplyLeaveModal({ isOpen, onClose }: ApplyLeaveModalProps) {
     const [formData, setFormData] = useState<LeaveApplicationPayload>(initialFormState);
     const [error, setError] = useState('');
+    const todayString = new Date().toISOString().split('T')[0];
     
     // Connect to React Query Mutation
     const applyLeaveMutation = useApplyLeave();
@@ -69,6 +70,14 @@ export default function ApplyLeaveModal({ isOpen, onClose }: ApplyLeaveModalProp
 
         if (calculatedDays <= 0) {
             setError("End date must be the same as or after the start date.");
+            return;
+        }
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const start = new Date(formData.startDate);
+        if (start < today) {
+            setError("Leave start date cannot be in the past.");
             return;
         }
 
@@ -130,6 +139,7 @@ export default function ApplyLeaveModal({ isOpen, onClose }: ApplyLeaveModalProp
                                 value={formData.startDate} 
                                 onChange={handleChange} 
                                 required 
+                                min={todayString}
                                 disabled={applyLeaveMutation.isPending}
                                 className="text-gray-900 dark:text-gray-100 [color-scheme:light] dark:[color-scheme:dark]"
                             />

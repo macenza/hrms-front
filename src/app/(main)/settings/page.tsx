@@ -5,32 +5,33 @@ import { useRouter } from 'next/navigation';
 import { Building, Lock, Bell, ChevronRight, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { cn } from '@/utils/cn';
-import { useAppSelector } from '@/store/hooks';
+import { useAppSelector, useAppDispatch } from '@/store/hooks';
 import { Card } from '@/components/ui/Card'; 
+import { setCompanySettings } from '@/store/settingsSlice';
 
-import GeneralSettings, { CompanySettings } from '@/components/settings/GeneralSettings';
+import GeneralSettings from '@/components/settings/GeneralSettings';
 import SecuritySettings from '@/components/settings/SecuritySettings';
-import NotificationSettings, { NotificationPreferences } from '@/components/settings/NotificationSettings';
+import NotificationSettings from '@/components/settings/NotificationSettings';
 
 import { 
     useCompanySettings, 
     useUpdateCompanySettings,
     useNotificationPreferences,
     useUpdateNotificationPreferences,
-    useUpdatePassword,
-    useToggle2FA
+    useUpdatePassword
 } from '@/hooks/api/useSettings';
 
 const settingsTabs = [
     { id: 'general', label: 'General & Company', icon: Building, description: 'Workspace details and branding' },
-    { id: 'security', label: 'Security & Access', icon: Lock, description: 'Passwords and 2FA settings' },
-    { id: 'notifications', label: 'Notifications', icon: Bell, description: 'Email and system alerts' },
+    { id: 'security', label: 'Security & Access', icon: Lock, description: 'Passwords and active sessions' },
+    { id: 'notifications', label: 'Notifications', icon: Bell, description: 'Email and system webhook alerts' },
 ] as const;
 
 type SettingsTabId = typeof settingsTabs[number]['id'];
 
 export default function SettingsPage() {
     const router = useRouter();
+    const dispatch = useAppDispatch();
     
     // Auth & RBAC
     const { user, isAuthenticated } = useAppSelector((state) => state.auth);
@@ -54,23 +55,28 @@ export default function SettingsPage() {
     const updateCompanyMutation = useUpdateCompanySettings();
     const updateNotificationsMutation = useUpdateNotificationPreferences();
     const updatePasswordMutation = useUpdatePassword();
-    const toggle2FAMutation = useToggle2FA();
 
-    const handleSaveCompanySettings = async (data: CompanySettings) => {
+    const handleSaveCompanySettings = async (data: FormData) => {
         try {
-            await updateCompanyMutation.mutateAsync(data);
+            const res = await updateCompanyMutation.mutateAsync(data);
+            if (res.success && res.data) {
+                dispatch(setCompanySettings(res.data));
+                if (res.data.brandColor) {
+                    document.documentElement.style.setProperty('--primary-color', res.data.brandColor);
+                }
+            }
             toast.success('Company settings updated successfully');
-        } catch (error) {
-            toast.error('Failed to update company settings');
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || 'Failed to update company settings');
         }
     };
 
-    const handleUpdateNotifications = async (data: NotificationPreferences) => {
+    const handleUpdateNotifications = async (data: any) => {
         try {
             await updateNotificationsMutation.mutateAsync(data);
             toast.success('Notification preferences saved');
-        } catch (error) {
-            toast.error('Failed to save preferences');
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || 'Failed to save preferences');
         }
     };
 
@@ -85,16 +91,6 @@ export default function SettingsPage() {
         }
     };
 
-    const handleToggle2FA = async (enable: boolean) => {
-        try {
-            await toggle2FAMutation.mutateAsync(enable);
-            toast.success(`Two-Factor Authentication ${enable ? 'enabled' : 'disabled'}`);
-        } catch (error) {
-            toast.error('Failed to toggle 2FA');
-            throw error; // Throw so child component can revert UI toggle
-        }
-    };
-
     const isCurrentTabLoading = 
         (activeTab === 'general' && isCompanyLoading) || 
         (activeTab === 'notifications' && isNotificationsLoading);
@@ -102,7 +98,7 @@ export default function SettingsPage() {
     if (!isAuthenticated) {
         return (
             <div className="flex h-[calc(100vh-4rem)] bg-gray-50/50 dark:bg-[#0a0a0a] items-center justify-center transition-colors duration-300">
-                <Loader2 className="w-8 h-8 animate-spin text-blue-600 dark:text-blue-500" />
+                <Loader2 className="w-8 h-8 animate-spin text-primary" />
             </div>
         );
     }
@@ -133,7 +129,7 @@ export default function SettingsPage() {
                                         className={cn(
                                             "w-full flex items-center justify-between px-4 py-3.5 rounded-xl text-sm font-bold transition-all text-left group",
                                             isActive
-                                                ? "bg-blue-600 dark:bg-blue-500 text-white shadow-md shadow-blue-200 dark:shadow-none"
+                                                ? "bg-primary text-white shadow-md shadow-primary/20"
                                                 : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50 hover:text-gray-900 dark:hover:text-gray-100"
                                         )}
                                     >
@@ -157,9 +153,9 @@ export default function SettingsPage() {
 
                         {/* Admin Notice */}
                         {isAdmin && (
-                            <div className="mt-6 p-4 bg-blue-50/50 dark:bg-blue-900/10 rounded-2xl border border-blue-100 dark:border-blue-900/30 hidden lg:block transition-colors">
-                                <p className="text-xs font-bold text-blue-700 dark:text-blue-400 uppercase tracking-widest mb-2 transition-colors">Workspace Admin</p>
-                                <p className="text-xs text-blue-600 dark:text-blue-300/80 leading-relaxed transition-colors">
+                            <div className="mt-6 p-4 bg-primary/5 rounded-2xl border border-primary/10 hidden lg:block transition-colors">
+                                <p className="text-xs font-bold text-primary uppercase tracking-widest mb-2 transition-colors">Workspace Admin</p>
+                                <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed transition-colors">
                                     Changes made in the General tab affect the entire workspace for all employees.
                                 </p>
                             </div>
@@ -173,7 +169,7 @@ export default function SettingsPage() {
                             {/* Loading Overlay */}
                             {isCurrentTabLoading && (
                                 <div className="absolute inset-0 z-10 bg-white/60 dark:bg-black/40 backdrop-blur-[1px] flex items-center justify-center transition-all">
-                                    <Loader2 className="animate-spin text-blue-600 dark:text-blue-500" size={32} />
+                                    <Loader2 className="animate-spin text-primary" size={32} />
                                 </div>
                             )}
 
@@ -187,7 +183,6 @@ export default function SettingsPage() {
                                 {activeTab === 'security' && (
                                     <SecuritySettings 
                                         onPasswordUpdate={handleUpdatePassword}
-                                        onToggle2FA={handleToggle2FA}
                                     />
                                 )}
                                 {activeTab === 'notifications' && (

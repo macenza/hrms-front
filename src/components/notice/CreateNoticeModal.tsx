@@ -6,8 +6,9 @@ import toast from 'react-hot-toast';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { useCreateNotice } from '@/hooks/api/useNotices';
+import { useCreateNotice, useUpdateNotice } from '@/hooks/api/useNotices';
 import { cn } from '@/utils/cn';
+import { Notice } from './NoticeFeed';
 
 export interface NoticePayload {
     title: string;
@@ -21,6 +22,7 @@ interface CreateNoticeModalProps {
     isOpen: boolean;
     onClose: () => void;
     onSuccess: () => void; 
+    editNotice?: Notice | null;
 }
 
 const initialFormState: NoticePayload = {
@@ -31,17 +33,31 @@ const initialFormState: NoticePayload = {
     attachment: null
 };
 
-export default function CreateNoticeModal({ isOpen, onClose, onSuccess }: CreateNoticeModalProps) {
+export default function CreateNoticeModal({ isOpen, onClose, onSuccess, editNotice = null }: CreateNoticeModalProps) {
+    const isEdit = !!editNotice;
     const [formData, setFormData] = useState<NoticePayload>(initialFormState);
     
     // Connect to React Query Mutation
     const createNoticeMutation = useCreateNotice();
+    const updateNoticeMutation = useUpdateNotice();
+    
+    const isPending = createNoticeMutation.isPending || updateNoticeMutation.isPending;
 
     useEffect(() => {
         if (isOpen) {
-            setFormData(initialFormState);
+            if (editNotice) {
+                setFormData({
+                    title: editNotice.title,
+                    category: editNotice.category,
+                    isPinned: editNotice.isPinned,
+                    content: editNotice.content,
+                    attachment: null
+                });
+            } else {
+                setFormData(initialFormState);
+            }
         }
-    }, [isOpen]);
+    }, [isOpen, editNotice]);
 
     const handleChange = (
         e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
@@ -67,7 +83,7 @@ export default function CreateNoticeModal({ isOpen, onClose, onSuccess }: Create
     };
 
     const handleClose = () => {
-        if (createNoticeMutation.isPending) return; 
+        if (isPending) return; 
         setFormData(initialFormState);
         onClose();
     };
@@ -85,18 +101,22 @@ export default function CreateNoticeModal({ isOpen, onClose, onSuccess }: Create
                 payload.append('file', formData.attachment);
             }
             
-            await createNoticeMutation.mutateAsync(payload);
+            if (isEdit && editNotice) {
+                await updateNoticeMutation.mutateAsync({ id: editNotice._id, data: payload });
+            } else {
+                await createNoticeMutation.mutateAsync(payload);
+            }
             
             onSuccess(); // Parent handles toast & closing
             handleClose();
         } catch (error: any) {
             console.error('Submission Error:', error);
-            toast.error(error?.response?.data?.message || 'Failed to publish notice. Please try again.');
+            toast.error(error?.response?.data?.message || `Failed to ${isEdit ? 'update' : 'publish'} notice. Please try again.`);
         }
     };
 
     return (
-        <Modal isOpen={isOpen} onClose={handleClose} title="Publish New Notice" className="max-w-2xl">
+        <Modal isOpen={isOpen} onClose={handleClose} title={isEdit ? "Edit Notice" : "Publish New Notice" } className="max-w-2xl">
             <form onSubmit={handleSubmit} className="flex flex-col h-full">
                 <div className="flex-1 space-y-6 p-2">
                     
@@ -111,7 +131,7 @@ export default function CreateNoticeModal({ isOpen, onClose, onSuccess }: Create
                             onChange={handleChange}
                             placeholder="e.g., Office closed for Thanksgiving"
                             required
-                            disabled={createNoticeMutation.isPending}
+                            disabled={isPending}
                             className="text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-950"
                         />
                     </div>
@@ -128,7 +148,7 @@ export default function CreateNoticeModal({ isOpen, onClose, onSuccess }: Create
                                 value={formData.category}
                                 onChange={handleChange}
                                 required
-                                disabled={createNoticeMutation.isPending}
+                                disabled={isPending}
                                 className="w-full h-10 px-3 rounded-md border border-gray-300 dark:border-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-600 dark:focus:ring-blue-500/40 focus:border-transparent text-sm bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 disabled:bg-gray-100 dark:disabled:bg-gray-900/50 disabled:cursor-not-allowed transition-all shadow-sm dark:shadow-none cursor-pointer"
                             >
                                 <option value="General">General</option>
@@ -140,14 +160,14 @@ export default function CreateNoticeModal({ isOpen, onClose, onSuccess }: Create
                         <div className="space-y-1.5 flex flex-col justify-center pt-6">
                             <label className={cn(
                                 "flex items-center gap-3 transition-colors",
-                                createNoticeMutation.isPending ? "cursor-not-allowed opacity-50" : "cursor-pointer group"
+                                isPending ? "cursor-not-allowed opacity-50" : "cursor-pointer group"
                             )}>
                                 <input
                                     type="checkbox"
                                     name="isPinned"
                                     checked={formData.isPinned}
                                     onChange={handleChange}
-                                    disabled={createNoticeMutation.isPending}
+                                    disabled={isPending}
                                     className="w-4 h-4 rounded border-gray-300 dark:border-gray-700 text-blue-600 focus:ring-blue-600 dark:focus:ring-blue-500/50 focus:ring-2 focus:ring-offset-1 dark:focus:ring-offset-gray-900 disabled:cursor-not-allowed transition-colors bg-white dark:bg-gray-900"
                                 />
                                 <span className="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-gray-100 transition-colors">
@@ -168,7 +188,7 @@ export default function CreateNoticeModal({ isOpen, onClose, onSuccess }: Create
                             value={formData.content}
                             onChange={handleChange}
                             required
-                            disabled={createNoticeMutation.isPending}
+                            disabled={isPending}
                             placeholder="Write your announcement here..."
                             className="w-full px-3 py-2 text-sm rounded-md border border-gray-300 dark:border-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-600 dark:focus:ring-blue-500/40 focus:border-transparent min-h-[150px] resize-y bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-600 disabled:bg-gray-100 dark:disabled:bg-gray-900/50 disabled:cursor-not-allowed transition-all shadow-sm dark:shadow-none"
                         />
@@ -179,7 +199,7 @@ export default function CreateNoticeModal({ isOpen, onClose, onSuccess }: Create
                         <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 transition-colors">Attachment (Optional)</label>
                         <div className={cn(
                             "border-2 border-dashed rounded-xl p-6 flex flex-col items-center justify-center text-center transition-colors relative overflow-hidden",
-                            createNoticeMutation.isPending 
+                            isPending 
                                 ? "bg-gray-50 dark:bg-gray-900/50 border-gray-200 dark:border-gray-800 opacity-50 cursor-not-allowed" 
                                 : "border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 hover:border-blue-600 dark:hover:border-blue-500 cursor-pointer group"
                         )}>
@@ -187,7 +207,7 @@ export default function CreateNoticeModal({ isOpen, onClose, onSuccess }: Create
                                 type="file"
                                 onChange={handleFileChange}
                                 accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
-                                disabled={createNoticeMutation.isPending}
+                                disabled={isPending}
                                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10 disabled:cursor-not-allowed"
                                 title=""
                             />
@@ -214,7 +234,7 @@ export default function CreateNoticeModal({ isOpen, onClose, onSuccess }: Create
                             type="button" 
                             variant="ghost" 
                             onClick={handleClose} 
-                            disabled={createNoticeMutation.isPending}
+                            disabled={isPending}
                             className="flex-1 sm:flex-none text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                         >
                             Cancel
@@ -222,10 +242,10 @@ export default function CreateNoticeModal({ isOpen, onClose, onSuccess }: Create
                         <Button 
                             type="submit" 
                             variant="primary" 
-                            disabled={createNoticeMutation.isPending || !formData.title || !formData.content}
+                            disabled={isPending || !formData.title || !formData.content}
                             className="flex-1 sm:flex-none min-w-[140px] shadow-md shadow-blue-500/25 dark:shadow-none font-semibold"
                         >
-                            {createNoticeMutation.isPending ? <Loader2 className="animate-spin mx-auto" size={20} /> : 'Publish Now'}
+                            {isPending ? <Loader2 className="animate-spin mx-auto" size={20} /> : (isEdit ? 'Save Changes' : 'Publish Now')}
                         </Button>
                     </div>
                 </div>

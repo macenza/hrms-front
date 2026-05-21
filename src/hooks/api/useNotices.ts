@@ -33,3 +33,23 @@ export function useCreateNotice() {
         }
     });
 }
+
+export function useUpdateNotice() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ id, data }: { id: string; data: any }) => noticeService.updateNotice(id, data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['notices'] });
+        }
+    });
+}
+
+export function useDeleteNotice() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (id: string) => noticeService.deleteNotice(id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['notices'] });
+        }
+    });
+}

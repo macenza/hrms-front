@@ -34,5 +34,19 @@ export const noticeService = {
     getNoticeStats: async () => {
         const response = await apiClient.get('/notices/stats');
         return response.data;
+    },
+
+    updateNotice: async (id: string, data: FormData) => {
+        const response = await apiClient.put(`/notices/${id}`, data, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        });
+        return response.data;
+    },
+
+    deleteNotice: async (id: string) => {
+        const response = await apiClient.delete(`/notices/${id}`);
+        return response.data;
     }
 };

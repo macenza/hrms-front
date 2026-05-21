@@ -49,15 +49,20 @@ const DetailItem = ({
     icon: any,
     iconColor?: string
 }) => (
-    <div>
+    <div className="min-w-0 w-full overflow-hidden">
         <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1 transition-colors">
             {label}
         </p>
-        <div className="flex items-start gap-2 text-gray-900 dark:text-gray-100 font-medium transition-colors">
+        <div className="flex items-start gap-2 text-gray-900 dark:text-gray-100 font-medium transition-colors w-full overflow-hidden">
             <Icon size={16} className={cn(iconColor, "mt-0.5 shrink-0 transition-colors")} />
-            <span className={!value || value === 'N/A' ? 'text-gray-400 dark:text-gray-500 italic font-normal transition-colors' : 'transition-colors'}>
-                {value || 'Not provided'}
-            </span>
+            <div className="min-w-0 flex-1 overflow-x-auto scrollbar-thin">
+                <span className={cn(
+                    "block max-w-full",
+                    !value || value === 'N/A' ? 'text-gray-400 dark:text-gray-500 italic font-normal transition-colors' : 'transition-colors'
+                )}>
+                    {value || 'Not provided'}
+                </span>
+            </div>
         </div>
     </div>
 );

@@ -136,13 +136,15 @@ export default function EmployeeDrawer({ isOpen, onClose, employee, onViewProfil
                     {/* Details List */}
                     <div className="space-y-4">
                         {contactDetails.map((detail, index) => (
-                            <div key={index} className="flex items-center gap-4 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-800 hover:border-gray-200 dark:hover:border-gray-700 transition-all group">
-                                <div className="p-2 bg-white dark:bg-gray-800 rounded-lg shadow-sm dark:shadow-none text-gray-500 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                            <div key={index} className="flex items-center gap-4 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-800 hover:border-gray-200 dark:hover:border-gray-700 transition-all group min-w-0">
+                                <div className="p-2 bg-white dark:bg-gray-800 rounded-lg shadow-sm dark:shadow-none text-gray-500 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors shrink-0">
                                     {detail.icon}
                                 </div>
-                                <div>
+                                <div className="min-w-0 flex-1">
                                     <p className="text-xs text-gray-500 dark:text-gray-400 font-medium transition-colors">{detail.label}</p>
-                                    <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 transition-colors">{detail.value}</p>
+                                    <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-200 dark:scrollbar-thumb-gray-800 max-w-full">
+                                        <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 transition-colors whitespace-nowrap">{detail.value}</p>
+                                    </div>
                                 </div>
                             </div>
                         ))}

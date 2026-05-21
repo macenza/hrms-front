@@ -3,7 +3,9 @@
 import React, { useEffect, useState } from 'react';
 import { useAppDispatch } from '@/store/hooks';
 import { setCredentials, logOut } from '@/store/authSlice';
+import { setCompanySettings } from '@/store/settingsSlice';
 import { fetchCurrentUser } from '@/services/authService';
+import apiClient from '@/services/apiClient';
 import { Loader2 } from 'lucide-react';
 
 export default function AuthInitializer({ children }: { children: React.ReactNode }) {
@@ -20,6 +22,20 @@ export default function AuthInitializer({ children }: { children: React.ReactNod
                 } catch (e) {
                     // Ignore parse errors, fallback to backend
                 }
+            }
+
+            // Hydrate global company settings
+            try {
+                const settingsRes = await apiClient.get('/settings/company');
+                const settings = settingsRes.data?.data;
+                if (settings) {
+                    dispatch(setCompanySettings(settings));
+                    if (settings.brandColor) {
+                        document.documentElement.style.setProperty('--primary-color', settings.brandColor);
+                    }
+                }
+            } catch (e) {
+                console.error("Failed to load company settings on boot:", e);
             }
 
             try {

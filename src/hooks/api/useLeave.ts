@@ -11,9 +11,10 @@ export function useLeaveStats(employeeId?: string) {
         queryKey: ['leave', 'stats', employeeId, role],
         queryFn: async () => {
             let url = '/leaves/stats';
-            if (role === 'Admin' && !employeeId) {
+            const normalizedRole = role?.toLowerCase();
+            if (normalizedRole === 'admin' && !employeeId) {
                 url = '/admin/leaves/stats';
-            } else if (role === 'HR' && !employeeId) {
+            } else if (normalizedRole === 'hr' && !employeeId) {
                 url = '/hr/leaves/stats';
             } else if (employeeId) {
                 url = `/leaves/stats/${employeeId}`;
@@ -33,9 +34,10 @@ export function useLeaveRequests(employeeId?: string) {
         queryKey: ['leave', 'requests', employeeId, role],
         queryFn: async () => {
             let url = '/leaves';
-            if (role === 'Admin') {
+            const normalizedRole = role?.toLowerCase();
+            if (normalizedRole === 'admin') {
                 url = employeeId ? `/admin/leaves/employee/${employeeId}` : '/admin/leaves';
-            } else if (role === 'HR') {
+            } else if (normalizedRole === 'hr') {
                 url = employeeId ? `/hr/leaves/employee/${employeeId}` : '/hr/leaves';
             } else {
                 url = employeeId ? `/leaves?employeeId=${employeeId}` : '/leaves';
@@ -56,6 +58,25 @@ export function useApplyLeave() {
     return useMutation({
         mutationFn: async (leaveData: any) => {
             const response = await apiClient.post('/leaves', leaveData);
+            return response.data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['leave'] });
+        }
+    });
+}
+
+export function useUpdateLeaveStatus() {
+    const queryClient = useQueryClient();
+    const { user } = useAppSelector((state) => state.auth);
+    const role = user?.role;
+
+    return useMutation({
+        mutationFn: async ({ leaveId, status, rejectionReason }: { leaveId: string; status: 'Approved' | 'Rejected'; rejectionReason?: string }) => {
+            const normalizedRole = role?.toLowerCase();
+            const endpointRole = normalizedRole === 'admin' ? 'admin' : 'hr';
+            const action = status === 'Approved' ? 'approve' : 'reject';
+            const response = await apiClient.patch(`/${endpointRole}/leaves/${leaveId}/${action}`, { rejectionReason });
             return response.data;
         },
         onSuccess: () => {

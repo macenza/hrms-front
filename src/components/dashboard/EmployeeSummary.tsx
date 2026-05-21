@@ -160,7 +160,13 @@ export default function EmployeeSummary({
                                                     getAvatarColor(emp.name)
                                                 )}>
                                                     {emp.avatar ? (
-                                                        <img src={emp.avatar} alt={emp.name} className="w-full h-full rounded-full object-cover" />
+                                                        <img 
+                                                            src={emp.avatar.startsWith('http') 
+                                                                ? emp.avatar 
+                                                                : `${process.env.NEXT_PUBLIC_API_URL ? process.env.NEXT_PUBLIC_API_URL.replace('/api', '') : 'http://localhost:4000'}${emp.avatar}`} 
+                                                            alt={emp.name} 
+                                                            className="w-full h-full rounded-full object-cover" 
+                                                        />
                                                     ) : (
                                                         initial
                                                     )}

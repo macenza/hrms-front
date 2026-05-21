@@ -31,6 +31,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
 
     // Pull current user to determine Role-Based Access
     const { user } = useAppSelector((state) => state.auth);
+    const { company } = useAppSelector((state) => state.settings);
     const role = user?.role?.toLowerCase() || 'employee';
     const isAdminOrHR = role === 'admin' || role === 'hr';
 
@@ -110,11 +111,26 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             )}>
 
                 {/* Logo & Close Button */}
-                <div className="h-20 flex items-center justify-between px-6 border-b border-gray-200 dark:border-gray-800 shrink-0">
-                    <h1 className="text-2xl font-bold text-blue-600 tracking-tight dark:text-blue-400">MACENZA</h1>
+                <div className="h-20 flex items-center justify-between px-6 border-b border-gray-200 dark:border-gray-800 shrink-0 gap-2 overflow-hidden">
+                    <div className="flex items-center gap-2.5 overflow-hidden">
+                        {company?.companyLogoUrl ? (
+                            <img 
+                                src={company.companyLogoUrl.startsWith('http') || company.companyLogoUrl.startsWith('/') ? company.companyLogoUrl : `http://localhost:4000/${company.companyLogoUrl}`} 
+                                alt="Branding" 
+                                className="w-8 h-8 rounded-lg object-cover border border-gray-200 dark:border-gray-800 shrink-0"
+                            />
+                        ) : (
+                            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center font-black text-primary shrink-0">
+                                {company?.companyName ? company.companyName.charAt(0).toUpperCase() : 'M'}
+                            </div>
+                        )}
+                        <span className="text-lg font-bold tracking-tight text-primary truncate max-w-[140px]">
+                            {company?.companyName || 'MACENZA'}
+                        </span>
+                    </div>
                     <button
                         onClick={onClose}
-                        className="md:hidden p-2 -mr-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 rounded-lg transition-colors dark:hover:bg-gray-800 dark:hover:text-gray-300"
+                        className="md:hidden p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 rounded-lg transition-colors dark:hover:bg-gray-800 dark:hover:text-gray-300 shrink-0"
                         aria-label="Close Sidebar"
                     >
                         <X size={20} />
@@ -135,9 +151,9 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                                 href={item.href}
                                 onClick={() => onClose()} // Auto-close sidebar on mobile
                                 className={cn(
-                                    "w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 group outline-none focus-visible:ring-2 focus-visible:ring-blue-600",
+                                    "w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 group outline-none focus-visible:ring-2 focus-visible:ring-primary",
                                     isActive
-                                        ? "bg-blue-600 text-white shadow-md shadow-blue-500/20"
+                                        ? "bg-primary text-white shadow-md shadow-primary/20"
                                         : "text-gray-500 hover:bg-white hover:text-gray-900 hover:shadow-sm dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-100"
                                 )}
                             >

@@ -240,6 +240,7 @@ export default function ProjectDetailsPage() {
                             onUpdateTeam={async (newTeamArray) => {
                                 await updateProjectMutation.mutateAsync({ teamMembers: newTeamArray });
                             }}
+                            canManageTeam={canEdit}
                         />
                     )}
 
@@ -286,6 +287,8 @@ export default function ProjectDetailsPage() {
                                     onTaskDelete={async (taskId) => {
                                         await deleteTaskMutation.mutateAsync(taskId);
                                     }}
+                                    currentUserId={user?.id}
+                                    currentUserRole={role}
                                 />
                             )}
                         </div>

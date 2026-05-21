@@ -1,9 +1,9 @@
 'use client';
 import React, { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useAppSelector } from '@/store/hooks'; 
+import { useAppSelector, useAppDispatch } from '@/store/hooks'; 
 import Link from 'next/link';
-import { Download, Edit, ChevronRight, Menu, X, MoreVertical, Loader2 } from 'lucide-react';
+import { Download, Edit, ChevronRight, Menu, X, MoreVertical, Loader2, Camera } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
@@ -17,6 +17,11 @@ import DocumentsTab from '@/components/profile/tabs/DocumentsTab';
 import CertificatesTab from '@/components/profile/tabs/CertificatesTab';
 import AttendanceTab from '@/components/profile/tabs/AttendanceTab';
 import NotesTab from '@/components/profile/tabs/NotesTab';
+import EditProfileModal from '@/components/profile/EditProfileModal';
+import CropPhotoModal from '@/components/profile/CropPhotoModal';
+import { employeeService } from '@/services/employeeService';
+import { setCredentials } from '@/store/authSlice';
+import { useEffect } from 'react';
 import { 
     useEmployeeProfile, 
     useEmployeeAttendanceLogs, 
@@ -68,16 +73,41 @@ export default function EmployeeProfileClient({ id }: EmployeeProfileClientProps
     
     const [activeTab, setActiveTab] = useState<TabId>('personal');
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const dispatch = useAppDispatch();
+    
+    const [isCropModalOpen, setIsCropModalOpen] = useState(false);
+    const [pendingPhotoSrc, setPendingPhotoSrc] = useState<string | null>(null);
+    const [avatarError, setAvatarError] = useState(false);
     
     const { data: rawEmployee, isLoading: isProfileLoading, refetch: refreshProfile } = useEmployeeProfile(resolvedEmployeeId);
+    
+    const employee = rawEmployee?.user || rawEmployee;
+
+    const isCurrentUser = user?._id === employee?._id || user?.id === employee?.id || user?.id === employee?._id;
+
+    useEffect(() => {
+        setAvatarError(false);
+    }, [rawEmployee?.profile?.avatar]);
+
+    useEffect(() => {
+        if (rawEmployee && isCurrentUser) {
+            const updatedUser = {
+                ...user,
+                name: rawEmployee.name,
+                role: rawEmployee.role,
+                profile: rawEmployee.profile
+            };
+            if (JSON.stringify(user?.profile) !== JSON.stringify(rawEmployee.profile) || user?.name !== rawEmployee.name) {
+                localStorage.setItem('user', JSON.stringify(updatedUser));
+                dispatch(setCredentials({ user: updatedUser as any }));
+            }
+        }
+    }, [rawEmployee, isCurrentUser, dispatch, user]);
     const { data: attendanceData, isLoading: isAttendanceLoading } = useEmployeeAttendanceLogs(
         resolvedEmployeeId, 
         activeTab === 'attendance'
     );
-
-    const employee = rawEmployee?.user || rawEmployee;
-
-    const isCurrentUser = user?._id === employee?._id || user?.id === employee?.id || user?.id === employee?._id;
 
     const uploadDocumentMutation = useUploadDocument(resolvedEmployeeId);
     const uploadCertificateMutation = useUploadCertificate(resolvedEmployeeId);
@@ -175,11 +205,52 @@ export default function EmployeeProfileClient({ id }: EmployeeProfileClientProps
                     <div className="flex flex-col gap-6">
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                             <div className="flex items-center gap-4">
-                                <div className={cn(
-                                    "w-14 h-14 sm:w-20 sm:h-20 rounded-full flex items-center justify-center text-xl sm:text-2xl font-bold shrink-0 shadow-inner dark:shadow-none transition-colors",
-                                    getAvatarColor(employee.name)
-                                )}>
-                                    {getInitials(employee.name)}
+                                <div className="relative group shrink-0">
+                                    {employee.profile?.avatar && !avatarError ? (
+                                        <img 
+                                            src={employee.profile.avatar.startsWith('http') 
+                                                ? employee.profile.avatar 
+                                                : `${process.env.NEXT_PUBLIC_API_URL ? process.env.NEXT_PUBLIC_API_URL.replace('/api', '') : 'http://localhost:4000'}${employee.profile.avatar}`
+                                            } 
+                                            alt={employee.name} 
+                                            className="w-14 h-14 sm:w-20 sm:h-20 rounded-full object-cover shadow-inner transition-transform duration-300"
+                                            onError={() => {
+                                                setAvatarError(true);
+                                            }}
+                                        />
+                                    ) : (
+                                        <div className={cn(
+                                            "w-14 h-14 sm:w-20 sm:h-20 rounded-full flex items-center justify-center text-xl sm:text-2xl font-bold shrink-0 shadow-inner dark:shadow-none transition-colors",
+                                            getAvatarColor(employee.name)
+                                        )}>
+                                            {getInitials(employee.name)}
+                                        </div>
+                                    )}
+                                    
+                                    {/* Upload overlay */}
+                                    {(isCurrentUser || isAdminOrHR) && (
+                                        <label className="absolute inset-0 bg-black/50 text-white rounded-full flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 cursor-pointer transition-all duration-300 border border-white/20">
+                                            <Camera size={18} className="mb-0.5" />
+                                            <span className="text-[9px] sm:text-[10px] font-bold text-center px-1">Upload Photo</span>
+                                            <input 
+                                                type="file" 
+                                                accept="image/*" 
+                                                className="hidden" 
+                                                value=""
+                                                onChange={(e) => {
+                                                    const file = e.target.files?.[0];
+                                                    if (file) {
+                                                        const reader = new FileReader();
+                                                        reader.onload = () => {
+                                                            setPendingPhotoSrc(reader.result as string);
+                                                            setIsCropModalOpen(true);
+                                                        };
+                                                        reader.readAsDataURL(file);
+                                                    }
+                                                }}
+                                            />
+                                        </label>
+                                    )}
                                 </div>
                                 <div>
                                     <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
@@ -197,17 +268,30 @@ export default function EmployeeProfileClient({ id }: EmployeeProfileClientProps
                                 </div>
                             </div>
 
-                            {isAdminOrHR && !isCurrentUser && (
-                                <Button
-                                    variant="outline"
-                                    onClick={handleDeleteEmployee}
-                                    disabled={deleteEmployeeMutation.isPending}
-                                    className="border-red-200 dark:border-red-900/50 hover:bg-red-50 dark:hover:bg-red-500/10 text-red-600 dark:text-red-400 gap-2 font-bold shadow-sm transition-colors w-fit self-end sm:self-auto"
-                                >
-                                    {deleteEmployeeMutation.isPending ? <Loader2 size={16} className="animate-spin" /> : null}
-                                    Delete Employee
-                                </Button>
-                            )}
+                            <div className="flex flex-wrap items-center gap-3 self-end sm:self-auto">
+                                {(isCurrentUser || isAdminOrHR) && (
+                                    <Button
+                                        variant="outline"
+                                        onClick={() => setIsEditModalOpen(true)}
+                                        className="gap-2 font-bold shadow-sm transition-colors border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300"
+                                    >
+                                        <Edit size={16} />
+                                        Edit Profile
+                                    </Button>
+                                )}
+
+                                {isAdminOrHR && !isCurrentUser && !employee.isPast && (
+                                    <Button
+                                        variant="outline"
+                                        onClick={handleDeleteEmployee}
+                                        disabled={deleteEmployeeMutation.isPending}
+                                        className="border-red-200 dark:border-red-900/50 hover:bg-red-50 dark:hover:bg-red-500/10 text-red-600 dark:text-red-400 gap-2 font-bold shadow-sm transition-colors"
+                                    >
+                                        {deleteEmployeeMutation.isPending ? <Loader2 size={16} className="animate-spin" /> : null}
+                                        Delete Employee
+                                    </Button>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </CardContent>
@@ -264,7 +348,19 @@ export default function EmployeeProfileClient({ id }: EmployeeProfileClientProps
                                     ? new Date(employment.joiningDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
                                     : ''
                             }}
-                            onAddSkill={() => toast.info("Add skill functionality coming soon!")}
+                            onUpdateSkills={async (newSkills) => {
+                                try {
+                                    await employeeService.update(resolvedEmployeeId, {
+                                        'profile.employment.skills': newSkills
+                                    });
+                                    toast.success("Skills updated successfully!");
+                                    refreshProfile();
+                                } catch (error) {
+                                    toast.error("Failed to update skills.");
+                                    throw error;
+                                }
+                            }}
+                            canEditSkills={isCurrentUser || isAdminOrHR}
                         />
                     )}
 
@@ -340,6 +436,37 @@ export default function EmployeeProfileClient({ id }: EmployeeProfileClientProps
                     )}
                 </div>
             </Card>
+
+            {/* Edit Profile Modal */}
+            <EditProfileModal
+                isOpen={isEditModalOpen}
+                onClose={() => setIsEditModalOpen(false)}
+                onSuccess={refreshProfile}
+                employee={employee}
+                isAdminOrHR={isAdminOrHR}
+            />
+
+            {/* Crop Photo Modal */}
+            <CropPhotoModal
+                isOpen={isCropModalOpen}
+                imageSrc={pendingPhotoSrc}
+                onClose={() => {
+                    setIsCropModalOpen(false);
+                    setPendingPhotoSrc(null);
+                }}
+                onCropSave={async (croppedFile) => {
+                    const formData = new FormData();
+                    formData.append('photo', croppedFile);
+                    try {
+                        await employeeService.uploadPhoto(resolvedEmployeeId, formData);
+                        toast.success("Profile photo updated successfully!");
+                        refreshProfile();
+                    } catch (error) {
+                        toast.error("Failed to upload cropped profile photo.");
+                        throw error;
+                    }
+                }}
+            />
         </div>
     );
 }

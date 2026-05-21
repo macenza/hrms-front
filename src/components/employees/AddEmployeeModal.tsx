@@ -6,6 +6,7 @@ import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import ProfilePhotoUploadStep from '@/components/employees/ProfilePhotoUploadStep';
+import { useAppSelector } from '@/store/hooks';
 
 export interface EmployeeFormData {
     firstName: string;
@@ -13,6 +14,7 @@ export interface EmployeeFormData {
     email: string;
     phone: string;
     address: string;
+    gender: 'Male' | 'Female' | 'Other';
     employeeId: string;
     department: string;
     role: 'Employee' | 'Manager' | 'HR' | 'Admin';
@@ -37,6 +39,7 @@ const initialFormState: EmployeeFormData = {
     email: '',
     phone: '',
     address: '',
+    gender: 'Male',
     employeeId: `EMP-${Math.floor(1000 + Math.random() * 9000)}`,
     department: 'Engineering',
     role: 'Employee',
@@ -45,6 +48,7 @@ const initialFormState: EmployeeFormData = {
 };
 
 export default function AddEmployeeModal({ isOpen, onClose, onSubmit, isSubmitting = false }: AddEmployeeModalProps) {
+    const { user } = useAppSelector((state) => state.auth);
     const [step, setStep] = useState(1);
     const [formData, setFormData] = useState<EmployeeFormData>(initialFormState);
     const [profilePhoto, setProfilePhoto] = useState<File | null>(null);
@@ -93,9 +97,10 @@ export default function AddEmployeeModal({ isOpen, onClose, onSubmit, isSubmitti
         const apiPayload = {
             name: `${formData.firstName.trim()} ${formData.lastName.trim()}`,
             email: formData.email,
+            gender: formData.gender,
             password: 'TempPassword123!',
             employeeId: formData.employeeId,
-            role: formData.role,
+            role: formData.role.toLowerCase(),
             profile: {
                 personal: {
                     phone: formData.phone,
@@ -164,6 +169,20 @@ export default function AddEmployeeModal({ isOpen, onClose, onSubmit, isSubmitti
                             <Input label="Last Name" name="lastName" value={formData.lastName} onChange={handleChange} placeholder="Doe" disabled={isSubmitting} />
                             <Input label="Email" type="email" name="email" value={formData.email} onChange={handleChange} placeholder="john@example.com" disabled={isSubmitting} />
                             <Input label="Phone" name="phone" value={formData.phone} onChange={handleChange} placeholder="+1 234 567 890" disabled={isSubmitting} />
+                            <div className="flex flex-col gap-1.5 md:col-span-2">
+                                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors">Gender</label>
+                                <select 
+                                    disabled={isSubmitting} 
+                                    name="gender" 
+                                    value={formData.gender} 
+                                    onChange={handleChange} 
+                                    className="h-10 px-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-600 text-sm bg-white dark:bg-gray-950 dark:border-gray-800 dark:text-gray-100 dark:focus:ring-blue-500 transition-colors"
+                                >
+                                    <option value="Male">Male</option>
+                                    <option value="Female">Female</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
                             <div className="md:col-span-2">
                                 <Input label="Address" name="address" value={formData.address} onChange={handleChange} placeholder="123 Main St, City, Country" disabled={isSubmitting} />
                             </div>
@@ -209,7 +228,9 @@ export default function AddEmployeeModal({ isOpen, onClose, onSubmit, isSubmitti
                                     <option value="Employee">Employee (Standard Access)</option>
                                     <option value="Manager">Manager</option>
                                     <option value="HR">HR Professional</option>
-                                    <option value="Admin">System Admin</option>
+                                    {user?.role?.toLowerCase() === 'admin' && (
+                                        <option value="Admin">System Admin</option>
+                                    )}
                                 </select>
                             </div>
 

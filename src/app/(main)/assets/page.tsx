@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Download, Plus, Loader2, ChevronLeft, ChevronRight, Monitor, Smartphone, Laptop as LaptopIcon, Headphones } from 'lucide-react';
+import { Download, Plus, Loader2, ChevronLeft, ChevronRight, Monitor, Smartphone, Laptop as LaptopIcon, Headphones, Search, X, RotateCcw, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Modal } from '@/components/ui/Modal';
@@ -14,6 +14,7 @@ import AddAssetModal, { AddAssetPayload } from '@/components/assets/AddAssetModa
 import { useAppSelector } from '@/store/hooks';
 import { useAssetData, useAssetFormOptions, useAvailableAssets, useCreateAsset, useAssignAsset, useDeleteAsset, useUpdateAssetStatus } from '@/hooks/api/useAssets';
 import { assetService } from '@/services/assetService';
+import { useDebounce } from '@/hooks/useDebounce';
 import { toast } from 'sonner';
 
 const getCategoryIcon = (category: string) => {
@@ -30,7 +31,8 @@ const getStatusBadgeVariant = (status: string) => {
     switch (status) {
         case 'Available': return 'success';
         case 'Assigned': return 'info';
-        case 'Maintenance': return 'warning';
+        case 'Maintenance':
+        case 'In Maintenance': return 'warning';
         default: return 'default';
     }
 };
@@ -41,12 +43,17 @@ export default function AssetsPage() {
     const role = user?.role?.toLowerCase() || 'employee';
     const isManagerial = role === 'admin' || role === 'hr';
 
-    // 2. Pagination State
+    // 2. Search & Filter State
+    const [searchTerm, setSearchTerm] = useState('');
+    const [statusFilter, setStatusFilter] = useState('');
+    const debouncedSearchTerm = useDebounce(searchTerm, 300);
+
+    // 3. Pagination State
     const [currentPage, setCurrentPage] = useState(1);
     const [entriesPerPage, setEntriesPerPage] = useState(10);
 
-    // 3. React Query Data Layer
-    const { data: assetData, isLoading: isAssetsLoading } = useAssetData(currentPage, entriesPerPage);
+    // 4. React Query Data Layer
+    const { data: assetData, isLoading: isAssetsLoading } = useAssetData(currentPage, entriesPerPage, statusFilter, debouncedSearchTerm);
     const { data: employeesData = [], isLoading: isEmpLoading } = useAssetFormOptions(isAuthenticated && isManagerial);
     const { data: availableAssets = [] } = useAvailableAssets(isAuthenticated && isManagerial);
     
@@ -63,12 +70,12 @@ export default function AssetsPage() {
 
     const isLoading = isAssetsLoading || createAssetMutation.isPending || assignAssetMutation.isPending || deleteAssetMutation.isPending || updateAssetStatusMutation.isPending;
 
-    // Reset pagination when page size changes
+    // Reset pagination when page size, status filter, or search term changes
     useEffect(() => {
         setCurrentPage(1);
-    }, [entriesPerPage]);
+    }, [entriesPerPage, statusFilter, debouncedSearchTerm]);
 
-    // 4. Local UI State
+    // 5. Local UI State
     const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [isViewModalOpen, setIsViewModalOpen] = useState(false);
@@ -123,8 +130,8 @@ export default function AssetsPage() {
 
     const handleExportInventory = async () => {
         try {
-            // Fetch all assets (up to 1000) for a full inventory export
-            const data = await assetService.getDashboardData(1, 1000);
+            // Fetch all assets (up to 1000) for a full inventory export matching current filters
+            const data = await assetService.getDashboardData(1, 1000, statusFilter, debouncedSearchTerm);
             const allRecords = data.records.map((rec: any) => ({
                 id: rec.assetTag,
                 name: rec.name,
@@ -214,6 +221,62 @@ export default function AssetsPage() {
 
                 {/* Dashboard Stats */}
                 {isManagerial && <AssetStats data={stats} isLoading={isAssetsLoading} />}
+
+                {/* Filter and Search Bar */}
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm transition-colors duration-300">
+                    <div className="relative w-full sm:max-w-md">
+                        <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400 dark:text-gray-500">
+                            <Search size={18} />
+                        </span>
+                        <input
+                            type="text"
+                            placeholder="Search asset, tag, category, assignee..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="w-full pl-10 pr-10 py-2 text-sm border border-gray-200 dark:border-gray-800 rounded-lg bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 outline-none focus:border-blue-500 dark:focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 transition-all font-medium"
+                        />
+                        {searchTerm && (
+                            <button
+                                onClick={() => setSearchTerm('')}
+                                className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400 transition-colors"
+                            >
+                                <X size={16} />
+                            </button>
+                        )}
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto justify-end">
+                        <div className="relative w-full sm:w-48">
+                            <select
+                                value={statusFilter}
+                                onChange={(e) => setStatusFilter(e.target.value)}
+                                className="w-full pl-3 pr-10 py-2 text-sm border border-gray-200 dark:border-gray-800 rounded-lg bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 outline-none focus:border-blue-500 dark:focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 transition-all cursor-pointer font-medium appearance-none"
+                            >
+                                <option value="">All Statuses</option>
+                                <option value="Available">Available</option>
+                                <option value="Assigned">Assigned</option>
+                                <option value="In Maintenance">In Maintenance</option>
+                            </select>
+                            <span className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-400 dark:text-gray-500">
+                                <ChevronDown size={16} />
+                            </span>
+                        </div>
+
+                        {(searchTerm || statusFilter) && (
+                            <Button
+                                variant="outline"
+                                onClick={() => {
+                                    setSearchTerm('');
+                                    setStatusFilter('');
+                                }}
+                                className="w-full sm:w-auto gap-2 border-dashed border-gray-300 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-600 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors shrink-0 font-bold"
+                            >
+                                <RotateCcw size={14} />
+                                <span>Reset Filters</span>
+                            </Button>
+                        )}
+                    </div>
+                </div>
 
                 {/* Data Table */}
                 <Card className="border-gray-200 dark:border-gray-800 shadow-sm bg-white dark:bg-gray-900 transition-colors duration-300 overflow-hidden">
@@ -323,10 +386,34 @@ export default function AssetsPage() {
                                 </div>
                                 <div>
                                     <span className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Status</span>
-                                    <div className="mt-0.5">
+                                    <div className="mt-1 flex flex-wrap items-center gap-2">
                                         <Badge variant={getStatusBadgeVariant(selectedAssetForView.status)}>
                                             {selectedAssetForView.status}
                                         </Badge>
+                                        {isManagerial && (selectedAssetForView.status === 'Available' || selectedAssetForView.status === 'In Maintenance') && (
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                disabled={updateAssetStatusMutation.isPending}
+                                                onClick={async () => {
+                                                    const nextStatus = selectedAssetForView.status === 'Available' ? 'In Maintenance' : 'Available';
+                                                    try {
+                                                        await updateAssetStatusMutation.mutateAsync({
+                                                            id: selectedAssetForView.dbId,
+                                                            status: nextStatus
+                                                        });
+                                                        toast.success(`Asset status updated to ${nextStatus}!`);
+                                                        setSelectedAssetForView((prev) => prev ? { ...prev, status: nextStatus as any } : null);
+                                                    } catch (error) {
+                                                        toast.error('Failed to update asset status.');
+                                                    }
+                                                }}
+                                                className="px-2 py-0.5 text-xs font-bold text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/10 border border-blue-200 dark:border-blue-900/50 rounded transition-all gap-1 h-7 shrink-0"
+                                            >
+                                                {updateAssetStatusMutation.isPending ? <Loader2 size={12} className="animate-spin" /> : null}
+                                                Send to {selectedAssetForView.status === 'Available' ? 'Maintenance' : 'Available'}
+                                            </Button>
+                                        )}
                                     </div>
                                 </div>
                                 <div>
