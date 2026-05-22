@@ -45,3 +45,14 @@ export function useDeleteEmployee() {
         }
     });
 }
+
+export function useActiveEmployees() {
+    return useQuery({
+        queryKey: ['employees', 'active'],
+        queryFn: async () => {
+            const res = await employeeService.getAll(1, 1000, '', { status: 'active' });
+            return res.employees;
+        },
+        staleTime: 5 * 60 * 1000,
+    });
+}

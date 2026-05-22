@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { useAppDispatch } from '@/store/hooks';
+import React, { useEffect, useState, useRef } from 'react';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { setCredentials, logOut } from '@/store/authSlice';
 import { setCompanySettings } from '@/store/settingsSlice';
 import { fetchCurrentUser } from '@/services/authService';
@@ -10,20 +10,15 @@ import { Loader2 } from 'lucide-react';
 
 export default function AuthInitializer({ children }: { children: React.ReactNode }) {
     const dispatch = useAppDispatch();
+    const persistedUser = useAppSelector((state) => state.auth.user);
     const [isHydrated, setIsHydrated] = useState(false);
+    const isFirstRun = useRef(true);
 
     useEffect(() => {
-        const hydrateAuth = async () => {
-            const cachedUserStr = localStorage.getItem('user');
-            if (cachedUserStr) {
-                try {
-                    const user = JSON.parse(cachedUserStr);
-                    dispatch(setCredentials({ user }));
-                } catch (e) {
-                    // Ignore parse errors, fallback to backend
-                }
-            }
+        if (!isFirstRun.current) return;
+        isFirstRun.current = false;
 
+        const hydrateAuth = async () => {
             // Hydrate global company settings
             try {
                 const settingsRes = await apiClient.get('/settings/company');
@@ -38,29 +33,36 @@ export default function AuthInitializer({ children }: { children: React.ReactNod
                 console.error("Failed to load company settings on boot:", e);
             }
 
-            try {
-                // apiClient will automatically attempt a refresh if the access token is expired.
-                const verifiedUser = await fetchCurrentUser();
-                localStorage.setItem('user', JSON.stringify(verifiedUser)); 
-                dispatch(setCredentials({ user: verifiedUser }));
-            } catch (error) {
-                // If we reach this catch block, the token is dead AND the refresh failed.
-                console.log("Session verification failed. Logging out.");
+            if (persistedUser) {
+                try {
+                    // apiClient will automatically attempt a refresh if the access token is expired.
+                    const verifiedUser = await fetchCurrentUser();
+                    localStorage.setItem('user', JSON.stringify(verifiedUser)); 
+                    dispatch(setCredentials({ user: verifiedUser }));
+                } catch (error) {
+                    // If we reach this catch block, the token is dead AND the refresh failed.
+                    console.log("Session verification failed. Logging out.");
+                    dispatch(logOut());
+                    localStorage.removeItem('user');
+                    
+                    const PUBLIC_ROUTES = ['/', '/login', '/signup'];
+                    // CRITICAL: Prevent zombie state if we are on a protected route
+                    if (typeof window !== 'undefined' && !PUBLIC_ROUTES.includes(window.location.pathname)) {
+                        window.location.href = '/login?error=session_expired';
+                    }
+                } finally {
+                    setIsHydrated(true);
+                }
+            } else {
+                // If there's no user cached, they are a guest.
                 dispatch(logOut());
                 localStorage.removeItem('user');
-                
-                const PUBLIC_ROUTES = ['/', '/login', '/signup'];
-                // CRITICAL: Prevent zombie state if we are on a protected route
-                if (typeof window !== 'undefined' && !PUBLIC_ROUTES.includes(window.location.pathname)) {
-                    window.location.href = '/login?error=session_expired';
-                }
-            } finally {
                 setIsHydrated(true);
             }
         };
 
         hydrateAuth();
-    }, [dispatch]);
+    }, [dispatch, persistedUser]);
 
     if (!isHydrated) {
         return (

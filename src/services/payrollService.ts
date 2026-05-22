@@ -1,16 +1,25 @@
 // src/services/payrollService.ts
 import apiClient from "./apiClient";
+import { ENDPOINTS } from "../constants/endpoints";
 
 export const payrollService = {
-    getDashboardData: async (payPeriod?: string) => {
-        const url = payPeriod ? `/payroll?payPeriod=${payPeriod}` : '/payroll';
-        const response = await apiClient.get(url);
-        return response.data.data;
+    getDashboardData: async (month: number, year: number) => {
+        const response = await apiClient.get(`${ENDPOINTS.PAYROLL.BASE}?month=${month}&year=${year}`);
+        return response.data;
     },
     
-    runPayroll: async (payPeriod?: string) => {
-        const payload = payPeriod ? { payPeriod } : {};
-        const response = await apiClient.post('/payroll/run', payload);
+    runPayroll: async (month: number, year: number) => {
+        const response = await apiClient.post(ENDPOINTS.PAYROLL.RUN, { month, year });
+        return response.data;
+    },
+
+    processPayment: async (payrollId: string) => {
+        const response = await apiClient.post(ENDPOINTS.PAYROLL.PROCESS(payrollId));
+        return response.data;
+    },
+
+    getMyPayslips: async () => {
+        const response = await apiClient.get(ENDPOINTS.PAYROLL.MY_PAYROLL);
         return response.data;
     }
 };

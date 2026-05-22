@@ -23,7 +23,14 @@ export default function PayslipModal({ isOpen, record, onClose }: PayslipModalPr
 
     if (!isOpen || !record) return null;
 
-    const currentMonth = new Date().toLocaleString('default', { month: 'long', year: 'numeric' });
+    const getPayslipPeriod = () => {
+        if (record && record.month && record.year) {
+            const date = new Date(record.year, record.month - 1, 1);
+            return date.toLocaleString('default', { month: 'long', year: 'numeric' });
+        }
+        return new Date().toLocaleString('default', { month: 'long', year: 'numeric' });
+    };
+    const currentMonth = getPayslipPeriod();
 
     const handleDownloadReceipt = async () => {
         setIsDownloading(true);

@@ -31,32 +31,34 @@ export const ENDPOINTS = {
         STATS: '/leaves/stats',
     },
     LOAN: {
-        BASE: '/loans', // GET Dashboard data
-        APPLY: '/loans/apply', // POST
-        REVIEW: (id: string | number) => `/loans/${id}/review`, // PUT (Admin/HR approve/reject)
+        BASE: '/loans',
+        APPLY: '/loans/apply',
+        REVIEW: (id: string | number) => `/loans/${id}/review`,
     },
     ASSET: {
-        BASE: '/assets', // GET list and POST create
-        ASSIGN: (id: string | number) => `/assets/${id}/assign`, // PUT
-        UPDATE_STATUS: (id: string | number) => `/assets/${id}/status`, // PUT
+        BASE: '/assets',
+        ASSIGN: (id: string | number) => `/assets/${id}/assign`,
+        UPDATE_STATUS: (id: string | number) => `/assets/${id}/status`,
     },
     NOTICE: {
-        BASE: '/notices', // GET feed and POST create
+        BASE: '/notices',
         STATS: '/notices/stats',
     },
     PAYROLL: {
-        BASE: '/payroll', // GET dashboard data
-        RUN: '/payroll/run', // POST batch execution
+        BASE: '/payroll',
+        RUN: '/payroll/run',
+        PROCESS: (id: string | number) => `/payroll/${id}/process`,
+        MY_PAYROLL: '/payroll/my-slips', // ESS Path
     },
     PROJECT: {
-        BASE: '/projects', // GET list and POST create
+        BASE: '/projects',
         GET_BY_ID: (id: string | number) => `/projects/${id}`,
-        UPDATE: (id: string | number) => `/projects/${id}`, // PUT
-        DELETE: (id: string | number) => `/projects/${id}`, // DELETE
+        UPDATE: (id: string | number) => `/projects/${id}`,
+        DELETE: (id: string | number) => `/projects/${id}`,
     },
     TASK: {
-        BY_PROJECT: (projectId: string | number) => `/tasks/project/${projectId}`, // GET & POST
-        MOVE: (taskId: string | number) => `/tasks/${taskId}/move`, // PUT (Drag and Drop Engine)
+        BY_PROJECT: (projectId: string | number) => `/tasks/project/${projectId}`,
+        MOVE: (taskId: string | number) => `/tasks/${taskId}/move`,
     },
     SETTINGS: {
         COMPANY: '/settings/company', // GET & PUT (Global Engine Rules)

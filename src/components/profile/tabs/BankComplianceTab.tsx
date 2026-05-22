@@ -23,10 +23,8 @@ export interface BankDetails {
 
 export interface StatutoryDetails {
     panNumber: string;
-    aadhaarNumber: string;
-    uanNumber: string;
-    pfNumber: string;
-    status: VerificationStatus;
+    esicNumber: string;
+    pfNumber?: string;
 }
 
 interface BankComplianceTabProps {
@@ -63,7 +61,7 @@ const DetailItem = ({ label, value, icon: Icon, isSensitive = false, showSensiti
             <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-0.5 transition-colors">{label}</p>
             <div className="min-w-0 overflow-x-auto scrollbar-thin">
                 <p className="text-sm font-bold text-gray-900 dark:text-gray-100 font-mono tracking-tight transition-colors whitespace-nowrap">
-                    {value ? (
+                     {value ? (
                         isSensitive && !showSensitive ? maskNumber(value) : value
                     ) : (
                         <span className="text-gray-400 dark:text-gray-500 font-sans italic font-normal">Not provided</span>
@@ -120,7 +118,9 @@ export default function BankComplianceTab({
         setIsSaving(true);
         try {
             await employeeService.update(employeeId, { 
-                'profile.statutoryDetails': { ...statForm, status: statutoryData?.status || 'Pending' } 
+                'profile.financial.panNumber': statForm.panNumber || '',
+                'profile.financial.esicNumber': statForm.esicNumber || '',
+                'profile.financial.pfNumber': statForm.pfNumber || ''
             });
             setIsEditingStat(false);
             onRefresh();
@@ -219,7 +219,6 @@ export default function BankComplianceTab({
                             Statutory & Tax
                         </CardTitle>
                         <div className="flex items-center gap-3">
-                            {statutoryData?.status && <Badge variant={getStatusBadgeVariant(statutoryData.status)}>{statutoryData.status}</Badge>}
                             {canEdit && !isEditingStat && (
                                 <Button 
                                     variant="ghost" 
@@ -227,8 +226,8 @@ export default function BankComplianceTab({
                                     onClick={() => setIsEditingStat(true)} 
                                     className="h-8 px-2 text-gray-500 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-500/10 transition-colors"
                                 >
-                                    {statutoryData?.panNumber ? <Edit2 size={16} /> : <Plus size={16} className="mr-1"/>}
-                                    {statutoryData?.panNumber ? 'Edit' : 'Add'}
+                                    {(statutoryData?.panNumber || statutoryData?.esicNumber || statutoryData?.pfNumber) ? <Edit2 size={16} /> : <Plus size={16} className="mr-1"/>}
+                                    {(statutoryData?.panNumber || statutoryData?.esicNumber || statutoryData?.pfNumber) ? 'Edit' : 'Add'}
                                 </Button>
                             )}
                         </div>
@@ -237,9 +236,8 @@ export default function BankComplianceTab({
                         {isEditingStat ? (
                             <div className="space-y-4 animate-in fade-in">
                                 <Input label="PAN / Tax ID" name="panNumber" value={statForm.panNumber || ''} onChange={handleStatChange} placeholder="Enter Tax ID" />
-                                <Input label="National ID" name="aadhaarNumber" value={statForm.aadhaarNumber || ''} onChange={handleStatChange} placeholder="Enter National ID" />
-                                <Input label="UAN (Provident Fund)" name="uanNumber" value={statForm.uanNumber || ''} onChange={handleStatChange} />
-                                <Input label="PF Account Number" name="pfNumber" value={statForm.pfNumber || ''} onChange={handleStatChange} />
+                                <Input label="ESIC Number" name="esicNumber" value={statForm.esicNumber || ''} onChange={handleStatChange} placeholder="Enter ESIC Number" />
+                                <Input label="PF Number" name="pfNumber" value={statForm.pfNumber || ''} onChange={handleStatChange} placeholder="Enter PF Number" />
                                 <div className="flex justify-end gap-2 pt-2">
                                     <Button variant="ghost" size="sm" onClick={() => setIsEditingStat(false)} className="text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800">Cancel</Button>
                                     <Button variant="primary" size="sm" onClick={saveStatutoryDetails} disabled={isSaving}>
@@ -247,7 +245,7 @@ export default function BankComplianceTab({
                                     </Button>
                                 </div>
                             </div>
-                        ) : !statutoryData?.panNumber ? (
+                        ) : (!statutoryData?.panNumber && !statutoryData?.esicNumber && !statutoryData?.pfNumber) ? (
                             <div className="flex flex-col items-center justify-center h-full text-center py-8 text-gray-500 dark:text-gray-400 transition-colors">
                                 <FileText size={40} className="text-gray-200 dark:text-gray-700 mb-3 transition-colors" />
                                 <p className="text-sm font-medium text-gray-900 dark:text-gray-100 transition-colors">No Statutory Details</p>
@@ -256,9 +254,8 @@ export default function BankComplianceTab({
                         ) : (
                             <div className="space-y-2">
                                 <DetailItem label="PAN / Tax ID" value={statutoryData.panNumber} icon={CreditCard} isSensitive showSensitive={showSensitiveInfo} />
-                                <DetailItem label="National ID" value={statutoryData.aadhaarNumber} icon={CreditCard} isSensitive showSensitive={showSensitiveInfo} />
-                                <DetailItem label="UAN Number" value={statutoryData.uanNumber} icon={Hash} />
-                                <DetailItem label="PF Account Number" value={statutoryData.pfNumber} icon={Hash} />
+                                <DetailItem label="ESIC Number" value={statutoryData.esicNumber} icon={Hash} isSensitive showSensitive={showSensitiveInfo} />
+                                <DetailItem label="PF Number" value={statutoryData.pfNumber} icon={Hash} isSensitive showSensitive={showSensitiveInfo} />
                             </div>
                         )}
                     </CardContent>

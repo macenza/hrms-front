@@ -36,7 +36,7 @@ export default function EmployeeProfilePage() {
 
     // 5. Pass the cleanly fetched data to your client component tabs
     return (
-        <div className="min-h-[calc(100vh-4rem)] bg-transparent text-gray-900 dark:text-gray-100 p-6 lg:p-8 transition-colors duration-300">
+        <div className="w-full bg-transparent text-gray-900 dark:text-gray-100 transition-colors duration-300">
             <div className="max-w-7xl mx-auto w-full animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <EmployeeProfileClient id={employeeId} />
             </div>

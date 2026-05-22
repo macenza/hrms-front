@@ -88,7 +88,7 @@ export default function EmployeeProfileClient({ id }: EmployeeProfileClientProps
 
     useEffect(() => {
         setAvatarError(false);
-    }, [rawEmployee?.profile?.avatar]);
+    }, [employee?.profile?.avatar]);
 
     useEffect(() => {
         if (rawEmployee && isCurrentUser) {
@@ -150,8 +150,12 @@ export default function EmployeeProfileClient({ id }: EmployeeProfileClientProps
             formData.append('description', 'Uploaded certificate');
             await uploadCertificateMutation.mutateAsync(formData);
             toast.success("Certificate uploaded successfully!");
-        } catch (error) {
-            toast.error('Failed to upload certificate. Please try again.');
+        } catch (error: any) {
+            if (error.response?.status === 404) {
+                toast.error("The certificate upload service is currently unavailable (404). Please contact your administrator.");
+            } else {
+                toast.error('Failed to upload certificate. Please try again.');
+            }
         }
     };
 
@@ -210,7 +214,7 @@ export default function EmployeeProfileClient({ id }: EmployeeProfileClientProps
                                         <img 
                                             src={employee.profile.avatar.startsWith('http') 
                                                 ? employee.profile.avatar 
-                                                : `${process.env.NEXT_PUBLIC_API_URL ? process.env.NEXT_PUBLIC_API_URL.replace('/api', '') : 'http://localhost:4000'}${employee.profile.avatar}`
+                                                : `${process.env.NEXT_PUBLIC_API_URL ? process.env.NEXT_PUBLIC_API_URL.replace('/api', '') : 'http://localhost:4000'}${employee.profile.avatar}?t=${employee.updatedAt ? new Date(employee.updatedAt).getTime() : Date.now()}`
                                             } 
                                             alt={employee.name} 
                                             className="w-14 h-14 sm:w-20 sm:h-20 rounded-full object-cover shadow-inner transition-transform duration-300"
@@ -340,7 +344,9 @@ export default function EmployeeProfileClient({ id }: EmployeeProfileClientProps
                                 employeeId: employee.employeeId,
                                 designation: employee.role,
                                 department: employment.department || '',
-                                reportingManager: employment.reportingManager || '',
+                                reportingManager: typeof employment.reportingManager === 'object' && employment.reportingManager
+                                    ? `${employment.reportingManager.name} (${employment.reportingManager.role.toUpperCase()})`
+                                    : (employment.reportingManager || ''),
                                 employmentType: employment.employmentType || '',
                                 workLocation: employment.workLocation || '',
                                 skills: employment.skills || [],
@@ -369,7 +375,11 @@ export default function EmployeeProfileClient({ id }: EmployeeProfileClientProps
                             employeeId={employee._id || employee.id}
                             currentUserRole={role}
                             bankData={financial.bankDetails}
-                            statutoryData={financial.statutoryDetails}
+                            statutoryData={{
+                                panNumber: financial.panNumber || '',
+                                esicNumber: financial.esicNumber || '',
+                                pfNumber: financial.pfNumber || ''
+                            }}
                             onRefresh={refreshProfile}
                         />
                     )}
@@ -460,6 +470,7 @@ export default function EmployeeProfileClient({ id }: EmployeeProfileClientProps
                     try {
                         await employeeService.uploadPhoto(resolvedEmployeeId, formData);
                         toast.success("Profile photo updated successfully!");
+                        setAvatarError(false);
                         refreshProfile();
                     } catch (error) {
                         toast.error("Failed to upload cropped profile photo.");

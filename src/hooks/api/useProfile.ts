@@ -36,6 +36,7 @@ export function useUploadDocument(employeeId: string) {
         mutationFn: (formData: FormData) => employeeService.uploadDocument(employeeId, formData),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['profile', employeeId] });
+            queryClient.invalidateQueries({ queryKey: ['employee', employeeId] });
         }
     });
 }
@@ -46,6 +47,7 @@ export function useUploadCertificate(employeeId: string) {
         mutationFn: (formData: FormData) => employeeService.uploadCertificate(employeeId, formData),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['profile', employeeId] });
+            queryClient.invalidateQueries({ queryKey: ['employee', employeeId] });
         },
     });
 }
@@ -56,6 +58,7 @@ export function useAddNote(employeeId: string) {
         mutationFn: (text: string) => employeeService.addNote(employeeId, text),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['profile', employeeId] });
+            queryClient.invalidateQueries({ queryKey: ['employee', employeeId] });
         }
     });
 }

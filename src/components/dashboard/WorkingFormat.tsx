@@ -6,11 +6,21 @@ import { PieChart, Pie, Cell, Tooltip } from "recharts";
 import { Loader2 } from "lucide-react";
 import { cn } from "@/utils/cn";
 
-const ROLE_COLORS: Record<string, string> = {
-    "Admin": "#8B5CF6",    // purple-500
-    "HR": "#EC4899",       // pink-500
-    "Employee": "#3B82F6", // blue-500
-    "Unspecified": "#9CA3AF" // gray-400
+const getRoleColor = (label: string): string => {
+    const formatted = label.trim().toLowerCase();
+    if (formatted === "admin") return "#8B5CF6"; // purple-500
+    if (formatted === "hr") return "#EC4899"; // pink-500
+    if (formatted === "employee") return "#3B82F6"; // blue-500
+    if (formatted === "manager") return "#10B981"; // green-500
+    if (formatted === "unspecified") return "#9CA3AF"; // gray-400
+    
+    // Dynamic HSL generator based on label string hash
+    let hash = 0;
+    for (let i = 0; i < label.length; i++) {
+        hash = label.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const h = Math.abs(hash) % 360;
+    return `hsl(${h}, 70%, 55%)`; // Vibrant, harmonized color
 };
 
 interface WorkingFormatProps {
@@ -44,7 +54,7 @@ export default function WorkingFormat({
         return Object.entries(formatData).map(([label, count]) => ({
             label,
             count,
-            color: ROLE_COLORS[label] || ROLE_COLORS["Unspecified"]
+            color: getRoleColor(label)
         }));
     }, [formatData]);
 

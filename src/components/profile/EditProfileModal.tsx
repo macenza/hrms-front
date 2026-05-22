@@ -7,6 +7,9 @@ import { Input } from '@/components/ui/Input';
 import { Card, CardContent } from '@/components/ui/Card';
 import { toast } from 'sonner';
 import { employeeService } from '@/services/employeeService';
+import { useCompanySettings } from '@/hooks/api/useSettings';
+import { useActiveEmployees } from '@/hooks/api/useEmployees';
+import { z } from 'zod';
 
 interface EditProfileModalProps {
     isOpen: boolean;
@@ -16,6 +19,29 @@ interface EditProfileModalProps {
     isAdminOrHR: boolean;
 }
 
+const parsePhoneNumber = (phoneStr: string) => {
+    if (!phoneStr) return { countryCode: '+91', rawPhone: '' };
+    const parts = phoneStr.trim().split(/\s+/);
+    if (parts.length > 1 && parts[0].startsWith('+')) {
+        return { countryCode: parts[0], rawPhone: parts.slice(1).join(' ') };
+    }
+    return { countryCode: '+91', rawPhone: phoneStr };
+};
+
+const profileEditSchema = z.object({
+    name: z.string().trim().min(2, 'Name must be at least 2 characters'),
+    phone: z.string().trim().optional().or(z.literal('')),
+    address: z.string().trim().optional(),
+    fathersName: z.string().trim().optional(),
+    dob: z.string().trim().optional().or(z.literal('')),
+    department: z.string().trim().optional(),
+    designation: z.string().trim().optional(),
+    employmentType: z.enum(['Full-Time', 'Part-Time', 'Contract', 'Internship']),
+    joiningDate: z.string().trim().optional().or(z.literal('')),
+    workLocation: z.string().trim().optional(),
+    reportingManager: z.string().trim().optional().or(z.literal('')),
+});
+
 export default function EditProfileModal({
     isOpen,
     onClose,
@@ -24,6 +50,11 @@ export default function EditProfileModal({
     isAdminOrHR
 }: EditProfileModalProps) {
     const [isSaving, setIsSaving] = useState(false);
+    const { data: companySettings } = useCompanySettings();
+    const { data: activeEmployees } = useActiveEmployees();
+
+    const dynamicRoles = companySettings?.roles || ['employee', 'manager', 'hr', 'admin'];
+    const dynamicDepartments = companySettings?.departments || ['HR', 'Engineering', 'Marketing', 'Sales', 'Finance'];
 
     // Deep destructure raw values
     const personal = employee?.profile?.personal || {};
@@ -34,6 +65,7 @@ export default function EditProfileModal({
         name: '',
         role: 'employee',
         isActive: true,
+        countryCode: '+91',
         phone: '',
         address: '',
         fathersName: '',
@@ -42,16 +74,27 @@ export default function EditProfileModal({
         designation: '',
         employmentType: 'Full-Time',
         joiningDate: '',
-        workLocation: ''
+        workLocation: '',
+        reportingManager: ''
     });
 
     useEffect(() => {
         if (employee) {
+            const { countryCode, rawPhone } = parsePhoneNumber(personal.phone);
+            
+            let managerId = '';
+            if (employment.reportingManager) {
+                managerId = typeof employment.reportingManager === 'object'
+                    ? (employment.reportingManager._id || employment.reportingManager.id || '')
+                    : employment.reportingManager;
+            }
+
             setForm({
                 name: employee.name || '',
                 role: employee.role || 'employee',
                 isActive: employee.isActive ?? true,
-                phone: personal.phone || '',
+                countryCode,
+                phone: rawPhone,
                 address: personal.address || '',
                 fathersName: personal.fathersName || '',
                 dob: personal.dob ? new Date(personal.dob).toISOString().split('T')[0] : '',
@@ -59,7 +102,8 @@ export default function EditProfileModal({
                 designation: employee.role || employment.designation || '',
                 employmentType: employment.employmentType || 'Full-Time',
                 joiningDate: employment.joiningDate ? new Date(employment.joiningDate).toISOString().split('T')[0] : '',
-                workLocation: employment.workLocation || ''
+                workLocation: employment.workLocation || '',
+                reportingManager: managerId
             });
         }
     }, [employee]);
@@ -68,6 +112,18 @@ export default function EditProfileModal({
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        
+        try {
+            profileEditSchema.parse(form);
+        } catch (err) {
+            if (err instanceof z.ZodError) {
+                toast.error(err.issues[0]?.message || 'Validation error');
+            } else {
+                toast.error('Validation error');
+            }
+            return;
+        }
+
         setIsSaving(true);
 
         try {
@@ -76,7 +132,7 @@ export default function EditProfileModal({
                 name: form.name,
                 profile: {
                     personal: {
-                        phone: form.phone,
+                        phone: form.phone ? `${form.countryCode} ${form.phone.trim()}` : '',
                         address: form.address,
                         fathersName: form.fathersName,
                         dob: form.dob || undefined
@@ -86,7 +142,8 @@ export default function EditProfileModal({
                         designation: form.designation,
                         employmentType: form.employmentType,
                         joiningDate: form.joiningDate || undefined,
-                        workLocation: form.workLocation
+                        workLocation: form.workLocation,
+                        reportingManager: form.reportingManager || null
                     }
                 }
             };
@@ -156,10 +213,18 @@ export default function EditProfileModal({
                                         onChange={(e) => setForm({ ...form, role: e.target.value })}
                                         className="w-full h-10 px-3 border border-gray-200 dark:border-gray-800 rounded-lg text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-950 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 outline-none transition-all cursor-pointer"
                                     >
-                                        <option value="employee">Employee</option>
-                                        <option value="manager">Manager</option>
-                                        <option value="hr">HR</option>
-                                        <option value="admin">Admin</option>
+                                        {dynamicRoles.map((r: string) => {
+                                            const formatRoleLabel = (roleStr: string) => {
+                                                if (roleStr.toLowerCase() === 'hr') return 'HR Professional';
+                                                if (roleStr.toLowerCase() === 'admin') return 'System Admin';
+                                                return roleStr.charAt(0).toUpperCase() + roleStr.slice(1);
+                                            };
+                                            return (
+                                                <option key={r} value={r.toLowerCase()}>
+                                                    {formatRoleLabel(r)}
+                                                </option>
+                                            );
+                                        })}
                                     </select>
                                 </div>
                             ) : (
@@ -206,11 +271,33 @@ export default function EditProfileModal({
                             Contact Details
                         </h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <Input
-                                label="Phone Number"
-                                value={form.phone}
-                                onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                            />
+                            <div className="space-y-1.5">
+                                <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Phone Number</label>
+                                <div className="flex gap-2">
+                                    <select
+                                        value={form.countryCode}
+                                        onChange={(e) => setForm({ ...form, countryCode: e.target.value })}
+                                        className="w-24 h-10 px-2 rounded-lg border border-gray-200 dark:border-gray-800 text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-950 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 outline-none transition-all cursor-pointer"
+                                    >
+                                        <option value="+91">+91 (IN)</option>
+                                        <option value="+1">+1 (US)</option>
+                                        <option value="+44">+44 (UK)</option>
+                                        <option value="+61">+61 (AU)</option>
+                                        <option value="+81">+81 (JP)</option>
+                                        <option value="+49">+49 (DE)</option>
+                                        <option value="+33">+33 (FR)</option>
+                                        <option value="+971">+971 (AE)</option>
+                                    </select>
+                                    <div className="flex-1">
+                                        <Input 
+                                            value={form.phone}
+                                            onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                                            placeholder="12345 67890" 
+                                            className="w-full"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
                             
                             <div className="md:col-span-2">
                                 <Input
@@ -229,11 +316,34 @@ export default function EditProfileModal({
                         </h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <Input
-                                label="Department"
-                                value={form.department}
-                                onChange={(e) => setForm({ ...form, department: e.target.value })}
-                                disabled={!isAdminOrHR}
+                                label="Employee ID"
+                                value={employee.employeeId || 'N/A'}
+                                disabled
+                                className="bg-gray-50 text-gray-500 dark:bg-gray-800/50 dark:text-gray-400 border-gray-200 dark:border-gray-800 cursor-not-allowed"
                             />
+
+                            {isAdminOrHR ? (
+                                <div className="space-y-1.5">
+                                    <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Department</label>
+                                    <select
+                                        value={form.department}
+                                        onChange={(e) => setForm({ ...form, department: e.target.value })}
+                                        className="w-full h-10 px-3 border border-gray-200 dark:border-gray-800 rounded-lg text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-950 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 outline-none transition-all cursor-pointer"
+                                    >
+                                        {dynamicDepartments.map((dept: string) => (
+                                            <option key={dept} value={dept}>
+                                                {dept}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                            ) : (
+                                <Input
+                                    label="Department"
+                                    value={form.department}
+                                    disabled
+                                />
+                            )}
                             
                             <Input
                                 label="Designation"
@@ -264,6 +374,26 @@ export default function EditProfileModal({
                                 onChange={(e) => setForm({ ...form, joiningDate: e.target.value })}
                                 disabled={!isAdminOrHR}
                             />
+
+                            {isAdminOrHR && (
+                                <div className="space-y-1.5">
+                                    <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Reporting Manager</label>
+                                    <select
+                                        value={form.reportingManager}
+                                        onChange={(e) => setForm({ ...form, reportingManager: e.target.value })}
+                                        className="w-full h-10 px-3 border border-gray-200 dark:border-gray-800 rounded-lg text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-950 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 outline-none transition-all cursor-pointer"
+                                    >
+                                        <option value="">No Manager (None)</option>
+                                        {activeEmployees
+                                            ?.filter((emp: any) => emp.id !== employee.id && emp._id !== employee.id && emp.id !== employee._id && emp._id !== employee._id)
+                                            ?.map((emp: any) => (
+                                                <option key={emp.id} value={emp.id}>
+                                                    {emp.name} ({emp.role.toUpperCase()})
+                                                </option>
+                                            ))}
+                                    </select>
+                                </div>
+                            )}
 
                             <div className="md:col-span-2">
                                 <Input

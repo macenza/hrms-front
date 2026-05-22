@@ -2,26 +2,47 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { payrollService } from '@/services/payrollService';
 
-export function usePayrollData(enabled: boolean) {
+export function usePayrollData(month: number, year: number, enabled: boolean) {
     return useQuery({
-        queryKey: ['payroll', 'dashboard'],
+        queryKey: ['payroll', 'dashboard', month, year],
         queryFn: async () => {
-            const data = await payrollService.getDashboardData();
+            const res = await payrollService.getDashboardData(month, year);
             
-            const mappedRecords = data.records.map((rec: any) => ({
-                id: rec.user?.employeeId || 'N/A',
-                name: rec.user?.name || 'Unknown',
-                department: rec.user?.profile?.department || 'Unassigned',
-                basicSalary: rec.earnings?.basic || 0,
-                grossSalary: rec.earnings?.total || 0,
+            // CRITICAL: Bulletproof Unwrapper to prevent silent crashes
+            const recordsList = Array.isArray(res?.data?.records) 
+                ? res.data.records 
+                : (res?.data?.records?.data || res?.data?.records?.payrolls || res?.data || []);
+            
+            const stats = res?.data?.stats || {
+                totalDraft: 0,
+                totalDisbursed: 0,
+                pendingApprovals: 0,
+                totalDeductions: 0
+            };
+            
+            // Map records cleanly for frontend rendering
+            const mappedRecords = recordsList.map((rec: any) => ({
+                id: rec.employee?.employeeId || 'N/A',
+                name: rec.employee?.name || 'Unknown',
+                department: rec.employee?.profile?.employment?.department || 'Unassigned',
+                role: rec.employee?.role || 'employee',
+                baseSalary: rec.baseSalary || 0,
+                basicSalary: rec.baseSalary || 0, // Fallback mapping for PayslipModal!
+                grossSalary: rec.grossPay || 0,
+                taxDeduction: rec.taxDeduction || 0,
+                unpaidLeaveDeduction: rec.unpaidLeaveDeduction || 0,
+                loanDeduction: rec.loanDeduction || 0,
                 netPayable: rec.netPay || 0,
                 status: rec.status,
+                paymentDate: rec.paymentDate,
+                month: rec.month,
+                year: rec.year,
                 dbId: rec._id
             }));
 
-            return { stats: data.stats, records: mappedRecords };
+            return { stats, records: mappedRecords };
         },
-        enabled, // RBAC Gate: Only fetch if Admin/HR
+        enabled,
         staleTime: 5 * 60 * 1000,
     });
 }
@@ -30,10 +51,59 @@ export function useRunPayroll() {
     const queryClient = useQueryClient();
     
     return useMutation({
-        mutationFn: () => payrollService.runPayroll(),
+        mutationFn: ({ month, year }: { month: number; year: number }) => 
+            payrollService.runPayroll(month, year),
         onSuccess: () => {
-            // Automatically refresh the payroll dashboard data upon successful run
             queryClient.invalidateQueries({ queryKey: ['payroll', 'dashboard'] });
         }
+    });
+}
+
+export function useProcessPayment() {
+    const queryClient = useQueryClient();
+    
+    return useMutation({
+        mutationFn: (payrollId: string) => payrollService.processPayment(payrollId),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['payroll', 'dashboard'] });
+        }
+    });
+}
+
+export function useMyPayslips(enabled: boolean = true) {
+    return useQuery({
+        queryKey: ['payroll', 'my-slips'],
+        queryFn: async () => {
+            const res = await payrollService.getMyPayslips();
+            
+            // CRITICAL: Bulletproof Unwrapper to prevent silent crashes
+            const recordsList = Array.isArray(res?.data) 
+                ? res.data 
+                : (res?.data?.data || res?.data?.payrolls || res || []);
+            
+            // Map records cleanly for frontend rendering
+            const mappedRecords = recordsList.map((rec: any) => ({
+                id: rec.employee?.employeeId || 'N/A',
+                name: rec.employee?.name || 'Unknown',
+                department: rec.employee?.profile?.employment?.department || 'Unassigned',
+                role: rec.employee?.role || 'employee',
+                baseSalary: rec.baseSalary || 0,
+                basicSalary: rec.baseSalary || 0, // Fallback mapping for PayslipModal!
+                grossSalary: rec.grossPay || 0,
+                taxDeduction: rec.taxDeduction || 0,
+                unpaidLeaveDeduction: rec.unpaidLeaveDeduction || 0,
+                loanDeduction: rec.loanDeduction || 0,
+                netPayable: rec.netPay || 0,
+                status: rec.status,
+                paymentDate: rec.paymentDate,
+                month: rec.month,
+                year: rec.year,
+                dbId: rec._id
+            }));
+
+            return mappedRecords;
+        },
+        enabled,
+        staleTime: 5 * 60 * 1000,
     });
 }

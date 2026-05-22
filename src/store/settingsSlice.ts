@@ -7,6 +7,8 @@ export interface CompanySettings {
     currency: string;
     dateFormat: string;
     lastCompanyUpdate?: string | null;
+    roles?: string[];
+    departments?: string[];
 }
 
 export interface SettingsState {

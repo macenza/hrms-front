@@ -50,7 +50,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             { id: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', show: true },
             // Administrative Links
             { id: 'Employees', href: '/employees', icon: Users, label: 'Employees', show: isAdminOrHR },
-            { id: 'Payroll', href: '/payroll', icon: DollarSign, label: 'Payroll', show: isAdminOrHR },
+            { id: 'Payroll', href: '/payroll', icon: DollarSign, label: 'Payroll', show: role === 'hr' },
             { id: 'Assets', href: '/assets', icon: Package, label: 'Assets', show: isAdminOrHR },
 
             // --- ARCHITECTURE UPGRADE: Dynamic Profile Routing ---

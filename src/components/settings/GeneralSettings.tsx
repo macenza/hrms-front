@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { UploadCloud, Save, Building2, Trash2, Lock, Palette, Calendar, Globe, DollarSign, Clock, AlertCircle } from 'lucide-react';
+import { UploadCloud, Save, Building2, Trash2, Lock, Palette, Calendar, Globe, DollarSign, Clock, AlertCircle, Plus, Edit2, Check, X, ShieldAlert } from 'lucide-react';
 import { cn } from '@/utils/cn';
+import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
@@ -16,6 +17,8 @@ export interface CompanySettings {
     brandColor: string;
     dateFormat: string;
     lastCompanyUpdate?: string | null;
+    roles?: string[];
+    departments?: string[];
 }
 
 interface GeneralSettingsProps {
@@ -52,6 +55,15 @@ export default function GeneralSettings({
     const [brandColor, setBrandColor] = useState('#3B82F6');
     const [dateFormat, setDateFormat] = useState('MM/DD/YYYY');
     const [lastCompanyUpdate, setLastCompanyUpdate] = useState<string | null>(null);
+    const [roles, setRoles] = useState<string[]>([]);
+    const [departments, setDepartments] = useState<string[]>([]);
+
+    const [editingRoleIndex, setEditingRoleIndex] = useState<number | null>(null);
+    const [editingRoleValue, setEditingRoleValue] = useState('');
+    const [editingDeptIndex, setEditingDeptIndex] = useState<number | null>(null);
+    const [editingDeptValue, setEditingDeptValue] = useState('');
+    const [newRoleValue, setNewRoleValue] = useState('');
+    const [newDeptValue, setNewDeptValue] = useState('');
 
     const [logoFile, setLogoFile] = useState<File | null>(null);
     const [logoPreview, setLogoPreview] = useState<string | null>(null);
@@ -73,6 +85,8 @@ export default function GeneralSettings({
             setBrandColor(initialData.brandColor || '#3B82F6');
             setDateFormat(initialData.dateFormat || 'MM/DD/YYYY');
             setLastCompanyUpdate(initialData.lastCompanyUpdate || null);
+            setRoles(initialData.roles || ['employee', 'manager', 'hr', 'admin']);
+            setDepartments(initialData.departments || ['HR', 'Engineering', 'Marketing', 'Sales', 'Finance']);
 
             if (initialData.companyLogoUrl) {
                 const fullUrl = initialData.companyLogoUrl.startsWith('http') || initialData.companyLogoUrl.startsWith('/')
@@ -101,6 +115,82 @@ export default function GeneralSettings({
             }
         }
     }, [initialData]);
+
+    const handleAddRole = () => {
+        if (!newRoleValue.trim()) return;
+        const normalized = newRoleValue.trim().toLowerCase();
+        if (roles.includes(normalized)) {
+            toast.error('Role already exists');
+            return;
+        }
+        setRoles([...roles, normalized]);
+        setNewRoleValue('');
+    };
+
+    const handleDeleteRole = (indexToDelete: number) => {
+        if (roles.length <= 1) {
+            toast.error('At least one role is required');
+            return;
+        }
+        setRoles(roles.filter((_, idx) => idx !== indexToDelete));
+    };
+
+    const handleStartEditRole = (index: number, val: string) => {
+        setEditingRoleIndex(index);
+        setEditingRoleValue(val);
+    };
+
+    const handleSaveEditRole = (index: number) => {
+        if (!editingRoleValue.trim()) return;
+        const normalized = editingRoleValue.trim().toLowerCase();
+        if (roles.some((r, idx) => r === normalized && idx !== index)) {
+            toast.error('Role already exists');
+            return;
+        }
+        const updated = [...roles];
+        updated[index] = normalized;
+        setRoles(updated);
+        setEditingRoleIndex(null);
+        setEditingRoleValue('');
+    };
+
+    const handleAddDept = () => {
+        if (!newDeptValue.trim()) return;
+        const normalized = newDeptValue.trim();
+        if (departments.some(d => d.toLowerCase() === normalized.toLowerCase())) {
+            toast.error('Department already exists');
+            return;
+        }
+        setDepartments([...departments, normalized]);
+        setNewDeptValue('');
+    };
+
+    const handleDeleteDept = (indexToDelete: number) => {
+        if (departments.length <= 1) {
+            toast.error('At least one department is required');
+            return;
+        }
+        setDepartments(departments.filter((_, idx) => idx !== indexToDelete));
+    };
+
+    const handleStartEditDept = (index: number, val: string) => {
+        setEditingDeptIndex(index);
+        setEditingDeptValue(val);
+    };
+
+    const handleSaveEditDept = (index: number) => {
+        if (!editingDeptValue.trim()) return;
+        const normalized = editingDeptValue.trim();
+        if (departments.some((d, idx) => d.toLowerCase() === normalized.toLowerCase() && idx !== index)) {
+            toast.error('Department already exists');
+            return;
+        }
+        const updated = [...departments];
+        updated[index] = normalized;
+        setDepartments(updated);
+        setEditingDeptIndex(null);
+        setEditingDeptValue('');
+    };
 
     const handleLogoButtonClick = () => {
         if (!isUserAdmin || isBrandingLocked) return;
@@ -132,6 +222,8 @@ export default function GeneralSettings({
         formData.append('currency', currency);
         formData.append('brandColor', brandColor);
         formData.append('dateFormat', dateFormat);
+        formData.append('roles', JSON.stringify(roles));
+        formData.append('departments', JSON.stringify(departments));
 
         if (logoFile) {
             formData.append('logo', logoFile);
@@ -396,6 +488,243 @@ export default function GeneralSettings({
                         </div>
                     </CardContent>
                 </Card>
+
+                {/* Roles & Departments Customization Section */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+                    {/* Roles Configuration Card */}
+                    <Card className="border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm dark:shadow-none transition-colors duration-300">
+                        <CardContent className="p-6 space-y-4">
+                            <div className="flex items-center justify-between">
+                                <div className="space-y-1">
+                                    <h3 className="text-base font-bold text-gray-900 dark:text-gray-100 transition-colors">Manage Workspace Roles</h3>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 transition-colors">
+                                        Configure custom access permission roles.
+                                    </p>
+                                </div>
+                                <ShieldAlert className="w-5 h-5 text-gray-400 dark:text-gray-500" />
+                            </div>
+
+                            {/* Add Role Form */}
+                            {canEditGeneral && (
+                                <div className="flex gap-2">
+                                    <Input
+                                        placeholder="Add new role (e.g. Lead)"
+                                        value={newRoleValue}
+                                        onChange={(e) => setNewRoleValue(e.target.value)}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter') {
+                                                e.preventDefault();
+                                                handleAddRole();
+                                            }
+                                        }}
+                                        className="text-xs h-9 bg-gray-50 dark:bg-gray-950 font-medium"
+                                    />
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={handleAddRole}
+                                        className="h-9 w-9 p-0 flex items-center justify-center border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 text-gray-700 dark:text-gray-300 hover:bg-gray-100 transition-colors"
+                                    >
+                                        <Plus size={16} />
+                                    </Button>
+                                </div>
+                            )}
+
+                            {/* Roles List */}
+                            <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
+                                {roles.map((role, idx) => {
+                                    const isEditing = editingRoleIndex === idx;
+                                    return (
+                                        <div
+                                            key={idx}
+                                            className="flex items-center justify-between p-2.5 bg-gray-50/50 dark:bg-gray-950/30 border border-gray-150 dark:border-gray-800/80 rounded-xl transition-all hover:border-primary/20 hover:bg-gray-50 dark:hover:bg-gray-950/50 group"
+                                        >
+                                            {isEditing ? (
+                                                <div className="flex items-center gap-2 w-full">
+                                                    <Input
+                                                        value={editingRoleValue}
+                                                        onChange={(e) => setEditingRoleValue(e.target.value)}
+                                                        className="text-xs h-7 py-0 px-2 font-medium focus:ring-1"
+                                                        onKeyDown={(e) => {
+                                                            if (e.key === 'Enter') {
+                                                                e.preventDefault();
+                                                                handleSaveEditRole(idx);
+                                                            } else if (e.key === 'Escape') {
+                                                                setEditingRoleIndex(null);
+                                                            }
+                                                        }}
+                                                        autoFocus
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleSaveEditRole(idx)}
+                                                        className="p-1 text-emerald-500 hover:text-emerald-600 transition-colors"
+                                                    >
+                                                        <Check size={14} />
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setEditingRoleIndex(null)}
+                                                        className="p-1 text-red-500 hover:text-red-600 transition-colors"
+                                                    >
+                                                        <X size={14} />
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <>
+                                                    <span className="text-xs font-semibold text-gray-700 dark:text-gray-300 capitalize">
+                                                        {role}
+                                                    </span>
+                                                    {canEditGeneral && (
+                                                        <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleStartEditRole(idx, role)}
+                                                                className="p-1 text-gray-400 hover:text-primary dark:text-gray-500 dark:hover:text-primary transition-colors"
+                                                                title="Rename Role"
+                                                            >
+                                                                <Edit2 size={13} />
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleDeleteRole(idx)}
+                                                                className="p-1 text-gray-400 hover:text-red-500 dark:text-gray-500 dark:hover:text-red-500 transition-colors"
+                                                                title="Delete Role"
+                                                            >
+                                                                <Trash2 size={13} />
+                                                            </button>
+                                                        </div>
+                                                    )}
+                                                </>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                                {roles.length === 0 && (
+                                    <p className="text-xs text-gray-400 dark:text-gray-500 italic text-center py-4">No custom roles defined.</p>
+                                )}
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* Departments Configuration Card */}
+                    <Card className="border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm dark:shadow-none transition-colors duration-300">
+                        <CardContent className="p-6 space-y-4">
+                            <div className="flex items-center justify-between">
+                                <div className="space-y-1">
+                                    <h3 className="text-base font-bold text-gray-900 dark:text-gray-100 transition-colors">Manage Departments</h3>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 transition-colors">
+                                        Configure organization department groupings.
+                                    </p>
+                                </div>
+                                <Building2 className="w-5 h-5 text-gray-400 dark:text-gray-500" />
+                            </div>
+
+                            {/* Add Department Form */}
+                            {canEditGeneral && (
+                                <div className="flex gap-2">
+                                    <Input
+                                        placeholder="Add department (e.g. Quality)"
+                                        value={newDeptValue}
+                                        onChange={(e) => setNewDeptValue(e.target.value)}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter') {
+                                                e.preventDefault();
+                                                handleAddDept();
+                                            }
+                                        }}
+                                        className="text-xs h-9 bg-gray-50 dark:bg-gray-950 font-medium"
+                                    />
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={handleAddDept}
+                                        className="h-9 w-9 p-0 flex items-center justify-center border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 text-gray-700 dark:text-gray-300 hover:bg-gray-100 transition-colors"
+                                    >
+                                        <Plus size={16} />
+                                    </Button>
+                                </div>
+                            )}
+
+                            {/* Departments List */}
+                            <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
+                                {departments.map((dept, idx) => {
+                                    const isEditing = editingDeptIndex === idx;
+                                    return (
+                                        <div
+                                            key={idx}
+                                            className="flex items-center justify-between p-2.5 bg-gray-50/50 dark:bg-gray-950/30 border border-gray-150 dark:border-gray-800/80 rounded-xl transition-all hover:border-primary/20 hover:bg-gray-50 dark:hover:bg-gray-950/50 group"
+                                        >
+                                            {isEditing ? (
+                                                <div className="flex items-center gap-2 w-full">
+                                                    <Input
+                                                        value={editingDeptValue}
+                                                        onChange={(e) => setEditingDeptValue(e.target.value)}
+                                                        className="text-xs h-7 py-0 px-2 font-medium focus:ring-1"
+                                                        onKeyDown={(e) => {
+                                                            if (e.key === 'Enter') {
+                                                                e.preventDefault();
+                                                                handleSaveEditDept(idx);
+                                                            } else if (e.key === 'Escape') {
+                                                                setEditingDeptIndex(null);
+                                                            }
+                                                        }}
+                                                        autoFocus
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleSaveEditDept(idx)}
+                                                        className="p-1 text-emerald-500 hover:text-emerald-600 transition-colors"
+                                                    >
+                                                        <Check size={14} />
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setEditingDeptIndex(null)}
+                                                        className="p-1 text-red-500 hover:text-red-600 transition-colors"
+                                                    >
+                                                        <X size={14} />
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <>
+                                                    <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">
+                                                        {dept}
+                                                    </span>
+                                                    {canEditGeneral && (
+                                                        <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleStartEditDept(idx, dept)}
+                                                                className="p-1 text-gray-400 hover:text-primary dark:text-gray-500 dark:hover:text-primary transition-colors"
+                                                                title="Rename Department"
+                                                            >
+                                                                <Edit2 size={13} />
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleDeleteDept(idx)}
+                                                                className="p-1 text-gray-400 hover:text-red-500 dark:text-gray-500 dark:hover:text-red-500 transition-colors"
+                                                                title="Delete Department"
+                                                            >
+                                                                <Trash2 size={13} />
+                                                            </button>
+                                                        </div>
+                                                    )}
+                                                </>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                                {departments.length === 0 && (
+                                    <p className="text-xs text-gray-400 dark:text-gray-500 italic text-center py-4">No departments defined.</p>
+                                )}
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
 
                 {/* Footer Save Action */}
                 {canEditGeneral && (
