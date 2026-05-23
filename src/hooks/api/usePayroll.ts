@@ -47,6 +47,35 @@ export function usePayrollData(month: number, year: number, enabled: boolean) {
     });
 }
 
+export function usePayrollBatches(enabled: boolean = true) {
+    return useQuery({
+        queryKey: ['payroll', 'batches'],
+        queryFn: async () => {
+            const res = await payrollService.getPayrollBatches();
+            return res.data || [];
+        },
+        enabled,
+        refetchInterval: (data) => {
+            // Poll every 3 seconds if any batch is still 'Processing'
+            const hasProcessing = Array.isArray(data) && data.some((b: any) => b.status === 'Processing');
+            return hasProcessing ? 3000 : false;
+        },
+    });
+}
+
+export function useBatchRecords(batchId: string | null, isProcessing: boolean = false) {
+    return useQuery({
+        queryKey: ['payroll', 'batchRecords', batchId],
+        queryFn: async () => {
+            if (!batchId) return [];
+            const res = await payrollService.getBatchRecords(batchId);
+            return res.data || [];
+        },
+        enabled: !!batchId,
+        refetchInterval: isProcessing ? 2000 : false,
+    });
+}
+
 export function useRunPayroll() {
     const queryClient = useQueryClient();
     

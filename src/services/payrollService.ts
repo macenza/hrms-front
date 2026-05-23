@@ -8,6 +8,16 @@ export const payrollService = {
         return response.data;
     },
     
+    getPayrollBatches: async () => {
+        const response = await apiClient.get(ENDPOINTS.PAYROLL.BATCHES);
+        return response.data;
+    },
+
+    getBatchRecords: async (batchId: string) => {
+        const response = await apiClient.get(`${ENDPOINTS.PAYROLL.BATCHES}/${batchId}/records`);
+        return response.data;
+    },
+
     runPayroll: async (month: number, year: number) => {
         const response = await apiClient.post(ENDPOINTS.PAYROLL.RUN, { month, year });
         return response.data;

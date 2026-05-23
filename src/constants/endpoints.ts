@@ -46,6 +46,7 @@ export const ENDPOINTS = {
     },
     PAYROLL: {
         BASE: '/payroll',
+        BATCHES: '/payroll/batches',
         RUN: '/payroll/run',
         PROCESS: (id: string | number) => `/payroll/${id}/process`,
         MY_PAYROLL: '/payroll/my-slips', // ESS Path

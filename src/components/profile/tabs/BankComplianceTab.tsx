@@ -1,12 +1,13 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Landmark, Hash, CreditCard, Building2, ShieldCheck, Eye, EyeOff, FileText, Edit2, Plus, Loader2 } from 'lucide-react';
+import { Landmark, Hash, CreditCard, Building2, ShieldCheck, Eye, EyeOff, FileText, Edit2, Plus, Loader2, Calculator, Trash2 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input'; 
 import { employeeService } from '@/services/employeeService';
+import { useCompanySettings } from '@/hooks/api/useSettings';
 import { cn } from '@/utils/cn';
 import { toast } from 'sonner';
 
@@ -27,11 +28,23 @@ export interface StatutoryDetails {
     pfNumber?: string;
 }
 
+export interface SalaryComponent {
+    name: string;
+    amount: number;
+}
+
+export interface SalaryData {
+    basicSalary: number;
+    activeAllowances: SalaryComponent[];
+    activeDeductions: SalaryComponent[];
+}
+
 interface BankComplianceTabProps {
     employeeId: string;
     currentUserRole: string; 
     bankData?: BankDetails | null;
     statutoryData?: StatutoryDetails | null;
+    salaryData?: SalaryData | null;
     onRefresh: () => void; 
 }
 
@@ -77,17 +90,22 @@ export default function BankComplianceTab({
     currentUserRole,
     bankData,
     statutoryData,
+    salaryData,
     onRefresh
 }: BankComplianceTabProps) {
     const [showSensitiveInfo, setShowSensitiveInfo] = useState(false);
     
     const [isEditingBank, setIsEditingBank] = useState(false);
     const [isEditingStat, setIsEditingStat] = useState(false);
+    const [isEditingSalary, setIsEditingSalary] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     
     const [bankForm, setBankForm] = useState<Partial<BankDetails>>(bankData || {});
     const [statForm, setStatForm] = useState<Partial<StatutoryDetails>>(statutoryData || {});
+    const [salaryForm, setSalaryForm] = useState<Partial<SalaryData>>(salaryData || { basicSalary: 0, activeAllowances: [], activeDeductions: [] });
     
+    const { data: companySettings } = useCompanySettings();
+
     const canEdit = currentUserRole?.toLowerCase() === 'admin' || currentUserRole?.toLowerCase() === 'hr';
 
     const handleBankChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -102,7 +120,7 @@ export default function BankComplianceTab({
         setIsSaving(true);
         try {
             await employeeService.update(employeeId, { 
-                'profile.bankDetails': { ...bankForm, status: bankData?.status || 'Pending' } 
+                'profile.financial.bankDetails': { ...bankForm, status: bankData?.status || 'Pending' } 
             });
             setIsEditingBank(false);
             onRefresh(); 
@@ -131,6 +149,65 @@ export default function BankComplianceTab({
             setIsSaving(false);
         }
     };
+
+    const saveSalaryDetails = async () => {
+        setIsSaving(true);
+        try {
+            await employeeService.update(employeeId, { 
+                'profile.financial.basicSalary': Number(salaryForm.basicSalary) || 0,
+                'profile.financial.activeAllowances': salaryForm.activeAllowances || [],
+                'profile.financial.activeDeductions': salaryForm.activeDeductions || []
+            });
+            setIsEditingSalary(false);
+            onRefresh();
+            toast.success('Salary components saved successfully!');
+        } catch (error) {
+            toast.error('Failed to save salary details.');
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const addAllowance = () => {
+        setSalaryForm({
+            ...salaryForm,
+            activeAllowances: [...(salaryForm.activeAllowances || []), { name: '', amount: 0 }]
+        });
+    };
+
+    const addDeduction = () => {
+        setSalaryForm({
+            ...salaryForm,
+            activeDeductions: [...(salaryForm.activeDeductions || []), { name: '', amount: 0 }]
+        });
+    };
+
+    const removeAllowance = (index: number) => {
+        const newArr = [...(salaryForm.activeAllowances || [])];
+        newArr.splice(index, 1);
+        setSalaryForm({ ...salaryForm, activeAllowances: newArr });
+    };
+
+    const removeDeduction = (index: number) => {
+        const newArr = [...(salaryForm.activeDeductions || [])];
+        newArr.splice(index, 1);
+        setSalaryForm({ ...salaryForm, activeDeductions: newArr });
+    };
+
+    const handleAllowanceChange = (index: number, field: string, value: any) => {
+        const newArr = [...(salaryForm.activeAllowances || [])];
+        newArr[index] = { ...newArr[index], [field]: field === 'amount' ? Number(value) : value };
+        setSalaryForm({ ...salaryForm, activeAllowances: newArr });
+    };
+
+    const handleDeductionChange = (index: number, field: string, value: any) => {
+        const newArr = [...(salaryForm.activeDeductions || [])];
+        newArr[index] = { ...newArr[index], [field]: field === 'amount' ? Number(value) : value };
+        setSalaryForm({ ...salaryForm, activeDeductions: newArr });
+    };
+
+    const availableAllowances = companySettings?.payroll?.customAllowances || [];
+    const availableDeductions = companySettings?.payroll?.customDeductions || [];
 
     return (
         <div className="space-y-6 animate-in fade-in duration-300">
@@ -260,6 +337,145 @@ export default function BankComplianceTab({
                         )}
                     </CardContent>
                 </Card>
+
+                {/* Salary Components Card */}
+                {canEdit && (
+                <Card className="border-gray-200 dark:border-gray-800 shadow-sm dark:shadow-none bg-white dark:bg-gray-900 flex flex-col transition-colors xl:col-span-2">
+                    <CardHeader className="flex flex-row items-center justify-between pb-4 border-b border-gray-100 dark:border-gray-800 transition-colors">
+                        <CardTitle className="text-lg flex items-center gap-2 text-gray-900 dark:text-gray-100">
+                            <Calculator size={20} className="text-emerald-600 dark:text-emerald-400" />
+                            Payroll & Salary Components
+                        </CardTitle>
+                        <div className="flex items-center gap-3">
+                            {!isEditingSalary && (
+                                <Button 
+                                    variant="ghost" 
+                                    size="sm" 
+                                    onClick={() => setIsEditingSalary(true)} 
+                                    className="h-8 px-2 text-gray-500 dark:text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition-colors"
+                                >
+                                    <Edit2 size={16} /> Edit
+                                </Button>
+                            )}
+                        </div>
+                    </CardHeader>
+                    <CardContent className="pt-4 flex-1">
+                        {isEditingSalary ? (
+                            <div className="space-y-6 animate-in fade-in">
+                                <Input label="Basic Salary (Monthly)" name="basicSalary" type="number" value={salaryForm.basicSalary || ''} onChange={(e) => setSalaryForm({...salaryForm, basicSalary: Number(e.target.value)})} placeholder="e.g. 50000" />
+                                
+                                {/* Allowances */}
+                                <div>
+                                    <div className="flex justify-between items-center mb-2">
+                                        <h4 className="font-semibold text-gray-700 dark:text-gray-300 text-sm">Active Allowances</h4>
+                                        <Button variant="outline" size="sm" onClick={addAllowance} className="h-7 text-xs px-2 gap-1"><Plus size={12}/> Add</Button>
+                                    </div>
+                                    <div className="space-y-2">
+                                        {salaryForm.activeAllowances?.map((allowance, idx) => (
+                                            <div key={idx} className="flex gap-2 items-center">
+                                                <select
+                                                    value={allowance.name}
+                                                    onChange={(e) => handleAllowanceChange(idx, 'name', e.target.value)}
+                                                    className="flex-1 h-9 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm focus:ring-2 focus:ring-blue-500"
+                                                >
+                                                    <option value="">Select Allowance...</option>
+                                                    {availableAllowances.map((a: any) => (
+                                                        <option key={a.name} value={a.name}>{a.name}</option>
+                                                    ))}
+                                                    <option value="Other">Other (Custom)</option>
+                                                </select>
+                                                <Input 
+                                                    name={`allowanceAmount_${idx}`} 
+                                                    type="number" 
+                                                    value={allowance.amount} 
+                                                    onChange={(e) => handleAllowanceChange(idx, 'amount', e.target.value)}
+                                                    placeholder="Amount"
+                                                />
+                                                <Button variant="ghost" size="sm" onClick={() => removeAllowance(idx)} className="text-red-500 hover:bg-red-50 p-2"><Trash2 size={16}/></Button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Deductions */}
+                                <div>
+                                    <div className="flex justify-between items-center mb-2">
+                                        <h4 className="font-semibold text-gray-700 dark:text-gray-300 text-sm">Active Deductions</h4>
+                                        <Button variant="outline" size="sm" onClick={addDeduction} className="h-7 text-xs px-2 gap-1"><Plus size={12}/> Add</Button>
+                                    </div>
+                                    <div className="space-y-2">
+                                        {salaryForm.activeDeductions?.map((deduction, idx) => (
+                                            <div key={idx} className="flex gap-2 items-center">
+                                                <select
+                                                    value={deduction.name}
+                                                    onChange={(e) => handleDeductionChange(idx, 'name', e.target.value)}
+                                                    className="flex-1 h-9 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm focus:ring-2 focus:ring-blue-500"
+                                                >
+                                                    <option value="">Select Deduction...</option>
+                                                    {availableDeductions.map((d: any) => (
+                                                        <option key={d.name} value={d.name}>{d.name}</option>
+                                                    ))}
+                                                    <option value="Other">Other (Custom)</option>
+                                                </select>
+                                                <Input 
+                                                    name={`deductionAmount_${idx}`} 
+                                                    type="number" 
+                                                    value={deduction.amount} 
+                                                    onChange={(e) => handleDeductionChange(idx, 'amount', e.target.value)}
+                                                    placeholder="Amount"
+                                                />
+                                                <Button variant="ghost" size="sm" onClick={() => removeDeduction(idx)} className="text-red-500 hover:bg-red-50 p-2"><Trash2 size={16}/></Button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className="flex justify-end gap-2 pt-2">
+                                    <Button variant="ghost" size="sm" onClick={() => setIsEditingSalary(false)} className="text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800">Cancel</Button>
+                                    <Button variant="primary" size="sm" onClick={saveSalaryDetails} disabled={isSaving}>
+                                        {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save Salary Details'}
+                                    </Button>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="space-y-4">
+                                <div className="flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-800">
+                                    <span className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase">Basic Salary</span>
+                                    <span className="text-lg font-bold text-gray-900 dark:text-gray-100">${salaryData?.basicSalary || 0}</span>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                        <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Allowances</h4>
+                                        {salaryData?.activeAllowances?.length ? (
+                                            <div className="space-y-2">
+                                                {salaryData.activeAllowances.map((a, i) => (
+                                                    <div key={i} className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                                                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{a.name}</span>
+                                                        <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">+${a.amount}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : <p className="text-xs text-gray-400 italic">None</p>}
+                                    </div>
+                                    <div>
+                                        <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Deductions</h4>
+                                        {salaryData?.activeDeductions?.length ? (
+                                            <div className="space-y-2">
+                                                {salaryData.activeDeductions.map((d, i) => (
+                                                    <div key={i} className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                                                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{d.name}</span>
+                                                        <span className="text-sm font-bold text-red-600 dark:text-red-400">-${d.amount}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : <p className="text-xs text-gray-400 italic">None</p>}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+                )}
             </div>
         </div>
     );

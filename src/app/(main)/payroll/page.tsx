@@ -3,13 +3,13 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Download, PlayCircle, IndianRupee, Users, Clock, AlertCircle, Loader2 } from 'lucide-react';
+import { Download, PlayCircle, FileSpreadsheet, Loader2, Calendar, Users, AlertCircle, CheckCircle2, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
-import { Card, CardContent } from '@/components/ui/Card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Modal } from '@/components/ui/Modal';
-import PayrollTable, { PayrollRecord } from '@/components/payroll/PayrollTable';
+import { Badge } from '@/components/ui/Badge';
 import { useAppSelector } from '@/store/hooks';
-import { usePayrollData, useRunPayroll, useProcessPayment } from '@/hooks/api/usePayroll';
+import { usePayrollBatches, useRunPayroll, useBatchRecords } from '@/hooks/api/usePayroll';
 import { cn } from '@/utils/cn';
 import { toast } from 'sonner';
 
@@ -30,46 +30,44 @@ const MONTHS = [
 
 const YEARS = [2024, 2025, 2026, 2027];
 
-const formatINR = (amount: number) => {
-    return new Intl.NumberFormat('en-IN', { 
-        style: 'currency', 
-        currency: 'INR', 
-        maximumFractionDigits: 0 
-    }).format(amount || 0);
-};
-
-export default function PayrollPage() {
+export default function PayrollDashboard() {
     const router = useRouter();
     
-    // 1. Strict RBAC Enforcement
+    // RBAC
     const { user, isAuthenticated } = useAppSelector((state) => state.auth);
     const role = user?.role?.toLowerCase() || 'employee';
-    const canManagePayroll = role === 'hr';
+    const canManagePayroll = role === 'hr' || role === 'admin';
 
-    // 2. Local Query State (Active month/year selection)
-    const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth() + 1);
-    const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
-
-    // 3. React Query Data Layer
-    const { data, isLoading: isQueryLoading } = usePayrollData(
-        selectedMonth, 
-        selectedYear, 
-        isAuthenticated && canManagePayroll
-    );
+    // Queries
+    const { data: batches, isLoading } = usePayrollBatches(isAuthenticated && canManagePayroll);
     const runPayrollMutation = useRunPayroll();
-    const processPaymentMutation = useProcessPayment();
 
-    const stats = data?.stats || { totalDraft: 0, totalDisbursed: 0, pendingApprovals: 0, totalDeductions: 0 };
-    const records: PayrollRecord[] = data?.records || [];
-    const isLoading = isQueryLoading;
-
-    // 4. Local UI Modal State
+    // Local UI State
     const [isRunModalOpen, setIsRunModalOpen] = useState(false);
     const [runMonth, setRunMonth] = useState<number>(new Date().getMonth() + 1);
     const [runYear, setRunYear] = useState<number>(new Date().getFullYear());
+    
+    // Batch Preview State
+    const [selectedBatchId, setSelectedBatchId] = useState<string | null>(null);
+    const selectedBatch = batches?.find((b: any) => b._id === selectedBatchId);
+    const isSelectedBatchProcessing = selectedBatch?.status === 'Processing';
+    
+    // Batch calculations hook (polls every 2s if selected batch is processing)
+    const { data: batchRecords, isLoading: isRecordsLoading } = useBatchRecords(
+        selectedBatchId, 
+        isSelectedBatchProcessing
+    );
+
+    const isProcessing = batches?.some((b: any) => b.status === 'Processing');
+
+    // Parallel calculations hook for background processing banner
+    const activeProcessingBatch = batches?.find((b: any) => b.status === 'Processing');
+    const { data: activeBatchRecords } = useBatchRecords(
+        activeProcessingBatch?._id || null,
+        !!activeProcessingBatch
+    );
 
     useEffect(() => {
-        // Redirect unauthorized roles
         if (isAuthenticated && !canManagePayroll) {
             router.replace('/dashboard');
         }
@@ -78,90 +76,33 @@ export default function PayrollPage() {
     const handleRunPayrollSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            const res = await runPayrollMutation.mutateAsync({ month: runMonth, year: runYear });
-            toast.success(res.message || "Payroll draft generated successfully!");
-            // Switch main filter to the generated month/year automatically
-            setSelectedMonth(runMonth);
-            setSelectedYear(runYear);
+            await runPayrollMutation.mutateAsync({ month: runMonth, year: runYear });
+            toast.success("Payroll batch processing started! It will run in the background.");
             setIsRunModalOpen(false);
         } catch (error: any) {
-            toast.error(error?.response?.data?.message || "Failed to generate payroll drafts.");
+            toast.error(error?.response?.data?.message || "Failed to start payroll batch.");
         }
     };
 
-    const handleProcessPayment = async (record: PayrollRecord) => {
-        try {
-            await processPaymentMutation.mutateAsync(record.dbId);
-            toast.success(`Disbursed salary of ${formatINR(record.netPayable)} to ${record.name} successfully!`);
-        } catch (error: any) {
-            toast.error(error?.response?.data?.message || "Disbursement transaction failed.");
+    const getExcelDownloadUrl = (url: string) => {
+        if (!url) return '';
+        if (url.startsWith('http://') || url.startsWith('https://')) {
+            return url;
+        }
+        const backendBaseUrl = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api').replace(/\/api$/, '');
+        return `${backendBaseUrl}${url}`;
+    };
+
+    const getStatusBadge = (status: string) => {
+        switch(status) {
+            case 'Completed': return <Badge variant="success" className="gap-1"><CheckCircle2 size={14}/> Completed</Badge>;
+            case 'Processing': return <Badge variant="warning" className="gap-1 bg-yellow-100 dark:bg-yellow-950/40 text-yellow-800 dark:text-yellow-300 border border-yellow-200 dark:border-yellow-900/60"><Loader2 size={14} className="animate-spin"/> Processing</Badge>;
+            case 'Failed': return <Badge variant="error" className="gap-1"><AlertCircle size={14}/> Failed</Badge>;
+            default: return <Badge variant="default">{status}</Badge>;
         }
     };
 
-    const handleExportReport = () => {
-        if (records.length === 0) return toast.info("No records to export.");
-        
-        const headers = ['Employee ID', 'Name', 'Department', 'Gross Salary', 'LWP Deduction', 'Loan EMI Deduction', 'Taxes (10%)', 'Net Payable', 'Status', 'Payment Date'];
-        const csvRows = records.map(rec => [
-            rec.id,
-            `"${rec.name}"`, 
-            `"${rec.department}"`,
-            rec.grossSalary,
-            rec.unpaidLeaveDeduction,
-            rec.loanDeduction,
-            rec.taxDeduction,
-            rec.netPayable,
-            rec.status,
-            rec.paymentDate ? new Date(rec.paymentDate).toLocaleDateString() : 'N/A'
-        ].join(','));
-        
-        const csvContent = [headers.join(','), ...csvRows].join('\n');
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        const currentMonthName = MONTHS.find(m => m.value === selectedMonth)?.label || 'Payroll';
-        link.download = `Payroll_Report_${currentMonthName}_${selectedYear}.csv`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-        toast.success("Payroll report exported successfully!");
-    };
-
-    // Advanced dynamic stats card mapping
-    const statCards = [
-        { 
-            title: "Total Payroll (Draft)", 
-            value: formatINR(stats.totalDraft), 
-            icon: <IndianRupee size={18} />, 
-            colorClass: "text-blue-600 dark:text-blue-400", 
-            bgClass: "bg-blue-50 dark:bg-blue-500/10" 
-        },
-        { 
-            title: "Total Disbursed", 
-            value: formatINR(stats.totalDisbursed), 
-            icon: <Users size={18} />, 
-            colorClass: "text-emerald-600 dark:text-emerald-400", 
-            bgClass: "bg-emerald-50 dark:bg-emerald-500/10" 
-        },
-        { 
-            title: "Pending Approvals", 
-            value: stats.pendingApprovals.toString(), 
-            icon: <Clock size={18} />, 
-            colorClass: "text-yellow-600 dark:text-yellow-500", 
-            bgClass: "bg-yellow-50 dark:bg-yellow-500/10" 
-        },
-        { 
-            title: "Total Deductions", 
-            value: formatINR(stats.totalDeductions), 
-            icon: <AlertCircle size={18} />, 
-            colorClass: "text-red-500 dark:text-red-400", 
-            bgClass: "bg-red-50 dark:bg-red-500/10" 
-        }
-    ];
-
-    if (!isAuthenticated || !canManagePayroll) return null; // Avoid UI flash
+    if (!isAuthenticated || !canManagePayroll) return null;
 
     return (
         <div className="min-h-[calc(100vh-4rem)] bg-gray-50/50 dark:bg-[#0a0a0a] text-gray-900 dark:text-gray-100 p-6 lg:p-8 transition-colors duration-300">
@@ -171,108 +112,189 @@ export default function PayrollPage() {
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-150/50 dark:border-gray-900 pb-4">
                     <div>
                         <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-gray-100 transition-colors">
-                            Payroll Aggregation & Disbursement
+                            Payroll Dashboard
                         </h1>
                         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 font-medium transition-colors">
-                            Maker-Checker salary engine calculation & transactional disbursements
+                            Manage and track asynchronous payroll calculation batches.
                         </p>
                     </div>
                     
-                    <div className="flex flex-wrap items-center gap-3">
-                        <Button 
-                            variant="outline" 
-                            onClick={handleExportReport} 
-                            disabled={isLoading || records.length === 0} 
-                            className="gap-2 shadow-sm bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-                        >
-                            <Download size={16} />
-                            <span>Export Report</span>
-                        </Button> 
+                    <div className="flex items-center gap-3">
                         <Button 
                             variant="primary" 
                             onClick={() => setIsRunModalOpen(true)} 
-                            disabled={runPayrollMutation.isPending}
-                            className="gap-2 shadow-sm shadow-blue-500/25 dark:shadow-none font-semibold ml-1"
+                            disabled={runPayrollMutation.isPending || isProcessing}
+                            className={cn(
+                                "gap-2 shadow-sm font-semibold ml-1 transition-all duration-350",
+                                isProcessing 
+                                    ? "bg-gray-150 text-gray-400 border-gray-250 cursor-not-allowed dark:bg-gray-900 dark:text-gray-600 dark:border-gray-800" 
+                                    : "shadow-blue-500/25 dark:shadow-none"
+                            )}
                         >
-                            {runPayrollMutation.isPending ? <Loader2 size={18} className="animate-spin" /> : <PlayCircle size={18} strokeWidth={2.5} />}
-                            <span>Run Payroll</span>
+                            {runPayrollMutation.isPending || isProcessing ? (
+                                <Loader2 size={18} className="animate-spin" />
+                            ) : (
+                                <PlayCircle size={18} strokeWidth={2.5} />
+                            )}
+                            <span>{isProcessing ? 'Processing Batch...' : 'Run Payroll Batch'}</span>
                         </Button>
                     </div>
                 </div>
 
-                {/* LEDGER DATE FILTER PANEL */}
-                <Card className="border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm dark:shadow-none">
-                    <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center gap-4 justify-between">
-                        <div className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                            Viewing payroll ledger for: <span className="text-blue-600 dark:text-blue-400">{MONTHS.find(m => m.value === selectedMonth)?.label} {selectedYear}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <select
-                                value={selectedMonth}
-                                onChange={(e) => setSelectedMonth(Number(e.target.value))}
-                                className="h-10 px-3 pr-8 appearance-none bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-600/20 dark:focus:ring-blue-500/40 focus:border-blue-600 dark:focus:border-blue-500 shadow-sm dark:shadow-none cursor-pointer"
-                            >
-                                {MONTHS.map(m => (
-                                    <option key={m.value} value={m.value}>{m.label}</option>
-                                ))}
-                            </select>
-                            <select
-                                value={selectedYear}
-                                onChange={(e) => setSelectedYear(Number(e.target.value))}
-                                className="h-10 px-3 pr-8 appearance-none bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-600/20 dark:focus:ring-blue-500/40 focus:border-blue-600 dark:focus:border-blue-500 shadow-sm dark:shadow-none cursor-pointer"
-                            >
-                                {YEARS.map(y => (
-                                    <option key={y} value={y}>{y}</option>
-                                ))}
-                            </select>
-                        </div>
+                {/* Parallel Calculations Live Widget */}
+                {activeProcessingBatch && (
+                    <Card className="border-blue-200 dark:border-blue-900/60 bg-gradient-to-r from-blue-50/80 to-indigo-50/80 dark:from-blue-950/20 dark:to-indigo-950/20 shadow-md">
+                        <CardHeader className="pb-3">
+                            <CardTitle className="text-lg flex items-center justify-between text-blue-900 dark:text-blue-100 font-bold">
+                                <div className="flex items-center gap-2.5">
+                                    <Loader2 size={20} className="animate-spin text-blue-600 dark:text-blue-400" />
+                                    <span>Active Calculations Processing (Background Job)</span>
+                                </div>
+                                <span className="flex h-2.5 w-2.5 relative">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-blue-500"></span>
+                                </span>
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+                                <div className="space-y-1">
+                                    <div className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                                        Period: <span className="font-bold text-gray-900 dark:text-gray-100">
+                                            {MONTHS.find(m => m.value === activeProcessingBatch.month)?.label} {activeProcessingBatch.year}
+                                        </span>
+                                    </div>
+                                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                                        Calculations are running concurrently. You can navigate safely; the process continues in the background.
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-3 self-stretch md:self-auto justify-between md:justify-start border-t md:border-t-0 pt-2 md:pt-0">
+                                    <span className="text-xs font-mono font-bold bg-blue-100/80 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300 px-2.5 py-1 rounded-lg">
+                                        Calculated: {activeBatchRecords?.length || 0} / {activeProcessingBatch.totalEmployees || 0}
+                                    </span>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setSelectedBatchId(activeProcessingBatch._id)}
+                                        className="text-blue-600 border-blue-200 hover:bg-blue-50/50 dark:border-blue-900 dark:hover:bg-blue-950/40 text-xs font-semibold px-3 py-1.5 h-auto flex items-center gap-1.5"
+                                    >
+                                        <Clock size={13} />
+                                        View Live Stream
+                                    </Button>
+                                </div>
+                            </div>
+                            
+                            {/* Modern Progress Bar */}
+                            <div className="space-y-1">
+                                <div className="w-full bg-gray-200 dark:bg-gray-800 rounded-full h-2.5 overflow-hidden">
+                                    <div 
+                                        className="bg-blue-600 dark:bg-blue-500 h-2.5 rounded-full transition-all duration-500 ease-out"
+                                        style={{ 
+                                            width: `${Math.min(100, Math.round(((activeBatchRecords?.length || 0) / (activeProcessingBatch.totalEmployees || 1)) * 100))}%` 
+                                        }}
+                                    />
+                                </div>
+                                <div className="flex justify-end text-[10px] text-gray-400 dark:text-gray-500 font-mono">
+                                    {Math.min(100, Math.round(((activeBatchRecords?.length || 0) / (activeProcessingBatch.totalEmployees || 1)) * 100))}% Complete
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                )}
+
+                {/* Batch History Table */}
+                <Card className="border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm text-gray-900 dark:text-gray-100">
+                    <CardHeader>
+                        <CardTitle className="text-lg flex items-center gap-2 text-gray-900 dark:text-gray-100 font-bold transition-colors">
+                            <Clock size={20} className="text-blue-600 dark:text-blue-500" />
+                            Batch History
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-0 overflow-x-auto">
+                        <table className="w-full text-left text-sm whitespace-nowrap">
+                            <thead className="bg-gray-50 dark:bg-gray-800/40 text-gray-500 dark:text-gray-400 font-semibold border-b border-gray-100 dark:border-gray-800">
+                                <tr>
+                                    <th className="px-6 py-4">Batch ID</th>
+                                    <th className="px-6 py-4 text-gray-700 dark:text-gray-300 font-semibold">Period</th>
+                                    <th className="px-6 py-4">Employees Processed</th>
+                                    <th className="px-6 py-4">Status</th>
+                                    <th className="px-6 py-4">Date Run</th>
+                                    <th className="px-6 py-4 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                                {isLoading ? (
+                                    <tr>
+                                        <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
+                                            <Loader2 className="w-6 h-6 animate-spin mx-auto text-blue-600" />
+                                        </td>
+                                    </tr>
+                                ) : batches?.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
+                                            No payroll batches found. Run a batch to get started.
+                                        </td>
+                                    </tr>
+                                ) : (
+                                    batches?.map((batch: any) => (
+                                        <tr key={batch._id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/20 transition-colors">
+                                            <td className="px-6 py-4 font-mono text-xs text-gray-500">{batch._id.slice(-6).toUpperCase()}</td>
+                                            <td className="px-6 py-4 font-bold flex items-center gap-2 text-gray-900 dark:text-gray-100 transition-colors">
+                                                <Calendar size={14} className="text-gray-400 dark:text-gray-550"/>
+                                                <span>{MONTHS.find(m => m.value === batch.month)?.label} {batch.year}</span>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <div className="flex items-center gap-1 text-gray-600 dark:text-gray-350">
+                                                    <Users size={14} />
+                                                    {batch.totalEmployees || 0}
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                {getStatusBadge(batch.status)}
+                                            </td>
+                                            <td className="px-6 py-4 text-gray-500">
+                                                {new Date(batch.createdAt).toLocaleString()}
+                                            </td>
+                                            <td className="p-4 text-right">
+                                                <div className="flex items-center justify-end gap-3 min-w-[220px]">
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() => setSelectedBatchId(batch._id)}
+                                                        className="text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/10 border-blue-100 dark:border-blue-900/60 font-semibold"
+                                                    >
+                                                        View Calculations
+                                                    </Button>
+                                                    {batch.status === 'Completed' && batch.excelFileUrl && (
+                                                        <Button 
+                                                            variant="ghost" 
+                                                            size="sm" 
+                                                            onClick={() => window.open(getExcelDownloadUrl(batch.excelFileUrl), '_blank')}
+                                                            className="text-emerald-600 dark:text-emerald-450 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 flex items-center gap-1.5 font-bold transition-all"
+                                                        >
+                                                            <FileSpreadsheet size={16} />
+                                                            Download
+                                                        </Button>
+                                                    )}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
                     </CardContent>
                 </Card>
-
-                {/* KPI Cards Layer */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    {statCards.map((stat, index) => (
-                        <Card key={index} className="border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm dark:shadow-none hover:shadow-md dark:hover:shadow-none transition-all duration-300 overflow-hidden group hover:border-blue-200 dark:hover:border-blue-900/50">
-                            <CardContent className="p-5 flex flex-col justify-center h-full">
-                                <div className="flex items-center gap-3 text-gray-500 dark:text-gray-400 mb-3 transition-colors">
-                                    <div className={cn("p-2 rounded-lg transition-colors", stat.bgClass, stat.colorClass)}>
-                                        {stat.icon}
-                                    </div>
-                                    <span className="text-xs font-bold uppercase tracking-wider">{stat.title}</span>
-                                </div>
-                                
-                                {isQueryLoading ? (
-                                    <div className="h-8 w-24 bg-gray-100 dark:bg-gray-800 rounded animate-pulse mt-1" />
-                                ) : (
-                                    <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 tracking-tight transition-colors">
-                                        {stat.value}
-                                    </p>
-                                )}
-                            </CardContent>
-                        </Card>
-                    ))}
-                </div>
-
-                {/* Interactive Ledger Table */}
-                <div className="pt-2">
-                    <PayrollTable
-                        data={records}
-                        isLoading={isLoading}
-                        onProcessPayment={handleProcessPayment}
-                        isProcessing={processPaymentMutation.isPending}
-                        processingId={processPaymentMutation.variables as string | null}
-                    />
-                </div>
 
                 {/* Run Payroll Dialog Modal */}
                 <Modal
                     isOpen={isRunModalOpen}
                     onClose={() => setIsRunModalOpen(false)}
-                    title="Generate Payroll Drafts"
+                    title="Generate Payroll Batch"
                 >
                     <form onSubmit={handleRunPayrollSubmit} className="space-y-4">
-                        <div className="text-sm text-gray-500 dark:text-gray-400 mb-2 leading-relaxed">
-                            Generate draft payroll records for all active employees. This will dynamically aggregate bases, calculate tax deductions (10%), check approved unpaid leaves (LWP), and deduct active EMIs.
+                        <div className="text-sm text-gray-500 dark:text-gray-400 mb-2 leading-relaxed bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border border-blue-100 dark:border-blue-900">
+                            <strong>Note:</strong> Generating payroll runs in the background. It will calculate dynamic allowances, deductions, and attendance records, then generate a downloadable Excel sheet for all active employees.
                         </div>
                         
                         <div className="space-y-2">
@@ -321,10 +343,98 @@ export default function PayrollPage() {
                                 ) : (
                                     <PlayCircle className="w-4 h-4 mr-2" />
                                 )}
-                                {runPayrollMutation.isPending ? 'Generating...' : 'Run Engine Draft'}
+                                {runPayrollMutation.isPending ? 'Starting...' : 'Start Processing'}
                             </Button>
                         </div>
                     </form>
+                </Modal>
+
+                {/* Batch Calculations Preview Modal */}
+                <Modal
+                    isOpen={!!selectedBatchId}
+                    onClose={() => setSelectedBatchId(null)}
+                    title={isSelectedBatchProcessing ? "Active Calculations Stream" : "Batch Calculations Preview"}
+                    className="max-w-5xl"
+                >
+                    <div className="space-y-4">
+                        {isSelectedBatchProcessing && (
+                            <div className="bg-blue-50/80 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900 rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-sm animate-in fade-in duration-300">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 bg-blue-100 dark:bg-blue-900/40 rounded-lg text-blue-600 dark:text-blue-400">
+                                        <Loader2 size={20} className="animate-spin" />
+                                    </div>
+                                    <div>
+                                        <h4 className="text-sm font-bold text-gray-900 dark:text-gray-100">Live Calculation Streaming...</h4>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400">Showing calculations in real-time as they are written to database.</p>
+                                    </div>
+                                </div>
+                                <div className="text-right">
+                                    <span className="text-xs font-mono font-bold bg-blue-100 dark:bg-blue-900/60 text-blue-800 dark:text-blue-300 px-3 py-1 rounded-full">
+                                        Processed: {batchRecords?.length || 0} / {selectedBatch?.totalEmployees || 0}
+                                    </span>
+                                </div>
+                            </div>
+                        )}
+                        
+                        <div className="overflow-x-auto border border-gray-150 dark:border-gray-800 rounded-xl shadow-sm bg-white dark:bg-gray-900">
+                            <table className="w-full text-left text-sm whitespace-nowrap border-collapse">
+                                <thead className="bg-gray-50 dark:bg-gray-800/40 text-gray-500 dark:text-gray-400 font-semibold border-b border-gray-150 dark:border-gray-800">
+                                    <tr>
+                                        <th className="px-4 py-3.5">S.No</th>
+                                        <th className="px-4 py-3.5">Emp ID</th>
+                                        <th className="px-4 py-3.5">Employee Name</th>
+                                        <th className="px-4 py-3.5">Department</th>
+                                        <th className="px-4 py-3.5 text-center">Days (Total/Attended/LWP)</th>
+                                        <th className="px-4 py-3.5">Basic Salary</th>
+                                        <th className="px-4 py-3.5">Gross Total</th>
+                                        <th className="px-4 py-3.5 text-red-500">Total Deduction</th>
+                                        <th className="px-4 py-3.5 text-emerald-600">Net Payable</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-150 dark:divide-gray-800">
+                                    {isRecordsLoading ? (
+                                        <tr>
+                                            <td colSpan={9} className="px-6 py-12 text-center text-gray-500">
+                                                <Loader2 className="w-8 h-8 animate-spin mx-auto text-blue-600 dark:text-blue-500" />
+                                                <span className="block mt-2 text-xs font-medium text-gray-400 dark:text-gray-500">Loading calculation records...</span>
+                                            </td>
+                                        </tr>
+                                    ) : batchRecords?.length === 0 ? (
+                                        <tr>
+                                            <td colSpan={9} className="px-6 py-12 text-center text-gray-500 font-medium">
+                                                No calculation records found for this batch.
+                                            </td>
+                                        </tr>
+                                    ) : (
+                                        batchRecords?.map((rec: any, idx: number) => (
+                                            <tr key={rec._id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/10 transition-colors">
+                                                <td className="px-4 py-3 text-gray-450 dark:text-gray-500 font-mono text-xs">{idx + 1}</td>
+                                                <td className="px-4 py-3 text-gray-600 dark:text-gray-455 font-mono text-xs">{rec.empIdString || 'N/A'}</td>
+                                                <td className="px-4 py-3 font-semibold text-gray-900 dark:text-gray-100">{rec.employeeName}</td>
+                                                <td className="px-4 py-3 text-gray-600 dark:text-gray-400 text-xs font-medium">{rec.department || 'N/A'}</td>
+                                                <td className="px-4 py-3 text-center text-gray-700 dark:text-gray-300 font-mono text-xs">
+                                                    {rec.totalDaysInMonth} / {rec.daysAttended} / <span className={rec.leave > 0 ? "text-red-500 font-bold" : ""}>{rec.leave}</span>
+                                                </td>
+                                                <td className="px-4 py-3 text-gray-600 dark:text-gray-300 font-mono text-xs">₹{rec.basic?.toLocaleString('en-IN')}</td>
+                                                <td className="px-4 py-3 font-medium text-gray-800 dark:text-gray-200 font-mono text-xs">₹{rec.grossTotal?.toLocaleString('en-IN')}</td>
+                                                <td className="px-4 py-3 text-red-500 dark:text-red-400 font-mono text-xs">₹{rec.totalDeduction?.toLocaleString('en-IN')}</td>
+                                                <td className="px-4 py-3 text-emerald-600 dark:text-emerald-400 font-bold font-mono text-xs">₹{rec.netPayable?.toLocaleString('en-IN')}</td>
+                                            </tr>
+                                        ))
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                        <div className="flex justify-end pt-2">
+                            <Button 
+                                variant="outline" 
+                                onClick={() => setSelectedBatchId(null)}
+                                className="h-10 px-5 font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-850"
+                            >
+                                Close
+                            </Button>
+                        </div>
+                    </div>
                 </Modal>
             </div>
         </div>

@@ -380,6 +380,11 @@ export default function EmployeeProfileClient({ id }: EmployeeProfileClientProps
                                 esicNumber: financial.esicNumber || '',
                                 pfNumber: financial.pfNumber || ''
                             }}
+                            salaryData={{
+                                basicSalary: financial.basicSalary || 0,
+                                activeAllowances: financial.activeAllowances || [],
+                                activeDeductions: financial.activeDeductions || []
+                            }}
                             onRefresh={refreshProfile}
                         />
                     )}

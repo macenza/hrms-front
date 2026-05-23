@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Building, Lock, Bell, ChevronRight, Loader2 } from 'lucide-react';
+import { Building, Lock, Bell, ChevronRight, Loader2, Calculator } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { cn } from '@/utils/cn';
 import { useAppSelector, useAppDispatch } from '@/store/hooks';
@@ -12,6 +12,7 @@ import { setCompanySettings } from '@/store/settingsSlice';
 import GeneralSettings from '@/components/settings/GeneralSettings';
 import SecuritySettings from '@/components/settings/SecuritySettings';
 import NotificationSettings from '@/components/settings/NotificationSettings';
+import PayrollSettings from '@/components/settings/PayrollSettings';
 
 import { 
     useCompanySettings, 
@@ -25,6 +26,7 @@ const settingsTabs = [
     { id: 'general', label: 'General & Company', icon: Building, description: 'Workspace details and branding' },
     { id: 'security', label: 'Security & Access', icon: Lock, description: 'Passwords and active sessions' },
     { id: 'notifications', label: 'Notifications', icon: Bell, description: 'Email and system webhook alerts' },
+    { id: 'payroll', label: 'Payroll Engine', icon: Calculator, description: 'Manage dynamic allowances and deductions' },
 ] as const;
 
 type SettingsTabId = typeof settingsTabs[number]['id'];
@@ -189,6 +191,12 @@ export default function SettingsPage() {
                                     <NotificationSettings 
                                         initialData={notificationData}
                                         onUpdate={handleUpdateNotifications}
+                                    />
+                                )}
+                                {activeTab === 'payroll' && (
+                                    <PayrollSettings 
+                                        initialData={companyData} 
+                                        onSave={handleSaveCompanySettings}
                                     />
                                 )}
                             </div>
