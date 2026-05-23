@@ -55,12 +55,18 @@ jobs:
     name: Continuous Deployment (Vercel)
     needs: build
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && secrets.VERCEL_TOKEN != ''
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
 
+      - name: Check Deploy Secrets
+        if: ${{ secrets.VERCEL_TOKEN == '' }}
+        run: |
+          echo "⚠️ Warning: VERCEL_TOKEN secret is not defined. Skipping deployment gracefully."
+
       - name: Deploy to Vercel Production
+        if: ${{ secrets.VERCEL_TOKEN != '' }}
         uses: amondnet/vercel-action@v20
         with:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
