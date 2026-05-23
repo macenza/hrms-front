@@ -55,7 +55,7 @@ jobs:
     name: Continuous Deployment (Vercel)
     needs: build
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && secrets.VERCEL_TOKEN != ''
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
