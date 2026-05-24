@@ -84,6 +84,7 @@ export function useRunPayroll() {
             payrollService.runPayroll(month, year),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['payroll', 'dashboard'] });
+            queryClient.invalidateQueries({ queryKey: ['payroll', 'batches'] });
         }
     });
 }
