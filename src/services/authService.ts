@@ -10,6 +10,8 @@ export interface AuthResponse {
     success: boolean;
     message: string;
     user: User;
+    accessToken?: string;
+    refreshToken?: string;
 }
 
 interface ApiErrorResponse { 
@@ -47,8 +49,16 @@ export const registerUser = async (userData: SignupPayload): Promise<AuthRespons
 };
 
 export const logoutUser = async () => {
-    const response = await apiClient.post('/auth/logout');
-    return response.data;
+    try {
+        const response = await apiClient.post('/auth/logout');
+        return response.data;
+    } finally {
+        if (typeof window !== 'undefined') {
+            localStorage.removeItem('user');
+            localStorage.removeItem('token');
+            localStorage.removeItem('refreshToken');
+        }
+    }
 };
 
 export const fetchCurrentUser = async (): Promise<User> => {

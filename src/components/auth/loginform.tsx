@@ -30,6 +30,14 @@ export default function LoginForm() {
             const data = await loginUser({ email, password });
             const raw = data.user;
             
+            // Store tokens for cookieless cross-domain compatibility
+            if (data.accessToken) {
+                localStorage.setItem('token', data.accessToken);
+            }
+            if (data.refreshToken) {
+                localStorage.setItem('refreshToken', data.refreshToken);
+            }
+            
             // Normalize Mongoose _id to frontend id
             const user = {
                 ...raw,

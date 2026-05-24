@@ -33,7 +33,14 @@ export default function AuthInitializer({ children }: { children: React.ReactNod
                 console.error("Failed to load company settings on boot:", e);
             }
 
-            if (persistedUser) {
+            const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+            const cachedUserStr = typeof window !== 'undefined' ? localStorage.getItem('user') : null;
+            let cachedUser = null;
+            try {
+                if (cachedUserStr) cachedUser = JSON.parse(cachedUserStr);
+            } catch (e) {}
+
+            if (persistedUser || token || cachedUser) {
                 try {
                     // apiClient will automatically attempt a refresh if the access token is expired.
                     const verifiedUser = await fetchCurrentUser();
@@ -44,6 +51,8 @@ export default function AuthInitializer({ children }: { children: React.ReactNod
                     console.log("Session verification failed. Logging out.");
                     dispatch(logOut());
                     localStorage.removeItem('user');
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('refreshToken');
                     
                     const PUBLIC_ROUTES = ['/', '/login', '/signup'];
                     // CRITICAL: Prevent zombie state if we are on a protected route
@@ -57,6 +66,8 @@ export default function AuthInitializer({ children }: { children: React.ReactNod
                 // If there's no user cached, they are a guest.
                 dispatch(logOut());
                 localStorage.removeItem('user');
+                localStorage.removeItem('token');
+                localStorage.removeItem('refreshToken');
                 setIsHydrated(true);
             }
         };

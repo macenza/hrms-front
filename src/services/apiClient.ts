@@ -9,6 +9,20 @@ const apiClient = axios.create({
     },
 });
 
+// Request Interceptor: Automatically attach Bearer accessToken from localStorage for cookieless clients (cross-domain)
+apiClient.interceptors.request.use(
+    (config) => {
+        if (typeof window !== 'undefined') {
+            const token = localStorage.getItem('token');
+            if (token) {
+                config.headers.Authorization = `Bearer ${token}`;
+            }
+        }
+        return config;
+    },
+    (error) => Promise.reject(error)
+);
+
 let isRefreshing = false;
 let failedQueue: Array<{
     resolve: (value?: unknown) => void;
@@ -46,6 +60,8 @@ apiClient.interceptors.response.use(
                 if (typeof window !== 'undefined') {
                     console.log('Refresh token expired. Forcing logout.');
                     localStorage.removeItem('user');
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('refreshToken');
 
                     const isPublicRoute = PUBLIC_ROUTES.includes(window.location.pathname);
                     if (!isPublicRoute) {
@@ -68,7 +84,16 @@ apiClient.interceptors.response.use(
                 isRefreshing = true;
 
                 try {
-                    await apiClient.post(ENDPOINTS.AUTH.REFRESH);
+                    const localRefreshToken = typeof window !== 'undefined' ? localStorage.getItem('refreshToken') : null;
+                    const refreshResponse = await apiClient.post(ENDPOINTS.AUTH.REFRESH, { 
+                        refreshToken: localRefreshToken 
+                    });
+                    
+                    const newAccessToken = refreshResponse.data?.accessToken;
+                    if (newAccessToken && typeof window !== 'undefined') {
+                        localStorage.setItem('token', newAccessToken);
+                    }
+                    
                     processQueue(null);
                     return apiClient(originalRequest);
                 } catch (refreshError) {
@@ -76,6 +101,8 @@ apiClient.interceptors.response.use(
                     if (typeof window !== 'undefined') {
                         console.log('Session permanently expired. Redirecting.');
                         localStorage.removeItem('user');
+                        localStorage.removeItem('token');
+                        localStorage.removeItem('refreshToken');
 
                         const isPublicRoute = PUBLIC_ROUTES.includes(window.location.pathname);
                         if (!isPublicRoute) {
