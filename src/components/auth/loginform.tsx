@@ -10,6 +10,7 @@ import { loginUser } from '@/services/authService';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import Link from 'next/link';
+import Cookies from 'js-cookie';
 
 export default function LoginForm() {
     const router = useRouter();
@@ -33,9 +34,13 @@ export default function LoginForm() {
             // Store tokens for cookieless cross-domain compatibility
             if (data.accessToken) {
                 localStorage.setItem('token', data.accessToken);
+                Cookies.set('token', data.accessToken, { expires: 7, secure: true, sameSite: 'lax' });
             }
             if (data.refreshToken) {
                 localStorage.setItem('refreshToken', data.refreshToken);
+            }
+            if (data.user?.role) {
+                Cookies.set('role', data.user.role.toLowerCase(), { expires: 7, secure: true, sameSite: 'lax' });
             }
             
             // Normalize Mongoose _id to frontend id

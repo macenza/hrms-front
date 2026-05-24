@@ -7,6 +7,7 @@ import { setCompanySettings } from '@/store/settingsSlice';
 import { fetchCurrentUser } from '@/services/authService';
 import apiClient from '@/services/apiClient';
 import { Loader2 } from 'lucide-react';
+import Cookies from 'js-cookie';
 
 export default function AuthInitializer({ children }: { children: React.ReactNode }) {
     const dispatch = useAppDispatch();
@@ -46,6 +47,23 @@ export default function AuthInitializer({ children }: { children: React.ReactNod
                     const verifiedUser = await fetchCurrentUser();
                     localStorage.setItem('user', JSON.stringify(verifiedUser)); 
                     dispatch(setCredentials({ user: verifiedUser }));
+
+                    // Keep cookies in sync for edge middleware
+                    const currentToken = localStorage.getItem('token');
+                    if (currentToken) {
+                        Cookies.set('token', currentToken, { expires: 7, secure: true, sameSite: 'lax' });
+                    }
+                    if (verifiedUser?.role) {
+                        Cookies.set('role', verifiedUser.role.toLowerCase(), { expires: 7, secure: true, sameSite: 'lax' });
+                    }
+
+                    // Client-side automatic redirect if user is on /login or /signup with valid session
+                    const isAuthRoute = window.location.pathname.startsWith('/login') || window.location.pathname.startsWith('/signup');
+                    if (isAuthRoute) {
+                        const searchParams = new URLSearchParams(window.location.search);
+                        const redirectTo = searchParams.get('redirect_to') || '/dashboard';
+                        window.location.href = redirectTo;
+                    }
                 } catch (error) {
                     // If we reach this catch block, the token is dead AND the refresh failed.
                     console.log("Session verification failed. Logging out.");
@@ -53,6 +71,8 @@ export default function AuthInitializer({ children }: { children: React.ReactNod
                     localStorage.removeItem('user');
                     localStorage.removeItem('token');
                     localStorage.removeItem('refreshToken');
+                    Cookies.remove('token');
+                    Cookies.remove('role');
                     
                     const PUBLIC_ROUTES = ['/', '/login', '/signup'];
                     // CRITICAL: Prevent zombie state if we are on a protected route
@@ -68,7 +88,15 @@ export default function AuthInitializer({ children }: { children: React.ReactNod
                 localStorage.removeItem('user');
                 localStorage.removeItem('token');
                 localStorage.removeItem('refreshToken');
-                setIsHydrated(true);
+                Cookies.remove('token');
+                Cookies.remove('role');
+
+                const PUBLIC_ROUTES = ['/', '/login', '/signup'];
+                if (typeof window !== 'undefined' && !PUBLIC_ROUTES.includes(window.location.pathname)) {
+                    window.location.href = '/login?error=session_expired';
+                } else {
+                    setIsHydrated(true);
+                }
             }
         };
 

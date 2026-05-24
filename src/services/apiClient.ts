@@ -1,5 +1,6 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { ENDPOINTS } from '../constants/endpoints';
+import Cookies from 'js-cookie';
 
 const apiClient = axios.create({
     baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api',
@@ -62,6 +63,8 @@ apiClient.interceptors.response.use(
                     localStorage.removeItem('user');
                     localStorage.removeItem('token');
                     localStorage.removeItem('refreshToken');
+                    Cookies.remove('token');
+                    Cookies.remove('role');
 
                     const isPublicRoute = PUBLIC_ROUTES.includes(window.location.pathname);
                     if (!isPublicRoute) {
@@ -92,6 +95,7 @@ apiClient.interceptors.response.use(
                     const newAccessToken = refreshResponse.data?.accessToken;
                     if (newAccessToken && typeof window !== 'undefined') {
                         localStorage.setItem('token', newAccessToken);
+                        Cookies.set('token', newAccessToken, { expires: 7, secure: true, sameSite: 'lax' });
                     }
                     
                     processQueue(null);
@@ -103,6 +107,8 @@ apiClient.interceptors.response.use(
                         localStorage.removeItem('user');
                         localStorage.removeItem('token');
                         localStorage.removeItem('refreshToken');
+                        Cookies.remove('token');
+                        Cookies.remove('role');
 
                         const isPublicRoute = PUBLIC_ROUTES.includes(window.location.pathname);
                         if (!isPublicRoute) {

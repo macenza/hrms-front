@@ -1,6 +1,7 @@
 import { AxiosError } from "axios";
 import apiClient from "./apiClient";
 import { ENDPOINTS } from "../constants/endpoints";
+import Cookies from "js-cookie";
 import type { SignupPayload } from "@/types/index";
 import { User } from "@/store/authSlice";
 
@@ -57,6 +58,8 @@ export const logoutUser = async () => {
             localStorage.removeItem('user');
             localStorage.removeItem('token');
             localStorage.removeItem('refreshToken');
+            Cookies.remove('token');
+            Cookies.remove('role');
         }
     }
 };
