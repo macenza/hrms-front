@@ -55,10 +55,10 @@ export const logoutUser = async () => {
         return response.data;
     } finally {
         if (typeof window !== 'undefined') {
-            localStorage.removeItem('user');
-            localStorage.removeItem('token');
-            localStorage.removeItem('refreshToken');
-            Cookies.remove('token');
+            localStorage.removeItem('hrms_user');
+            localStorage.removeItem('hrms_token');
+            localStorage.removeItem('hrms_refreshToken');
+            Cookies.remove('hrms_token');
             Cookies.remove('role');
         }
     }
@@ -66,11 +66,63 @@ export const logoutUser = async () => {
 
 export const fetchCurrentUser = async (): Promise<User> => {
     try {
-        // Note: Check your backend routes. In your controllers, this was mapped to /profile.
-        // Make sure it matches what you are actually using in routes/auth.js!
         const response = await apiClient.get<{success: boolean, user: User}>('/auth/profile'); 
         return response.data.user;
     } catch (error) {
         throw new Error("Session invalid or expired");
+    }
+};
+
+export interface CustomerRegisterPayload {
+    name: string;
+    email: string;
+    password: string;
+    companyName: string;
+    subscriptionPlan: string;
+}
+
+export interface CustomerAuthResponse {
+    success: boolean;
+    message: string;
+    customer: any;
+    accessToken?: string;
+}
+
+export const registerCustomer = async (payload: CustomerRegisterPayload): Promise<CustomerAuthResponse> => {
+    try {
+        const response = await apiClient.post<CustomerAuthResponse>(ENDPOINTS.CUSTOMERS.REGISTER, payload);
+        return response.data;
+    } catch (error: unknown) {
+        if (error instanceof AxiosError) {
+            const apiError = error.response?.data as ApiErrorResponse;
+            throw new Error(apiError?.message || "Failed to register workspace.");
+        }
+        throw new Error("An unexpected error occurred during workspace registration.");
+    }
+};
+
+export const loginCustomer = async (credentials: LoginCredentials): Promise<CustomerAuthResponse> => {
+    try {
+        const response = await apiClient.post<CustomerAuthResponse>(ENDPOINTS.CUSTOMERS.LOGIN, credentials);
+        return response.data;
+    } catch (error: unknown) {
+        if (error instanceof AxiosError) {
+            const apiError = error.response?.data as ApiErrorResponse;
+            throw new Error(apiError?.message || "Failed to login. Please check your credentials.");
+        }
+        throw new Error("An unexpected error occurred during login.");
+    }
+};
+
+export const logoutCustomer = async () => {
+    try {
+        const response = await apiClient.post(ENDPOINTS.CUSTOMERS.LOGOUT);
+        return response.data;
+    } finally {
+        if (typeof window !== 'undefined') {
+            localStorage.removeItem('customer_user');
+            localStorage.removeItem('customer_token');
+            Cookies.remove('customer_token');
+        }
     }
 };
