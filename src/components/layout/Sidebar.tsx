@@ -88,7 +88,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             if (typeof onClose === 'function') onClose();
             
             // Force Next.js to navigate to the login page securely
-            router.push('/login');
+            router.push('/hrms-login');
         }
     };
 

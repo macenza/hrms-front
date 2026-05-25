@@ -22,7 +22,7 @@ export function proxy(request: NextRequest) {
     const role = rawRole ? rawRole.toLowerCase() : 'unauthenticated';
     
     const { pathname } = request.nextUrl;
-    const isAuthRoute = pathname.startsWith('/login') || pathname.startsWith('/signup');
+    const isAuthRoute = pathname.startsWith('/login') || pathname.startsWith('/signup') || pathname.startsWith('/hrms-login');
     const isProtectedRoute = PROTECTED_PREFIXES.some(prefix => pathname.startsWith(prefix));
 
     if (isAuthRoute) {
@@ -31,7 +31,7 @@ export function proxy(request: NextRequest) {
     }
 
     if (isProtectedRoute && !token) {
-        const loginUrl = new URL('/login', request.url);
+        const loginUrl = new URL('/hrms-login', request.url);
         loginUrl.searchParams.set('redirect_to', pathname);
         return NextResponse.redirect(loginUrl);
     }

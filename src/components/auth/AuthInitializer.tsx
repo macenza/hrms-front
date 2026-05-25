@@ -57,8 +57,8 @@ export default function AuthInitializer({ children }: { children: React.ReactNod
                         Cookies.set('role', verifiedUser.role.toLowerCase(), { expires: 7, secure: true, sameSite: 'lax' });
                     }
 
-                    // Client-side automatic redirect if user is on /login or /signup with valid session
-                    const isAuthRoute = window.location.pathname.startsWith('/login') || window.location.pathname.startsWith('/signup');
+                    // Client-side automatic redirect if user is on /login, /signup or /hrms-login with valid session
+                    const isAuthRoute = window.location.pathname.startsWith('/login') || window.location.pathname.startsWith('/signup') || window.location.pathname.startsWith('/hrms-login');
                     if (isAuthRoute) {
                         const searchParams = new URLSearchParams(window.location.search);
                         const redirectTo = searchParams.get('redirect_to') || '/dashboard';
@@ -74,10 +74,10 @@ export default function AuthInitializer({ children }: { children: React.ReactNod
                     Cookies.remove('token');
                     Cookies.remove('role');
                     
-                    const PUBLIC_ROUTES = ['/', '/login', '/signup'];
+                    const PUBLIC_ROUTES = ['/', '/login', '/signup', '/hrms-login'];
                     // CRITICAL: Prevent zombie state if we are on a protected route
                     if (typeof window !== 'undefined' && !PUBLIC_ROUTES.includes(window.location.pathname)) {
-                        window.location.href = '/login?error=session_expired';
+                        window.location.href = '/hrms-login?error=session_expired';
                     }
                 } finally {
                     setIsHydrated(true);
@@ -91,9 +91,9 @@ export default function AuthInitializer({ children }: { children: React.ReactNod
                 Cookies.remove('token');
                 Cookies.remove('role');
 
-                const PUBLIC_ROUTES = ['/', '/login', '/signup'];
+                const PUBLIC_ROUTES = ['/', '/login', '/signup', '/hrms-login'];
                 if (typeof window !== 'undefined' && !PUBLIC_ROUTES.includes(window.location.pathname)) {
-                    window.location.href = '/login?error=session_expired';
+                    window.location.href = '/hrms-login?error=session_expired';
                 } else {
                     setIsHydrated(true);
                 }

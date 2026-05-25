@@ -54,7 +54,7 @@ apiClient.interceptors.response.use(
                 return Promise.reject(error);
             }
 
-            const PUBLIC_ROUTES = ['/', '/login', '/signup'];
+            const PUBLIC_ROUTES = ['/', '/login', '/signup', '/hrms-login'];
 
             // Prevent infinite refresh loops
             if (originalRequest.url?.includes(ENDPOINTS.AUTH.REFRESH)) {
@@ -68,7 +68,7 @@ apiClient.interceptors.response.use(
 
                     const isPublicRoute = PUBLIC_ROUTES.includes(window.location.pathname);
                     if (!isPublicRoute) {
-                        window.location.href = '/login?error=session_expired';
+                        window.location.href = '/hrms-login?error=session_expired';
                     }
                 }
                 return Promise.reject(error);
@@ -112,7 +112,7 @@ apiClient.interceptors.response.use(
 
                         const isPublicRoute = PUBLIC_ROUTES.includes(window.location.pathname);
                         if (!isPublicRoute) {
-                            window.location.href = '/login?error=session_expired';
+                            window.location.href = '/hrms-login?error=session_expired';
                         }
                     }
                     return Promise.reject(refreshError);
