@@ -27,8 +27,8 @@ function mapUserToProfile(authUser: User | null): UserProfile {
         : undefined;
 
     return {
-        name: authUser.name,
-        role: authUser.role,
+        name: authUser.name || 'User',
+        role: authUser.role || '',
         avatarUrl,
         unreadNotifications: 0,
     };
@@ -58,8 +58,8 @@ export default function Header({ onMenuClick }: HeaderProps) {
         return <header className="h-20 bg-white/80 dark:bg-gray-950/80 border-b border-gray-200 dark:border-gray-800 sticky top-0 z-30"></header>;
     }
 
-    const firstName = user.name.trim() ? user.name.split(' ')[0] : 'there';
-    const getInitials = (name: string) => name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+    const firstName = (user.name || '').trim() ? (user.name || '').split(' ')[0] : 'there';
+    const getInitials = (name: string) => (name || '').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
 
     return (
         <header className="h-20 bg-white/80 dark:bg-gray-950/80 backdrop-blur-md flex items-center justify-between px-4 md:px-8 sticky top-0 z-30 border-b border-gray-200 dark:border-gray-800">

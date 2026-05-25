@@ -91,19 +91,19 @@ export default function EmployeeProfileClient({ id }: EmployeeProfileClientProps
     }, [employee?.profile?.avatar]);
 
     useEffect(() => {
-        if (rawEmployee && isCurrentUser) {
+        if (employee && isCurrentUser) {
             const updatedUser = {
                 ...user,
-                name: rawEmployee.name,
-                role: rawEmployee.role,
-                profile: rawEmployee.profile
+                name: employee.name,
+                role: employee.role,
+                profile: employee.profile
             };
-            if (JSON.stringify(user?.profile) !== JSON.stringify(rawEmployee.profile) || user?.name !== rawEmployee.name) {
+            if (JSON.stringify(user?.profile) !== JSON.stringify(employee.profile) || user?.name !== employee.name) {
                 localStorage.setItem('user', JSON.stringify(updatedUser));
                 dispatch(setCredentials({ user: updatedUser as any }));
             }
         }
-    }, [rawEmployee, isCurrentUser, dispatch, user]);
+    }, [employee, isCurrentUser, dispatch, user]);
     const { data: attendanceData, isLoading: isAttendanceLoading } = useEmployeeAttendanceLogs(
         resolvedEmployeeId, 
         activeTab === 'attendance'
