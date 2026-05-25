@@ -345,7 +345,7 @@ export default function EmployeeProfileClient({ id }: EmployeeProfileClientProps
                                 designation: employee.role,
                                 department: employment.department || '',
                                 reportingManager: typeof employment.reportingManager === 'object' && employment.reportingManager
-                                    ? `${employment.reportingManager.name} (${employment.reportingManager.role.toUpperCase()})`
+                                    ? `${employment.reportingManager.name} (${employment.reportingManager.role?.toUpperCase() || ''})`
                                     : (employment.reportingManager || ''),
                                 employmentType: employment.employmentType || '',
                                 workLocation: employment.workLocation || '',
