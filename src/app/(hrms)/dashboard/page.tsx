@@ -20,8 +20,8 @@ const AttendanceChart = dynamic(
     }
 );
 
-const WorkingFormat = dynamic(
-    () => import('@/components/dashboard/WorkingFormat'),
+const RoleChart = dynamic(
+    () => import('@/components/(hrms)/dashboard/RoleChart'),
     {
         ssr: false,
         loading: () => (
@@ -171,9 +171,9 @@ export default function DashboardPage() {
                     </div>
                     {isAdminOrHR && (
                         <div className="lg:col-span-2">
-                            <WorkingFormat
-                                formatData={roleDistribution}
-                                isLoading={isStatsLoading || isAttendanceLoading}
+                            <RoleChart
+                                roleDistribution={stats?.roleDistribution}
+                                isLoading={isStatsLoading}
                             />
                         </div>
                     )}

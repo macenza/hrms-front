@@ -19,6 +19,7 @@ export interface DashboardStats {
     usersByRole: Record<string, number>;
     usersByTeam: Record<string, number>;
     recentEmployees: EmployeeSummaryRow[];
+    roleDistribution?: { name: string; value: number }[];
 }
 
 export interface DailyAttendance {

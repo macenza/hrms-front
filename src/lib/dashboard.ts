@@ -153,6 +153,7 @@ export function normalizeDashboardStats(raw: unknown): DashboardStats {
         usersByRole: toRecordOfNumbers(payload.usersByRole ?? payload.roles),
         usersByTeam: toRecordOfNumbers(payload.usersByTeam ?? payload.teams),
         recentEmployees: normalizeRecentEmployees(recentRaw),
+        roleDistribution: Array.isArray(payload.roleDistribution) ? payload.roleDistribution : []
     };
 }
 
