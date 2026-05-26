@@ -31,5 +31,20 @@ export const payrollService = {
     getMyPayslips: async () => {
         const response = await apiClient.get(ENDPOINTS.PAYROLL.MY_PAYROLL);
         return response.data;
+    },
+
+    getRealTimeAccrual: async (page: number = 1, limit: number = 10) => {
+        const response = await apiClient.get(`/payroll/real-time?page=${page}&limit=${limit}`);
+        return response.data;
+    },
+
+    getPayrollHistory: async (page: number = 1, limit: number = 10) => {
+        const response = await apiClient.get(`/payroll/history?page=${page}&limit=${limit}`);
+        return response.data;
+    },
+
+    finalizeMonth: async (month: number, year: number) => {
+        const response = await apiClient.post(`/payroll/finalize-month`, { month, year });
+        return response.data;
     }
 };

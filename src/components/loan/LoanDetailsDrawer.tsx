@@ -33,6 +33,21 @@ const getStatusBadgeVariant = (status: string) => {
 export default function LoanDetailsDrawer({ isOpen, onClose, record }: LoanDetailsDrawerProps) {
     if (!isOpen || !record) return null;
 
+    const formatTimelineDate = (dateString: any) => {
+        if (!dateString) return '';
+        try {
+            return new Date(dateString).toLocaleString('en-US', { 
+                month: 'short', 
+                day: 'numeric', 
+                year: 'numeric', 
+                hour: 'numeric', 
+                minute: '2-digit' 
+            });
+        } catch (e) {
+            return '';
+        }
+    };
+
     // Helper to calculate EMI schedule dynamically for the UI
     const generateEmiSchedule = () => {
         const schedule = [];
@@ -80,7 +95,14 @@ export default function LoanDetailsDrawer({ isOpen, onClose, record }: LoanDetai
         return schedule;
     };
 
-    const emiSchedule = generateEmiSchedule();
+    const emiSchedule = record.emiSchedule && record.emiSchedule.length > 0
+        ? record.emiSchedule.map((emi: any) => ({
+            installment: emi.month,
+            month: new Date(emi.date).toLocaleString('default', { month: 'long', year: 'numeric' }),
+            amount: emi.totalEMI,
+            status: emi.status
+        }))
+        : generateEmiSchedule();
 
     return (
         <div className="fixed inset-0 z-50 overflow-hidden" aria-labelledby="slide-over-title" role="dialog" aria-modal="true">
@@ -189,9 +211,18 @@ export default function LoanDetailsDrawer({ isOpen, onClose, record }: LoanDetai
                             )}
 
                             {record.remarks && (
-                                <div className="bg-blue-50/30 dark:bg-blue-950/10 p-4 rounded-xl border border-blue-100/50 dark:border-blue-950/30 mt-2">
+                                <div className="flex flex-col gap-2 mt-4 p-4 bg-gray-50 rounded-lg whitespace-pre-wrap break-words">
                                     <span className="text-xs text-blue-600 dark:text-blue-400 block font-bold uppercase tracking-wider mb-1">HR Remarks</span>
                                     <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 leading-relaxed">{record.remarks}</p>
+                                </div>
+                            )}
+
+                            {['Active', 'Completed', 'Rejected'].includes(record.status) && record.processedBy?.name && (
+                                <div className="flex flex-col gap-2 mt-4 p-4 bg-gray-50 rounded-lg whitespace-pre-wrap break-words">
+                                    <span className="text-xs text-gray-400 dark:text-gray-500 block font-bold uppercase tracking-wider mb-1">Audit Details</span>
+                                    <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 leading-relaxed">
+                                        {"Approved by: " + record.processedBy.name}
+                                    </p>
                                 </div>
                             )}
                         </div>
@@ -211,7 +242,9 @@ export default function LoanDetailsDrawer({ isOpen, onClose, record }: LoanDetai
                                     </div>
                                     <div className="pt-0.5">
                                         <p className="text-xs font-bold text-gray-900 dark:text-gray-100">Application Submitted</p>
-                                        <p className="text-[10px] text-gray-400 dark:text-gray-500">Completed automatically by system</p>
+                                        <p className="text-[10px] text-gray-400 dark:text-gray-500 font-mono">
+                                            {formatTimelineDate(record.createdAt)}
+                                        </p>
                                     </div>
                                 </div>
 
@@ -236,9 +269,19 @@ export default function LoanDetailsDrawer({ isOpen, onClose, record }: LoanDetai
                                         <p className="text-xs font-bold text-gray-900 dark:text-gray-100">
                                             {record.status === 'Pending' ? 'Awaiting HR Audit' : (record.status === 'Rejected' ? 'Application Rejected' : 'Audit Approved')}
                                         </p>
-                                        <p className="text-[10px] text-gray-400 dark:text-gray-500">
+                                        <p className="text-[10px] text-gray-400 dark:text-gray-500 leading-relaxed">
                                             {record.status === 'Pending' ? 'Reviewing request' : `Finalized: ${record.remarks || 'No remarks provided'}`}
                                         </p>
+                                        {['Active', 'Completed', 'Rejected'].includes(record.status) && (
+                                            <p className="text-[10px] text-gray-400 dark:text-gray-500 font-mono mt-0.5">
+                                                {formatTimelineDate(record.processedAt || record.approvedAt)}
+                                            </p>
+                                        )}
+                                        {['Active', 'Completed', 'Rejected'].includes(record.status) && record.processedBy?.name && (
+                                            <p className="text-[10px] font-black text-blue-600 dark:text-blue-400 mt-1">
+                                                {"Approved by: " + record.processedBy.name}
+                                            </p>
+                                        )}
                                     </div>
                                 </div>
 
@@ -281,7 +324,7 @@ export default function LoanDetailsDrawer({ isOpen, onClose, record }: LoanDetai
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-200 dark:divide-gray-900 bg-white dark:bg-gray-950">
-                                        {emiSchedule.map((emi) => (
+                                        {emiSchedule.map((emi: any) => (
                                             <tr key={emi.installment} className="hover:bg-gray-50/50 dark:hover:bg-gray-900/30">
                                                 <td className="px-4 py-3 font-semibold text-gray-500 dark:text-gray-400 text-center">
                                                     #{emi.installment}
