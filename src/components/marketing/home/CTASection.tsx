@@ -25,9 +25,9 @@ export default function CTASection() {
             <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
               
               {/* Primary Button */}
-              <button className="bg-white text-indigo-700 font-semibold px-6 py-3 rounded-lg hover:bg-gray-100 transition duration-300 w-full sm:w-auto">
+              {/* <button className="bg-white text-indigo-700 font-semibold px-6 py-3 rounded-lg hover:bg-gray-100 transition duration-300 w-full sm:w-auto">
                 Start Free Trial
-              </button>
+              </button> */}
 
               {/* Secondary Button */}
               <button className="border border-white text-white font-semibold px-6 py-3 rounded-lg hover:bg-white hover:text-indigo-700 transition duration-300 w-full sm:w-auto">
