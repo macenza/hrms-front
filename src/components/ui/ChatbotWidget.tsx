@@ -87,6 +87,25 @@ export default function ChatbotWidget() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const initializeWelcomeMessage = () => {
+    const welcome: Message = {
+      id: 'welcome',
+      sender: 'bot',
+      text: "👋 Hi there!\n\nNeed help navigating the platform?\nAsk me anything about HRMS features and workflows.",
+      timestamp: new Date()
+    };
+    setMessages([welcome]);
+  };
+
+  const toggleChat = () => {
+    const nextState = !isOpen;
+    setIsOpen(nextState);
+    if (nextState) {
+      setShowTooltip(false);
+      sessionStorage.setItem('macenza_chat_tooltip_dismissed', 'true');
+    }
+  };
+
   // Initialize session ID, load messages, and trigger first-time tooltip delay
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -106,7 +125,7 @@ export default function ChatbotWidget() {
             timestamp: new Date(msg.timestamp)
           }));
           setMessages(parsed);
-        } catch (e) {
+        } catch {
           initializeWelcomeMessage();
         }
       } else {
@@ -123,25 +142,6 @@ export default function ChatbotWidget() {
       }
     }
   }, []);
-
-  const toggleChat = () => {
-    const nextState = !isOpen;
-    setIsOpen(nextState);
-    if (nextState) {
-      setShowTooltip(false);
-      sessionStorage.setItem('macenza_chat_tooltip_dismissed', 'true');
-    }
-  };
-
-  const initializeWelcomeMessage = () => {
-    const welcome: Message = {
-      id: 'welcome',
-      sender: 'bot',
-      text: "👋 Hi there!\n\nNeed help navigating the platform?\nAsk me anything about HRMS features and workflows.",
-      timestamp: new Date()
-    };
-    setMessages([welcome]);
-  };
 
   // Cache messages to sessionStorage when updated
   useEffect(() => {
@@ -245,7 +245,7 @@ export default function ChatbotWidget() {
       } else {
         const reader = response.body?.getReader();
         const decoder = new TextDecoder();
-        let completeText = "";
+        const textAccumulator = { value: "" };
 
         if (reader) {
           let isDone = false;
@@ -267,10 +267,11 @@ export default function ChatbotWidget() {
                   const parsed = JSON.parse(dataStr);
                   
                   if (parsed.text) {
-                    completeText += parsed.text;
+                    textAccumulator.value += parsed.text;
+                    const textValue = textAccumulator.value;
                     setMessages(prev => 
                       prev.map(msg => 
-                        msg.id === botMessageId ? { ...msg, text: completeText } : msg
+                        msg.id === botMessageId ? { ...msg, text: textValue } : msg
                       )
                     );
                   }
@@ -302,7 +303,7 @@ export default function ChatbotWidget() {
                       sessionStorage.setItem('macenza_chat_session_id', parsed.sessionId);
                     }
                   }
-                } catch (err) {
+                } catch {
                   // Skip incomplete streaming JSON parses
                 }
               }
