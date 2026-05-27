@@ -112,7 +112,7 @@ export default function AssignAssetModal({
                             value={formData.assetId}
                             onChange={handleChange}
                             required
-                            disabled={isSubmitting}
+                            disabled={isSubmitting || !!selectedAssetId}
                             className="w-full h-10 px-3 rounded-md border border-gray-300 dark:border-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-600 dark:focus:ring-blue-500/40 focus:border-transparent text-sm bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 disabled:bg-gray-100 dark:disabled:bg-gray-900 disabled:text-gray-500 dark:disabled:text-gray-600 transition-all"
                         >
                             <option value="" disabled>Select available asset...</option>

@@ -24,7 +24,7 @@ import { setCredentials } from '@/store/authSlice';
 import { useEffect } from 'react';
 import { 
     useEmployeeProfile, 
-    useEmployeeAttendanceLogs, 
+    useEmployeeAttendance, 
     useUploadDocument,
     useUploadCertificate,
     useAddNote 
@@ -91,20 +91,20 @@ export default function EmployeeProfileClient({ id }: EmployeeProfileClientProps
     }, [employee?.profile?.avatar]);
 
     useEffect(() => {
-        if (rawEmployee && isCurrentUser) {
+        if (employee && isCurrentUser) {
             const updatedUser = {
                 ...user,
-                name: rawEmployee.name,
-                role: rawEmployee.role,
-                profile: rawEmployee.profile
+                name: employee.name,
+                role: employee.role,
+                profile: employee.profile
             };
-            if (JSON.stringify(user?.profile) !== JSON.stringify(rawEmployee.profile) || user?.name !== rawEmployee.name) {
+            if (JSON.stringify(user?.profile) !== JSON.stringify(employee.profile) || user?.name !== employee.name) {
                 localStorage.setItem('user', JSON.stringify(updatedUser));
                 dispatch(setCredentials({ user: updatedUser as any }));
             }
         }
-    }, [rawEmployee, isCurrentUser, dispatch, user]);
-    const { data: attendanceData, isLoading: isAttendanceLoading } = useEmployeeAttendanceLogs(
+    }, [employee, isCurrentUser, dispatch, user]);
+    const { data: attendanceData, isLoading: isAttendanceLoading } = useEmployeeAttendance(
         resolvedEmployeeId, 
         activeTab === 'attendance'
     );
@@ -345,7 +345,7 @@ export default function EmployeeProfileClient({ id }: EmployeeProfileClientProps
                                 designation: employee.role,
                                 department: employment.department || '',
                                 reportingManager: typeof employment.reportingManager === 'object' && employment.reportingManager
-                                    ? `${employment.reportingManager.name} (${employment.reportingManager.role.toUpperCase()})`
+                                    ? `${employment.reportingManager.name} (${employment.reportingManager.role?.toUpperCase() || ''})`
                                     : (employment.reportingManager || ''),
                                 employmentType: employment.employmentType || '',
                                 workLocation: employment.workLocation || '',
@@ -428,7 +428,18 @@ export default function EmployeeProfileClient({ id }: EmployeeProfileClientProps
                     {activeTab === 'attendance' && (
                         <AttendanceTab
                             stats={attendanceData?.stats}
-                            logs={attendanceData?.logs || []}
+                            logs={attendanceData?.logs?.map((log: any) => {
+                                const checkInDate = log.checkInTime ? new Date(log.checkInTime) : null;
+                                const checkOutDate = log.checkOutTime ? new Date(log.checkOutTime) : null;
+                                return {
+                                    id: log._id || log.id,
+                                    date: log.dateString || (checkInDate ? checkInDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A'),
+                                    checkIn: checkInDate ? checkInDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }) : '-',
+                                    checkOut: checkOutDate ? checkOutDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }) : '-',
+                                    totalHours: log.totalWorkedMinutes ? `${(log.totalWorkedMinutes / 60).toFixed(2)} hrs` : '0.00 hrs',
+                                    status: log.status
+                                };
+                            }) || []}
                             isLoading={isAttendanceLoading}
                         />
                     )}

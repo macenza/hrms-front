@@ -6,6 +6,11 @@ export const ENDPOINTS = {
         LOGOUT: '/auth/logout',
         PROFILE: '/auth/profile',
     },
+    CUSTOMERS: {
+        REGISTER: '/customers/register',
+        LOGIN: '/customers/login',
+        LOGOUT: '/customers/logout',
+    },
     DASHBOARD: {
         STATS: '/dashboard/stats',
         ATTENDANCE: '/dashboard/attendance',

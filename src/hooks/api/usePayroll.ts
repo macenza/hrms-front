@@ -55,8 +55,8 @@ export function usePayrollBatches(enabled: boolean = true) {
             return res.data || [];
         },
         enabled,
-        refetchInterval: (data) => {
-            // Poll every 3 seconds if any batch is still 'Processing'
+        refetchInterval: (query) => {
+            const data = query.state.data;
             const hasProcessing = Array.isArray(data) && data.some((b: any) => b.status === 'Processing');
             return hasProcessing ? 3000 : false;
         },

@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { employeeService } from '@/services/employeeService';
 import apiClient from '@/services/apiClient';
+import { useAppSelector } from '@/store/hooks';
 
 export function useEmployeeProfile(employeeId: string) {
     return useQuery({
@@ -18,6 +19,23 @@ export function useEmployeeProfile(employeeId: string) {
         },
         enabled: !!employeeId,
         staleTime: 5 * 60 * 1000,
+    });
+}
+
+export function useEmployeeAttendance(employeeId: string, enabled: boolean = true) {
+    const { user } = useAppSelector((state) => state.auth);
+    const role = user?.role?.toLowerCase() || 'employee';
+    const isAdminOrHR = role === 'admin' || role === 'hr';
+
+    return useQuery({
+        queryKey: ['profile', 'attendance', employeeId],
+        queryFn: async () => {
+            if (!employeeId) throw new Error("Employee ID is required");
+            return employeeService.getAttendanceLogs(employeeId);
+        },
+        enabled: !!employeeId && enabled,
+        staleTime: 5 * 60 * 1000,
+        refetchOnWindowFocus: isAdminOrHR, // Real-time UX: auto-refetch on window focus if Admin/HR is viewing
     });
 }
 

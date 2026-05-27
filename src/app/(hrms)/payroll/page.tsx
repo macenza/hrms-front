@@ -71,17 +71,17 @@ export default function PayrollDashboard() {
     const [runMonth, setRunMonth] = useState<number>(new Date().getMonth() + 1);
     const [runYear, setRunYear] = useState<number>(new Date().getFullYear());
     
-    // mathematical date restriction: months/years dynamically filtered to prevent future dates
+    const availablePeriods = Array.from({length: 6}, (_, i) => {
+        const d = new Date();
+        d.setMonth(d.getMonth() - i);
+        return { month: d.getMonth() + 1, year: d.getFullYear() };
+    });
+    
+    const availableYears = Array.from(new Set(availablePeriods.map(p => p.year)));
+    const availableMonths = MONTHS.filter(m => availablePeriods.some(p => p.month === m.value && p.year === runYear));
+
     const currentYear = new Date().getFullYear();
     const currentMonth = new Date().getMonth() + 1;
-
-    const availableYears = YEARS.filter(y => y <= currentYear);
-    const availableMonths = MONTHS.filter(m => {
-        if (runYear === currentYear) {
-            return m.value <= currentMonth;
-        }
-        return true;
-    });
 
     useEffect(() => {
         if (runYear === currentYear && runMonth > currentMonth) {

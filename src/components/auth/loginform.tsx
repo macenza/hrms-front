@@ -33,11 +33,11 @@ export default function LoginForm() {
             
             // Store tokens for cookieless cross-domain compatibility
             if (data.accessToken) {
-                localStorage.setItem('token', data.accessToken);
-                Cookies.set('token', data.accessToken, { expires: 7, secure: true, sameSite: 'lax' });
+                localStorage.setItem('hrms_token', data.accessToken);
+                Cookies.set('hrms_token', data.accessToken, { expires: 7, secure: true, sameSite: 'lax' });
             }
             if (data.refreshToken) {
-                localStorage.setItem('refreshToken', data.refreshToken);
+                localStorage.setItem('hrms_refreshToken', data.refreshToken);
             }
             if (data.user?.role) {
                 Cookies.set('role', data.user.role.toLowerCase(), { expires: 7, secure: true, sameSite: 'lax' });
