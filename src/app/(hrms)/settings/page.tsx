@@ -3,11 +3,13 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Building, Lock, Bell, ChevronRight, Loader2, Calculator } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 import { cn } from '@/utils/cn';
 import { useAppSelector, useAppDispatch } from '@/store/hooks';
 import { Card } from '@/components/ui/Card'; 
 import { setCompanySettings } from '@/store/settingsSlice';
+import { logOut } from '@/store/authSlice';
+import { logoutUser } from '@/services/authService';
 
 import GeneralSettings from '@/components/settings/GeneralSettings';
 import SecuritySettings from '@/components/settings/SecuritySettings';
@@ -45,7 +47,7 @@ export default function SettingsPage() {
     // Route Protection
     useEffect(() => {
         if (!isAuthenticated && typeof window !== 'undefined') {
-            router.replace('/login');
+            router.replace('/hrms-login');
         }
     }, [isAuthenticated, router]);
 
@@ -85,7 +87,18 @@ export default function SettingsPage() {
     const handleUpdatePassword = async (currentPass: string, newPass: string): Promise<boolean> => {
         try {
             await updatePasswordMutation.mutateAsync({ currentPassword: currentPass, newPassword: newPass });
-            toast.success('Password updated successfully');
+            toast.success('Password Updated Successfully. Logging out...');
+            
+            setTimeout(async () => {
+                try {
+                    await logoutUser();
+                } catch (e) {
+                    console.error("Backend logout failed:", e);
+                } finally {
+                    dispatch(logOut());
+                }
+            }, 1500);
+
             return true; 
         } catch (error: any) {
             toast.error(error.response?.data?.message || 'Failed to update password');
