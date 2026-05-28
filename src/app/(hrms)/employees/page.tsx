@@ -8,6 +8,7 @@ import EmployeeFilters, { EmployeeFilterState } from '@/components/employees/Emp
 import EmployeeTable, { Employee, PaginationState } from '@/components/employees/EmployeeTable';
 import EmployeeDrawer from '@/components/employees/EmployeeDrawer';
 import AddEmployeeModal, { AddEmployeeSubmitMeta } from '@/components/employees/AddEmployeeModal';
+import SendCredentialsModal from '@/components/employees/SendCredentialsModal';
 import { useEmployees, useCreateEmployee } from '@/hooks/api/useEmployees';
 import { employeeService } from '@/services/employeeService';
 import { useDebounce } from '@/hooks/useDebounce';
@@ -56,6 +57,11 @@ export default function EmployeesPage() {
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
+    const [credentialsModalData, setCredentialsModalData] = useState<{
+        name: string;
+        email: string;
+        password: string;
+    } | null>(null);
 
     // Query State
     const [page, setPage] = useState(1);
@@ -119,10 +125,24 @@ export default function EmployeesPage() {
             } else {
                 toast.success('Employee created successfully!');
             }
+
+            // Save details to trigger the Send Credentials modal
+            const createdName = payload.name as string;
+            const createdEmail = payload.email as string;
+            const createdPassword = payload.password as string;
+
+            setCredentialsModalData({
+                name: createdName,
+                email: createdEmail,
+                password: createdPassword
+            });
+
             setIsModalOpen(false);
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to add employee:', error);
-            toast.error('An error occurred while creating the employee.');
+            const serverMsg = error.response?.data?.message || 'An error occurred while creating the employee.';
+            console.error('❌ Server error details:', error.response?.data);
+            toast.error(serverMsg);
         }
     };
 
@@ -141,16 +161,6 @@ export default function EmployeesPage() {
         toast.success('Employee list exported successfully!');
     };
 
-    if (isError) {
-        return (
-            <div className="flex h-[50vh] items-center justify-center">
-                <div className="p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400">
-                    Failed to load employees. Please try again later.
-                </div>
-            </div>
-        );
-    }
-
     return (
         /* Premium Layout Wrapper: Handles deep dark mode backgrounds and smooth transitions */
         <div className="min-h-[calc(100vh-4rem)] bg-gray-50/50 dark:bg-[#0a0a0a] text-gray-900 dark:text-gray-100 p-6 lg:p-8 transition-colors duration-300">
@@ -161,7 +171,10 @@ export default function EmployeesPage() {
                         setSearchTerm(value);
                         setPage(1);
                     }}
-                    onAddClick={() => setIsModalOpen(true)} 
+                    onAddClick={() => {
+                        console.log("🟢 Add Employee Button Clicked!");
+                        setIsModalOpen(true);
+                    }} 
                     onExportClick={handleExport} 
                 />
 
@@ -203,14 +216,22 @@ export default function EmployeesPage() {
                     onFilterChange={handleFilterChange}
                 />  
                 
-                {/* Ensure the Table component itself has a premium card wrapper inside its own file */}
-                <EmployeeTable 
-                    data={employees}
-                    pagination={pagination}
-                    isLoading={isLoading || createEmployeeMutation.isPending}
-                    onRowClick={handleRowClick} 
-                    onPageChange={setPage}
-                />
+                {isError ? (
+                    <div className="flex h-[30vh] items-center justify-center">
+                        <div className="p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400">
+                            Failed to load employees. Please try again later.
+                        </div>
+                    </div>
+                ) : (
+                    /* Ensure the Table component itself has a premium card wrapper inside its own file */
+                    <EmployeeTable 
+                        data={employees}
+                        pagination={pagination}
+                        isLoading={isLoading || createEmployeeMutation.isPending}
+                        onRowClick={handleRowClick} 
+                        onPageChange={setPage}
+                    />
+                )}
                 
                 <EmployeeDrawer
                     isOpen={isDrawerOpen}
@@ -225,6 +246,16 @@ export default function EmployeesPage() {
                     onSubmit={handleAddEmployee}
                     isSubmitting={createEmployeeMutation.isPending}
                 />
+
+                {credentialsModalData && (
+                    <SendCredentialsModal
+                        isOpen={!!credentialsModalData}
+                        onClose={() => setCredentialsModalData(null)}
+                        employeeName={credentialsModalData.name}
+                        employeeEmail={credentialsModalData.email}
+                        password={credentialsModalData.password}
+                    />
+                )}
             </div>
         </div>
     );

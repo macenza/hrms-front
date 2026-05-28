@@ -54,5 +54,6 @@ export function useActiveEmployees() {
             return res.employees;
         },
         staleTime: 5 * 60 * 1000,
+        enabled: typeof window !== 'undefined' && !!localStorage.getItem('hrms_token'),
     });
 }

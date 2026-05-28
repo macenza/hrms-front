@@ -1,6 +1,5 @@
 'use client';
-
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { ChevronDown, RotateCcw } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import { useAppSelector } from '@/store/hooks';
@@ -42,19 +41,23 @@ const FilterSelect = ({ value, onChange, options, placeholder, className }: Filt
                 </option>
             ))}
         </select>
-        <ChevronDown 
+        <ChevronDown
             className={cn(
                 "absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none transition-colors",
                 value ? "text-blue-500" : "text-gray-400 dark:text-gray-500 group-hover:text-gray-600 dark:group-hover:text-gray-400"
-            )} 
-            size={16} 
+            )}
+            size={16}
         />
     </div>
 );
 
 export default function EmployeeFilters({ filters, onFilterChange }: EmployeeFiltersProps) {
     const { user } = useAppSelector((state) => state.auth);
-    const isAdmin = user?.role?.toLowerCase() === 'admin';
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => {
+        setMounted(true);
+    }, []);
+    const isAdmin = mounted && user?.role?.toLowerCase() === 'admin';
 
     const departments = [
         { label: 'Engineering', value: 'Engineering' },
@@ -63,7 +66,7 @@ export default function EmployeeFilters({ filters, onFilterChange }: EmployeeFil
         { label: 'Finance', value: 'Finance' },
         { label: 'Product', value: 'Product' },
     ];
-    
+
     const roles = [
         { label: 'Frontend Developer', value: 'Frontend Developer' },
         { label: 'Backend Developer', value: 'Backend Developer' },
@@ -71,7 +74,7 @@ export default function EmployeeFilters({ filters, onFilterChange }: EmployeeFil
         { label: 'QA Engineer', value: 'QA Engineer' },
         { label: 'Product Manager', value: 'Product Manager' },
     ];
-    
+
     const statuses = [
         { label: 'Active', value: 'Active' },
         { label: 'Inactive', value: 'Inactive' },
@@ -99,14 +102,14 @@ export default function EmployeeFilters({ filters, onFilterChange }: EmployeeFil
                 options={departments}
                 placeholder="All Departments"
             />
-            
+
             <FilterSelect
                 value={filters.role}
                 onChange={(val) => onFilterChange('role', val)}
                 options={roles}
                 placeholder="All Roles"
             />
-            
+
             <FilterSelect
                 value={filters.status}
                 onChange={(val) => onFilterChange('status', val)}
@@ -116,7 +119,7 @@ export default function EmployeeFilters({ filters, onFilterChange }: EmployeeFil
 
             {/* Dynamic Clear Button */}
             {hasFilters && (
-                <button 
+                <button
                     onClick={clearAllFilters}
                     className="flex items-center gap-1.5 h-9 px-4 ml-1.5 sm:ml-2 text-sm font-semibold text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-lg transition-colors animate-in zoom-in-95 shrink-0"
                 >

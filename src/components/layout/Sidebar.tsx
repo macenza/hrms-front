@@ -4,13 +4,10 @@ import React, { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useTheme } from 'next-themes';
-import Cookies from 'js-cookie';
-
 import { cn } from '@/utils/cn';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { logOut } from '@/store/authSlice';
 import { logoutUser } from '@/services/authService';
-import { setCredentials } from '@/store/authSlice';
 
 import {
     LayoutDashboard, Users, CalendarCheck, CalendarDays, Briefcase,
@@ -32,8 +29,10 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     // Pull current user to determine Role-Based Access
     const { user } = useAppSelector((state) => state.auth);
     const { company } = useAppSelector((state) => state.settings);
-    const role = user?.role?.toLowerCase() || 'employee';
-    const isAdminOrHR = role === 'admin' || role === 'hr';
+    
+    // Safety check: only evaluate role-based credentials after client-side hydration
+    const role = mounted ? (user?.role?.toLowerCase() || 'employee') : 'employee';
+    const isAdminOrHR = mounted && (role === 'admin' || role === 'hr');
 
     useEffect(() => {
         setMounted(true);
@@ -43,9 +42,6 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
 
     // Architect Note: Config-driven RBAC. Easily extendable if you add "Manager" or "Finance" roles later.
     const menuItems = useMemo(() => {
-        // 1. Grab the user ID safely. (Fallback to 'me' or empty if undefined, though auth guards should prevent this)
-        const currentUserId = user?.id || user?._id || '';
-
         const items = [
             { id: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', show: true },
             // Administrative Links
@@ -72,7 +68,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             { id: 'Settings', href: '/settings', icon: Settings, label: 'Settings', show: true },
         ];
         return items.filter(item => item.show);
-    }, [isAdminOrHR, user]);
+    }, [isAdminOrHR, user, role]);
 
     const handleLogout = async () => {
         try {
@@ -115,7 +111,11 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                     <div className="flex items-center gap-2.5 overflow-hidden">
                         {company?.companyLogoUrl ? (
                             <img 
-                                src={company.companyLogoUrl.startsWith('http') || company.companyLogoUrl.startsWith('/') ? company.companyLogoUrl : `http://localhost:4000/${company.companyLogoUrl}`} 
+                                src={
+                                    company.companyLogoUrl.startsWith('http')
+                                        ? company.companyLogoUrl
+                                        : `${process.env.NEXT_PUBLIC_API_URL ? process.env.NEXT_PUBLIC_API_URL.replace('/api', '') : 'http://localhost:4000'}${company.companyLogoUrl.startsWith('/') ? '' : '/'}${company.companyLogoUrl}`
+                                } 
                                 alt="Branding" 
                                 className="w-8 h-8 rounded-lg object-cover border border-gray-200 dark:border-gray-800 shrink-0"
                             />

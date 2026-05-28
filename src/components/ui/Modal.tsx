@@ -10,6 +10,7 @@ interface ModalProps {
 }
 
 export function Modal({ isOpen, onClose, title, children, className }: ModalProps) {
+    console.log("🟠 Modal component render, isOpen =", isOpen);
     useEffect(() => {
         if (isOpen) {
             document.body.style.overflow = "hidden";
@@ -24,7 +25,7 @@ export function Modal({ isOpen, onClose, title, children, className }: ModalProp
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in duration-200 bg-black/50 backdrop-blur-sm dark:bg-black/70">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 animate-in fade-in duration-200 bg-black/50 backdrop-blur-sm dark:bg-black/70">
             <div
                 className={cn(
                     "rounded-xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh] transition-colors duration-300",
