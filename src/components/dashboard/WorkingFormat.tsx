@@ -23,8 +23,14 @@ const getRoleColor = (label: string): string => {
     return `hsl(${h}, 70%, 55%)`; // Vibrant, harmonized color
 };
 
+interface ChartSegment {
+    label: string;
+    count: number;
+    color: string;
+}
+
 interface WorkingFormatProps {
-    formatData?: Record<string, number>;
+    formatData?: Record<string, number> | any[];
     isLoading?: boolean;
     disableAnimations?: boolean;
 }
@@ -44,21 +50,40 @@ const CustomTooltip = ({ active, payload }: any) => {
 };
 
 export default function WorkingFormat({ 
-    formatData = {}, 
+    formatData = [], 
     isLoading = false, 
     disableAnimations = false 
 }: WorkingFormatProps) {
     
-    const chartData = useMemo(() => {
-        if (!formatData) return [];
-        return Object.entries(formatData).map(([label, count]) => ({
-            label,
-            count,
-            color: getRoleColor(label)
-        }));
+    const chartData = useMemo<ChartSegment[]>(() => {
+        // Bulletproof Unwrapper for roleDistribution from props
+        const distributionArray = Array.isArray(formatData) 
+            ? formatData 
+            : (formatData && typeof formatData === 'object' && 'roleDistribution' in formatData && Array.isArray((formatData as any).roleDistribution)
+                ? (formatData as any).roleDistribution 
+                : []);
+
+        if (distributionArray.length > 0) {
+            return distributionArray.map((item: any) => ({
+                label: item.name || item.label || 'Unspecified',
+                count: Number(item.value ?? item.count ?? 0) || 0,
+                color: getRoleColor(item.name || item.label || '')
+            }));
+        }
+
+        // Fallback: If formatData is a Record<string, number>
+        if (formatData && !Array.isArray(formatData) && typeof formatData === 'object') {
+            return Object.entries(formatData).map(([label, count]) => ({
+                label,
+                count: Number(count) || 0,
+                color: getRoleColor(label)
+            }));
+        }
+
+        return [];
     }, [formatData]);
 
-    const total = chartData.reduce((acc, s) => acc + s.count, 0);
+    const total = chartData.reduce((acc: number, s: ChartSegment) => acc + s.count, 0);
 
     // Premium Skeleton Loader
     if (isLoading && chartData.length === 0) {
@@ -96,8 +121,8 @@ export default function WorkingFormat({
 
             {/* Content */}
             {chartData.length === 0 ? (
-                <div className="flex-1 flex flex-col items-center justify-center text-sm text-gray-400 dark:text-gray-500 border-2 border-dashed border-gray-100 dark:border-gray-800 rounded-xl mt-2 transition-colors">
-                    No role data available.
+                <div className="flex-1 flex flex-col items-center justify-center text-sm text-gray-400 dark:text-gray-500 border-2 border-dashed border-gray-100 dark:border-gray-800 rounded-xl mt-2 transition-colors min-h-[220px]">
+                    No Active Employees Found
                 </div>
             ) : (
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-8 mt-4 flex-1">            
@@ -117,9 +142,9 @@ export default function WorkingFormat({
                                 startAngle={90}
                                 endAngle={-270}
                                 stroke="none"
-                                isAnimationActive={!disableAnimations}
+                                 isAnimationActive={!disableAnimations}
                             >
-                                {chartData.map((segment) => (
+                                {chartData.map((segment: ChartSegment) => (
                                     <Cell 
                                         key={segment.label} 
                                         fill={segment.color} 
@@ -143,7 +168,7 @@ export default function WorkingFormat({
 
                     {/* Legend */}
                     <div className="flex flex-col gap-3 w-full sm:w-auto">
-                        {chartData.map((segment) => (
+                        {chartData.map((segment: ChartSegment) => (
                             <div key={segment.label} className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
                                 <span
                                     className="w-3.5 h-3.5 rounded-full shrink-0 shadow-sm"

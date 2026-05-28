@@ -11,6 +11,11 @@ export interface EmployeeSummaryRow {
     status?: string;
 }
 
+export interface RoleDistributionItem {
+    name: string;
+    value: number;
+}
+
 export interface DashboardStats {
     totalUsers: number;
     newUsers?: number;
@@ -19,6 +24,7 @@ export interface DashboardStats {
     usersByRole: Record<string, number>;
     usersByTeam: Record<string, number>;
     recentEmployees: EmployeeSummaryRow[];
+    roleDistribution?: RoleDistributionItem[];
 }
 
 export interface DailyAttendance {

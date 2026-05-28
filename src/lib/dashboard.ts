@@ -4,6 +4,7 @@ import type {
     DailyAttendance,
     AttendanceRecord,
     EmployeeSummaryRow,
+    RoleDistributionItem,
 } from '@/store/dashboardSlice';
 
 /** Unwrap common API envelopes: `{ data }`, `{ success, data }`, or raw payload. */
@@ -137,6 +138,22 @@ function normalizeRecentEmployees(items: unknown): EmployeeSummaryRow[] {
         .filter((row): row is EmployeeSummaryRow => row !== null);
 }
 
+export function normalizeRoleDistributionArray(items: unknown): RoleDistributionItem[] {
+    if (!Array.isArray(items)) return [];
+    return items
+        .map((item) => {
+            if (!item || typeof item !== 'object') return null;
+            const row = item as Record<string, unknown>;
+            const name = String(row.name ?? row._id ?? 'Unspecified');
+            const value = Number(row.value ?? row.count ?? 0) || 0;
+            return {
+                name: formatRoleLabel(name),
+                value,
+            };
+        })
+        .filter((row): row is RoleDistributionItem => row !== null);
+}
+
 export function normalizeDashboardStats(raw: unknown): DashboardStats {
     const payload = unwrapApiPayload(raw);
     const recentRaw =
@@ -145,14 +162,26 @@ export function normalizeDashboardStats(raw: unknown): DashboardStats {
         payload.employees ??
         [];
 
+    const usersByRole = toRecordOfNumbers(payload.usersByRole ?? payload.roles);
+    let roleDistribution = normalizeRoleDistributionArray(payload.roleDistribution);
+
+    // Bulletproof fallback: if roleDistribution is empty, construct it from usersByRole
+    if (roleDistribution.length === 0 && Object.keys(usersByRole).length > 0) {
+        roleDistribution = Object.entries(usersByRole).map(([role, count]) => ({
+            name: formatRoleLabel(role),
+            value: count,
+        }));
+    }
+
     return {
         totalUsers: Number(payload.totalUsers ?? payload.totalEmployees ?? 0) || 0,
         newUsers: Number(payload.newUsers ?? payload.newEmployees ?? 0) || 0,
         activeUsers: Number(payload.activeUsers ?? payload.activeEmployees ?? 0) || 0,
         inactiveUsers: Number(payload.inactiveUsers ?? payload.inactiveEmployees ?? 0) || 0,
-        usersByRole: toRecordOfNumbers(payload.usersByRole ?? payload.roles),
+        usersByRole,
         usersByTeam: toRecordOfNumbers(payload.usersByTeam ?? payload.teams),
         recentEmployees: normalizeRecentEmployees(recentRaw),
+        roleDistribution,
     };
 }
 
