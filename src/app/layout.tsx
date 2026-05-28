@@ -27,11 +27,9 @@ export default function RootLayout({
             <body className={inter.className}>
                 <ThemeProvider>
                     <StoreProvider>
-                        <AuthInitializer>
-                            <SettingsProvider>
-                                {children}
-                            </SettingsProvider>
-                        </AuthInitializer>
+                        <SettingsProvider>
+                            {children}
+                        </SettingsProvider>
                     </StoreProvider>
                 </ThemeProvider>
                

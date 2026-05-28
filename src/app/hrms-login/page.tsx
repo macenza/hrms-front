@@ -1,5 +1,5 @@
 import React from 'react';
-import LoginForm from '@/components/auth/loginform';
+import EmployeeLoginForm from '@/components/auth/EmployeeLoginForm';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -27,7 +27,7 @@ export default function HRMSLoginPage() {
                     </h2>
                 </div>
 
-                <LoginForm />
+                <EmployeeLoginForm />
 
                 <p className="mt-12 text-center text-gray-400 dark:text-gray-500 text-xs font-medium">
                     &copy; {new Date().getFullYear()} Macenza Tech. All rights reserved.

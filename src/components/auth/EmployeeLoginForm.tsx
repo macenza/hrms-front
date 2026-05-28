@@ -1,4 +1,4 @@
-// src/components/auth/LoginForm.tsx
+// src/components/auth/EmployeeLoginForm.tsx
 'use client';
 
 import React, { useState } from 'react';
@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/Input';
 import Link from 'next/link';
 import Cookies from 'js-cookie';
 
-export default function LoginForm() {
+export default function EmployeeLoginForm() {
     const router = useRouter();
     const dispatch = useAppDispatch();
     
@@ -40,7 +40,7 @@ export default function LoginForm() {
                 localStorage.setItem('hrms_refreshToken', data.refreshToken);
             }
             if (data.user?.role) {
-                Cookies.set('role', data.user.role.toLowerCase(), { expires: 7, secure: true, sameSite: 'lax' });
+                Cookies.set('hrms_role', data.user.role.toLowerCase(), { expires: 7, secure: true, sameSite: 'lax' });
             }
             
             // Normalize Mongoose _id to frontend id
@@ -59,11 +59,11 @@ export default function LoginForm() {
     };
 
     return (
-        <div className="bg-white dark:bg-gray-900 dark:border-gray-800 p-8 rounded-2xl shadow-xl border border-gray-100 animate-in fade-in zoom-in-95 duration-300">
+        <div className="bg-white dark:bg-gray-900 dark:border-gray-800 p-8 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-850 animate-in fade-in zoom-in-95 duration-300">
             <div className="mb-8 text-center">
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Welcome Back</h1>
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Employee Portal</h1>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-                    Enter your credentials to access your account
+                    Enter your organization credentials to access the HRMS
                 </p>
             </div>
             
@@ -120,7 +120,7 @@ export default function LoginForm() {
                     className="w-full py-6 text-base font-bold flex items-center justify-center gap-2 shadow-lg shadow-blue-200 dark:shadow-none"
                     disabled={isLoading}
                 >
-                    {isLoading ? <Loader2 className="animate-spin w-5 h-5" /> : 'Sign In'}
+                    {isLoading ? <Loader2 className="animate-spin w-5 h-5" /> : 'Sign In to Portal'}
                 </Button>
             </form>
             

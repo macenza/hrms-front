@@ -59,7 +59,7 @@ export const logoutUser = async () => {
             localStorage.removeItem('hrms_token');
             localStorage.removeItem('hrms_refreshToken');
             Cookies.remove('hrms_token');
-            Cookies.remove('role');
+            Cookies.remove('hrms_role');
         }
     }
 };
