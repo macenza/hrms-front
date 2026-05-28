@@ -1,5 +1,6 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { ENDPOINTS } from '../constants/endpoints';
+import Cookies from 'js-cookie';
 
 const apiClient = axios.create({
     baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api',
@@ -13,7 +14,17 @@ const apiClient = axios.create({
 apiClient.interceptors.request.use(
     (config) => {
         if (typeof window !== 'undefined') {
-            const token = localStorage.getItem('token');
+            const hrmsToken = localStorage.getItem('hrms_token');
+            const customerToken = localStorage.getItem('customer_token');
+            
+            // Prioritize customerToken if on a customer/marketing route, otherwise hrmsToken
+            const isCustomerRoute = window.location.pathname.startsWith('/customer-dashboard') || 
+                                    window.location.pathname.startsWith('/billing') || 
+                                    window.location.pathname.startsWith('/subscriptions') ||
+                                    window.location.pathname.startsWith('/login') ||
+                                    window.location.pathname.startsWith('/signup');
+            
+            const token = isCustomerRoute ? (customerToken || hrmsToken) : (hrmsToken || customerToken);
             if (token) {
                 config.headers.Authorization = `Bearer ${token}`;
             }
@@ -53,19 +64,21 @@ apiClient.interceptors.response.use(
                 return Promise.reject(error);
             }
 
-            const PUBLIC_ROUTES = ['/', '/login', '/signup'];
+            const PUBLIC_ROUTES = ['/', '/login', '/signup', '/hrms-login'];
 
             // Prevent infinite refresh loops
             if (originalRequest.url?.includes(ENDPOINTS.AUTH.REFRESH)) {
                 if (typeof window !== 'undefined') {
                     console.log('Refresh token expired. Forcing logout.');
-                    localStorage.removeItem('user');
-                    localStorage.removeItem('token');
-                    localStorage.removeItem('refreshToken');
+                    localStorage.removeItem('hrms_user');
+                    localStorage.removeItem('hrms_token');
+                    localStorage.removeItem('hrms_refreshToken');
+                    Cookies.remove('hrms_token');
+                    Cookies.remove('role');
 
                     const isPublicRoute = PUBLIC_ROUTES.includes(window.location.pathname);
                     if (!isPublicRoute) {
-                        window.location.href = '/login?error=session_expired';
+                        window.location.href = '/hrms-login?error=session_expired';
                     }
                 }
                 return Promise.reject(error);
@@ -84,14 +97,15 @@ apiClient.interceptors.response.use(
                 isRefreshing = true;
 
                 try {
-                    const localRefreshToken = typeof window !== 'undefined' ? localStorage.getItem('refreshToken') : null;
+                    const localRefreshToken = typeof window !== 'undefined' ? localStorage.getItem('hrms_refreshToken') : null;
                     const refreshResponse = await apiClient.post(ENDPOINTS.AUTH.REFRESH, { 
                         refreshToken: localRefreshToken 
                     });
                     
                     const newAccessToken = refreshResponse.data?.accessToken;
                     if (newAccessToken && typeof window !== 'undefined') {
-                        localStorage.setItem('token', newAccessToken);
+                        localStorage.setItem('hrms_token', newAccessToken);
+                        Cookies.set('hrms_token', newAccessToken, { expires: 7, secure: true, sameSite: 'lax' });
                     }
                     
                     processQueue(null);
@@ -100,13 +114,15 @@ apiClient.interceptors.response.use(
                     processQueue(refreshError as Error, null);
                     if (typeof window !== 'undefined') {
                         console.log('Session permanently expired. Redirecting.');
-                        localStorage.removeItem('user');
-                        localStorage.removeItem('token');
-                        localStorage.removeItem('refreshToken');
+                        localStorage.removeItem('hrms_user');
+                        localStorage.removeItem('hrms_token');
+                        localStorage.removeItem('hrms_refreshToken');
+                        Cookies.remove('hrms_token');
+                        Cookies.remove('role');
 
                         const isPublicRoute = PUBLIC_ROUTES.includes(window.location.pathname);
                         if (!isPublicRoute) {
-                            window.location.href = '/login?error=session_expired';
+                            window.location.href = '/hrms-login?error=session_expired';
                         }
                     }
                     return Promise.reject(refreshError);
