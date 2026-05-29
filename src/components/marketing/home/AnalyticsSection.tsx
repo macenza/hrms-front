@@ -94,12 +94,12 @@ export default function AnalyticsSection() {
   </Link> */}
 
           {/* Button */}
-          <Link
+          {/* <Link
             href="/login"
             className="inline-block mt-10 bg-[#6D5DFD] text-white px-6 py-3 rounded-xl font-semibold hover:bg-[#5B4DF0] transition"
           >
             View Dashboard
-          </Link>
+          </Link> */}
 
         </div>
 
@@ -107,7 +107,7 @@ export default function AnalyticsSection() {
         <div className="w-full lg:w-2/3 flex justify-center">
 
           <Image
-            src="/Dashboard.png"
+            src="/1.png"
             alt="Analytics Dashboard"
             width={900}
             height={600}

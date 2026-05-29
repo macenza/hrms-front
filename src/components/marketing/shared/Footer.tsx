@@ -1,16 +1,15 @@
 import Link from "next/link";
 import {
+
     Mail,
     Phone,
     MapPin,
 } from "lucide-react";
 import {
-    FaFacebookF,
-    FaTwitter,
-    FaLinkedinIn,
-    FaInstagram,
-    FaLinkedin,
-    FaFacebook,
+  FaFacebookF,
+  FaTwitter,
+  FaLinkedinIn,
+  FaInstagram,
 } from "react-icons/fa";
 
 export default function Footer() {
@@ -36,104 +35,80 @@ export default function Footer() {
                     {/* Social Icons */}
                     <div className="flex items-center gap-4">
 
-                        <a
-                            href="https://www.facebook.com/share/1PZpFHjLAB/"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                        >
-                            <div
-                                className="
-      w-9
-      h-9
-      rounded-full
-      bg-white/10
-      flex
-      items-center
-      justify-center
-      footer-link
-      hover:text-[#8B7BFF]
-      cursor-pointer
-      transition
+                         <div
+    className="
+    w-9
+    h-9
+    rounded-full
+    bg-white/10
+    flex
+    items-center
+    justify-center
+    footer-link
+    hover:text-[#8B7BFF]
+    cursor-pointer
+    transition
     "
-                            >
-                                <FaFacebook size={16} />
-                            </div>
-                        </a>
+  >
+    <FaFacebookF size={16} />
+  </div>
 
 
-                        <a
-                            href="https://www.facebook.com/share/1PZpFHjLAB/"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                        >
-                            <div
-                                className="
-      w-9
-      h-9
-      rounded-full
-      bg-white/10
-      flex
-      items-center
-      justify-center
-      footer-link
-      hover:text-[#8B7BFF]
-      cursor-pointer
-      transition
+                         <div
+    className="
+    w-9
+    h-9
+    rounded-full
+    bg-white/10
+    flex
+    items-center
+    justify-center
+    footer-link
+    hover:text-[#8B7BFF]
+    cursor-pointer
+    transition
     "
-                            >
-                                <FaTwitter size={16} />
-                            </div>
-                        </a>
+  >
+    <FaTwitter size={16} />
+  </div>
 
 
-                        <a
-                            href="https://in.linkedin.com/company/macenza"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                        >
-                            <div
-                                className="
-      w-9
-      h-9
-      rounded-full
-      bg-white/10
-      flex
-      items-center
-      justify-center
-      footer-link
-      hover:text-[#8B7BFF]
-      cursor-pointer
-      transition
+                        <div
+    className="
+    w-9
+    h-9
+    rounded-full
+    bg-white/10
+    flex
+    items-center
+    justify-center
+    footer-link
+    hover:text-[#8B7BFF]
+    cursor-pointer
+    transition
     "
-                            >
-                                <FaLinkedin size={16} />
-                            </div>
-                        </a>
+  >
+    <FaLinkedinIn size={16} />
+  </div>
 
 
-                        <a
-                            href="https://www.instagram.com/macenza.ai/"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                        >
-                            <div
-                                className="
-      w-9
-      h-9
-      rounded-full
-      bg-white/10
-      flex
-      items-center
-      justify-center
-      footer-link
-      hover:text-[#8B7BFF]
-      cursor-pointer
-      transition
+                        <div
+    className="
+    w-9
+    h-9
+    rounded-full
+    bg-white/10
+    flex
+    items-center
+    justify-center
+    footer-link
+    hover:text-[#8B7BFF]
+    cursor-pointer
+    transition
     "
-                            >
-                                <FaInstagram size={16} />
-                            </div>
-                        </a>
+  >
+    <FaInstagram size={16} />
+  </div>
 
                     </div>
                 </div>
@@ -146,7 +121,7 @@ export default function Footer() {
 
                     <div className="flex flex-col gap-3 text-gray-300 text-sm">
 
-                        <Link href="/features" className="footer-link hover:text-[#8B7BFF]">
+                        <Link href="/" className="footer-link hover:text-[#8B7BFF]">
                             Features
                         </Link>
 
@@ -154,7 +129,7 @@ export default function Footer() {
                             Modules
                         </Link>
 
-                        <Link href="/pricing" className="footer-link hover:text-[#8B7BFF]">
+                        <Link href="/" className="footer-link hover:text-[#8B7BFF]">
                             Pricing
                         </Link>
 
@@ -173,7 +148,7 @@ export default function Footer() {
 
                     <div className="flex flex-col gap-3 text-gray-300 text-sm">
 
-                        <Link href="/about" className="footer-link hover:text-[#8B7BFF]">
+                        <Link href="/" className="footer-link hover:text-[#8B7BFF]">
                             About Us
                         </Link>
 
@@ -181,11 +156,11 @@ export default function Footer() {
                             Careers
                         </Link>
 
-                        <Link href="/blog" className="footer-link hover:text-[#8B7BFF]">
+                        <Link href="/" className="footer-link hover:text-[#8B7BFF]">
                             Blog
                         </Link>
 
-                        <Link href="/contact" className="footer-link hover:text-[#8B7BFF]">
+                        <Link href="/" className="footer-link hover:text-[#8B7BFF]">
                             Contact Us
                         </Link>
 
@@ -229,18 +204,19 @@ export default function Footer() {
 
                         <div className="flex items-start gap-3">
                             <Mail size={16} className="mt-1 shrink-0" />
-                            <span>info@hrms.com</span>
+                            <span>info@macenza.com</span>
                         </div>
 
                         <div className="flex items-start gap-3">
                             <Phone size={16} className="mt-1 shrink-0" />
-                            <span>+91 98765 43210</span>
+                            <span>+91 9414660123</span>
                         </div>
 
                         <div className="flex items-start gap-3">
                             <MapPin size={16} className="mt-1 shrink-0" />
                             <span>
-                                123 Business Park, Ahmedabad, India
+                                Siddhart Nagar, Mayo Link Road, Ajmer, 
+                                Rajasthan, India, 305001
                             </span>
                         </div>
 
