@@ -84,6 +84,11 @@ export default function ChatbotWidget() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [showTooltip, setShowTooltip] = useState(false);
 
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const dragRef = useRef<{ startX: number; startY: number; posX: number; posY: number } | null>(null);
+  const dragMoved = useRef(false);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -98,6 +103,7 @@ export default function ChatbotWidget() {
   };
 
   const toggleChat = () => {
+    if (dragMoved.current) return;
     const nextState = !isOpen;
     setIsOpen(nextState);
     if (nextState) {
@@ -105,6 +111,87 @@ export default function ChatbotWidget() {
       sessionStorage.setItem('macenza_chat_tooltip_dismissed', 'true');
     }
   };
+
+  // Mouse handlers for dragging
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (e.button !== 0) return;
+    setIsDragging(true);
+    dragMoved.current = false;
+    dragRef.current = {
+      startX: e.clientX,
+      startY: e.clientY,
+      posX: position.x,
+      posY: position.y
+    };
+  };
+
+  // Touch handlers for mobile dragging
+  const handleTouchStart = (e: React.TouchEvent) => {
+    const touch = e.touches[0];
+    setIsDragging(true);
+    dragMoved.current = false;
+    dragRef.current = {
+      startX: touch.clientX,
+      startY: touch.clientY,
+      posX: position.x,
+      posY: position.y
+    };
+  };
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isDragging || !dragRef.current) return;
+      const deltaX = e.clientX - dragRef.current.startX;
+      const deltaY = e.clientY - dragRef.current.startY;
+      if (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5) {
+        dragMoved.current = true;
+      }
+      setPosition({
+        x: dragRef.current.posX + deltaX,
+        y: dragRef.current.posY + deltaY
+      });
+    };
+
+    const handleMouseUp = () => {
+      if (isDragging) {
+        setIsDragging(false);
+      }
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (!isDragging || !dragRef.current) return;
+      const touch = e.touches[0];
+      const deltaX = touch.clientX - dragRef.current.startX;
+      const deltaY = touch.clientY - dragRef.current.startY;
+      if (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5) {
+        dragMoved.current = true;
+      }
+      setPosition({
+        x: dragRef.current.posX + deltaX,
+        y: dragRef.current.posY + deltaY
+      });
+    };
+
+    const handleTouchEnd = () => {
+      if (isDragging) {
+        setIsDragging(false);
+      }
+    };
+
+    if (isDragging) {
+      window.addEventListener('mousemove', handleMouseMove);
+      window.addEventListener('mouseup', handleMouseUp);
+      window.addEventListener('touchmove', handleTouchMove, { passive: true });
+      window.addEventListener('touchend', handleTouchEnd);
+    }
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+      window.removeEventListener('touchmove', handleTouchMove);
+      window.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, [isDragging]);
 
   // Initialize session ID, load messages, and trigger first-time tooltip delay
   useEffect(() => {
@@ -356,7 +443,16 @@ export default function ChatbotWidget() {
   const dynamicSuggestions = getSuggestionsForPage(pathname || '/');
 
   return (
-    <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 flex flex-col items-end font-sans">
+    <div 
+      className="fixed z-50 flex flex-col items-end font-sans pointer-events-none"
+      style={{
+        bottom: '1.5rem',
+        right: '1.5rem',
+        transform: `translate(${position.x}px, ${position.y}px)`,
+        transition: isDragging ? 'none' : 'transform 0.1s ease-out',
+        touchAction: 'none'
+      }}
+    >
       {/* Global Widget Styles (List spacing, margin, & animations) */}
       <style>{`
         @keyframes gentleBounce {
@@ -408,7 +504,11 @@ export default function ChatbotWidget() {
         `}
       >
         {/* Header */}
-        <div className="bg-gradient-to-r from-[#6D5DFD] to-[#8B7BFF] p-4 text-white flex items-center justify-between shadow-md">
+        <div 
+          onMouseDown={handleMouseDown}
+          onTouchStart={handleTouchStart}
+          className="bg-gradient-to-r from-[#6D5DFD] to-[#8B7BFF] p-4 text-white flex items-center justify-between shadow-md cursor-grab active:cursor-grabbing select-none"
+        >
           <div className="flex items-center gap-3">
             <div className="relative">
               <div className="w-10 h-10 rounded-2xl bg-white/10 flex items-center justify-center backdrop-blur-md">
@@ -547,7 +647,7 @@ export default function ChatbotWidget() {
             e.preventDefault();
             handleSendMessage(inputValue);
           }}
-          className="p-3 bg-gray-50 dark:bg-gray-900/60 border-t border-gray-150 dark:border-gray-850 flex items-center gap-2"
+          className="p-3 bg-gray-50 dark:bg-gray-900/60 border-t border-gray-150 dark:border-gray-855 flex items-center gap-2"
         >
           <input
             ref={inputRef}
@@ -632,6 +732,7 @@ export default function ChatbotWidget() {
             gentle-bounce
             z-40
             cursor-pointer
+            pointer-events-auto
           "
           onClick={toggleChat}
         >
@@ -664,6 +765,8 @@ export default function ChatbotWidget() {
 
       {/* Floating Circle Launcher */}
       <button
+        onMouseDown={handleMouseDown}
+        onTouchStart={handleTouchStart}
         onClick={toggleChat}
         className="
           group
@@ -686,6 +789,7 @@ export default function ChatbotWidget() {
           cursor-pointer
           relative
           overflow-hidden
+          pointer-events-auto
         "
         aria-label="Toggle MACENZA AI Assistant"
       >

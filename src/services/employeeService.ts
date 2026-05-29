@@ -79,6 +79,16 @@ export const employeeService = {
         }
     },
 
+    sendCredentials: async (payload: { name: string; email: string; password: string }) => {
+        try {
+            const response = await apiClient.post('/employees/send-credentials', payload);
+            return response.data;
+        } catch (error) {
+            console.error("Error sending credentials:", error);
+            throw error;
+        }
+    },
+
     /**
      * Fetch a single employee's profile by ID
      */
