@@ -32,7 +32,7 @@ const storage = typeof window !== 'undefined' ? createWebStorage('local') : crea
 const employeePersistConfig = {
   key: 'employeeAuth',
   storage,
-  whitelist: ['user', 'isAuthenticated'],
+  whitelist: ['user', 'isAuthenticated', 'customerUser', 'isCustomerAuthenticated'],
 };
 
 // Persist config for customer credentials

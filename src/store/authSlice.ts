@@ -16,6 +16,8 @@ export interface User {
 export interface EmployeeAuthState {
     user: User | null;
     isAuthenticated: boolean;
+    customerUser: any | null;
+    isCustomerAuthenticated: boolean;
 }
 
 export interface CustomerAuthState {
@@ -27,6 +29,8 @@ export interface CustomerAuthState {
 const initialEmployeeState: EmployeeAuthState = {
     user: null,
     isAuthenticated: false,
+    customerUser: null,
+    isCustomerAuthenticated: false,
 };
 
 // Initial state for B2B Customers
@@ -50,6 +54,17 @@ export const employeeAuthSlice = createSlice({
         logOut: (state) => {
             state.user = null;
             state.isAuthenticated = false;
+        },
+        setCustomerCredentials: (
+            state,
+            action: PayloadAction<{ user: any }>
+        ) => {
+            state.customerUser = action.payload.user;
+            state.isCustomerAuthenticated = true;
+        },
+        logOutCustomer: (state) => {
+            state.customerUser = null;
+            state.isCustomerAuthenticated = false;
         },
     },
 });

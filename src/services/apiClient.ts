@@ -19,7 +19,6 @@ apiClient.interceptors.request.use(
             
             // Inspect Request URL directly to determine portal context strictly
             const isCustomerApi = config.url?.includes('/api/customers') || config.url?.includes('/customers');
-            
             const token = isCustomerApi ? customerToken : hrmsToken;
             if (token) {
                 config.headers.Authorization = `Bearer ${token}`;
@@ -71,6 +70,7 @@ apiClient.interceptors.response.use(
                     localStorage.removeItem('hrms_refreshToken');
                     Cookies.remove('hrms_token');
                     Cookies.remove('hrms_role');
+                    Cookies.remove('role');
 
                     const isPublicRoute = PUBLIC_ROUTES.includes(window.location.pathname);
                     if (!isPublicRoute) {
@@ -115,6 +115,7 @@ apiClient.interceptors.response.use(
                         localStorage.removeItem('hrms_refreshToken');
                         Cookies.remove('hrms_token');
                         Cookies.remove('hrms_role');
+                        Cookies.remove('role');
 
                         const isPublicRoute = PUBLIC_ROUTES.includes(window.location.pathname);
                         if (!isPublicRoute) {
