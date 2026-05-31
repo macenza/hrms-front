@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Building, Lock, Bell, ChevronRight, Loader2, Calculator } from 'lucide-react';
+import { Building, Lock, Bell, ChevronRight, Loader2, Calculator, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/utils/cn';
 import { useAppSelector, useAppDispatch } from '@/store/hooks';
@@ -15,6 +15,7 @@ import GeneralSettings from '@/components/settings/GeneralSettings';
 import SecuritySettings from '@/components/settings/SecuritySettings';
 import NotificationSettings from '@/components/settings/NotificationSettings';
 import PayrollSettings from '@/components/settings/PayrollSettings';
+import PoliciesSettings from '@/components/settings/PoliciesSettings';
 
 import { 
     useCompanySettings, 
@@ -29,6 +30,7 @@ const settingsTabs = [
     { id: 'security', label: 'Security & Access', icon: Lock, description: 'Passwords and active sessions' },
     { id: 'notifications', label: 'Notifications', icon: Bell, description: 'Email and system webhook alerts' },
     { id: 'payroll', label: 'Payroll Engine', icon: Calculator, description: 'Manage dynamic allowances and deductions' },
+    { id: 'policies', label: 'Policies', icon: FileText, description: 'View and manage organizational policies' },
 ] as const;
 
 type SettingsTabId = typeof settingsTabs[number]['id'];
@@ -166,15 +168,7 @@ export default function SettingsPage() {
                             })}
                         </nav>
 
-                        {/* Admin Notice */}
-                        {isAdmin && (
-                            <div className="mt-6 p-4 bg-primary/5 rounded-2xl border border-primary/10 hidden lg:block transition-colors">
-                                <p className="text-xs font-bold text-primary uppercase tracking-widest mb-2 transition-colors">Workspace Admin</p>
-                                <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed transition-colors">
-                                    Changes made in the General tab affect the entire workspace for all employees.
-                                </p>
-                            </div>
-                        )}
+
                     </aside>
 
                     {/* Main Content Area */}
@@ -211,6 +205,9 @@ export default function SettingsPage() {
                                         initialData={companyData} 
                                         onSave={handleSaveCompanySettings}
                                     />
+                                )}
+                                {activeTab === 'policies' && (
+                                    <PoliciesSettings />
                                 )}
                             </div>
                         </Card>

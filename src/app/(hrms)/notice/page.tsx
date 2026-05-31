@@ -3,14 +3,14 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Megaphone, Filter, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/Button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import NoticeStats from '@/components/notice/NoticeStats';
 import NoticeFeed, { Notice } from '@/components/notice/NoticeFeed';
 import CreateNoticeModal from '@/components/notice/CreateNoticeModal';
 import { useAppSelector } from '@/store/hooks';
-import { useNoticeStats, useNotices, useDeleteNotice } from '@/hooks/api/useNotices';
+import { useNoticeStats, useNotices, useDeleteNotice, useToggleNoticePin } from '@/hooks/api/useNotices';
 
 export default function NoticePage() {
     const router = useRouter();
@@ -31,6 +31,7 @@ export default function NoticePage() {
     const { data: stats, isLoading: isLoadingStats } = useNoticeStats();
     const { data: responsePayload, isLoading: isLoadingNotices } = useNotices(categoryFilter, currentPage, entriesPerPage);
     const deleteNoticeMutation = useDeleteNotice();
+    const toggleNoticePinMutation = useToggleNoticePin();
 
     const notices = responsePayload?.data || [];
     const pagination = responsePayload?.pagination || { currentPage: 1, totalPages: 1, totalEntries: 0 };
@@ -53,7 +54,7 @@ export default function NoticePage() {
     const handleNoticeSuccess = () => {
         setIsModalOpen(false);
         setEditNotice(null);
-        toast.success(editNotice ? 'Announcement updated successfully!' : 'Announcement published successfully!');
+        toast.success(editNotice ? 'Announcement updated successfully!' : 'Notice Published Successfully');
     };
 
     const handleEditClick = (notice: Notice) => {
@@ -70,6 +71,16 @@ export default function NoticePage() {
                 console.error('Delete Error:', error);
                 toast.error(error?.response?.data?.message || 'Failed to delete announcement. Please try again.');
             }
+        }
+    };
+
+    const handlePinToggle = async (noticeId: string) => {
+        try {
+            const res = await toggleNoticePinMutation.mutateAsync(noticeId);
+            toast.success(res.data?.isPinned ? 'Notice Pinned' : 'Notice Unpinned');
+        } catch (error: any) {
+            console.error('Pin Toggle Error:', error);
+            toast.error(error?.response?.data?.message || 'Failed to toggle pin status. Please try again.');
         }
     };
 
@@ -144,6 +155,7 @@ export default function NoticePage() {
                             isLoading={isLoadingNotices}
                             onEditClick={handleEditClick}
                             onDeleteClick={handleDeleteClick}
+                            onPinToggle={handlePinToggle}
                         />
                     </CardContent>
 

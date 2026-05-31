@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { AlignLeft, Tag, UploadCloud, Loader2 } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -98,17 +98,30 @@ export default function CreateNoticeModal({ isOpen, onClose, onSuccess, editNoti
             payload.append('isPinned', String(formData.isPinned));
             payload.append('content', formData.content);
             if (formData.attachment) {
-                payload.append('file', formData.attachment);
+                payload.append('attachment', formData.attachment);
             }
             
             if (isEdit && editNotice) {
-                await updateNoticeMutation.mutateAsync({ id: editNotice._id, data: payload });
+                await updateNoticeMutation.mutateAsync(
+                    { id: editNotice._id, data: payload },
+                    {
+                        onSuccess: () => {
+                            onSuccess();
+                            handleClose();
+                        }
+                    }
+                );
             } else {
-                await createNoticeMutation.mutateAsync(payload);
+                await createNoticeMutation.mutateAsync(
+                    payload,
+                    {
+                        onSuccess: () => {
+                            onSuccess();
+                            handleClose();
+                        }
+                    }
+                );
             }
-            
-            onSuccess(); // Parent handles toast & closing
-            handleClose();
         } catch (error: any) {
             console.error('Submission Error:', error);
             toast.error(error?.response?.data?.message || `Failed to ${isEdit ? 'update' : 'publish'} notice. Please try again.`);
