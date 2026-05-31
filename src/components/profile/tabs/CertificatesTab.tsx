@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Download, Eye, UploadCloud, FileBadge, Loader2, FileText, Image as ImageIcon } from 'lucide-react';
+import { Download, Eye, UploadCloud, FileBadge, Loader2, FileText, Image as ImageIcon, Trash2 } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -26,6 +26,7 @@ interface CertificatesTabProps {
     canUpload?: boolean;
     isUploading?: boolean;
     onUpload?: (file: File) => void;
+    onDelete?: (certificateId: string) => void;
 }
 
 const formatBytes = (bytes: number, decimals = 1) => {
@@ -87,6 +88,7 @@ export default function CertificatesTab({
     canUpload = false,
     isUploading = false,
     onUpload,
+    onDelete,
 }: CertificatesTabProps) {
     const [isDragging, setIsDragging] = useState(false);
     const [localError, setLocalError] = useState('');
@@ -219,6 +221,17 @@ export default function CertificatesTab({
                                         >
                                             <Download size={16} /> Download
                                         </Button>
+                                        {canUpload && onDelete && (
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => onDelete(cert.id)}
+                                                className="p-2 h-9 w-9 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-full transition-all flex items-center justify-center shrink-0"
+                                                aria-label="Delete certificate"
+                                            >
+                                                <Trash2 size={16} />
+                                            </Button>
+                                        )}
                                     </div>
                                 </CardContent>
                             </Card>

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { FileText, Image as ImageIcon, UploadCloud, MoreVertical, File, Loader2 } from 'lucide-react';
+import { FileText, Image as ImageIcon, UploadCloud, File, Loader2, Eye, Trash2 } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import { Button } from '@/components/ui/Button';
 
@@ -21,7 +21,7 @@ interface DocumentsTabProps {
     isLoading?: boolean;
     isUploading?: boolean;
     onUpload?: (file: File) => void;
-    onActionClick?: (documentId: string) => void;
+    onDelete?: (documentId: string) => void;
     /** Admin and HR can upload; employees only see the list. */
     canUploadDocuments?: boolean;
 }
@@ -33,6 +33,13 @@ const formatBytes = (bytes: number, decimals = 1) => {
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`;
+};
+
+const getFullFileUrl = (url?: string) => {
+    if (!url) return '';
+    if (url.startsWith('http')) return url;
+    const backendBaseUrl = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api').replace(/\/api$/, '');
+    return `${backendBaseUrl}${url}`;
 };
 
 // Premium Dark-Mode compatible document styling
@@ -71,7 +78,7 @@ export default function DocumentsTab({
     isLoading = false,
     isUploading = false,
     onUpload,
-    onActionClick,
+    onDelete,
     canUploadDocuments = true,
 }: DocumentsTabProps) {
     const [isDragging, setIsDragging] = useState(false);
@@ -120,11 +127,11 @@ export default function DocumentsTab({
                     </div>
                 ) : !documents || documents.length === 0 ? (
                     <div className="p-12 text-center bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800 border-dashed rounded-xl transition-colors">
-                        <div className="p-4 bg-white dark:bg-gray-800 w-16 h-16 mx-auto rounded-full text-gray-400 dark:text-gray-500 mb-3 shadow-sm dark:shadow-none flex items-center justify-center transition-colors">
+                        <div className="p-4 bg-white dark:bg-gray-800 w-16 h-16 mx-auto rounded-full text-gray-400 dark:text-gray-550 mb-3 shadow-sm dark:shadow-none flex items-center justify-center transition-colors">
                             <File size={24} />
                         </div>
                         <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 transition-colors">No documents uploaded yet.</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 transition-colors">
+                        <p className="text-xs text-gray-550 dark:text-gray-400 mt-1 transition-colors">
                             {canUploadDocuments
                                 ? 'Drag and drop a file in the upload panel, or ask HR to add documents for this profile.'
                                 : 'Documents will appear here once an administrator or HR uploads them.'}
@@ -134,6 +141,7 @@ export default function DocumentsTab({
                     <div className="space-y-3">
                         {documents.map((doc) => {
                             const { icon: Icon, colorClass } = getDocumentStyle(doc.type);
+                            const absoluteUrl = getFullFileUrl(doc.fileUrl);
                             return (
                                 <div
                                     key={doc.id}
@@ -152,15 +160,29 @@ export default function DocumentsTab({
                                             </p>
                                         </div>
                                     </div>
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => onActionClick && onActionClick(doc.id)}
-                                        className="p-2 h-9 w-9 text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-all shrink-0"
-                                        aria-label="Document options"
-                                    >
-                                        <MoreVertical size={18} />
-                                    </Button>
+                                    <div className="flex items-center gap-2 shrink-0">
+                                        {doc.fileUrl && (
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => window.open(absoluteUrl, '_blank', 'noopener,noreferrer')}
+                                                className="gap-1.5 h-9 bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all text-xs font-bold px-3"
+                                            >
+                                                <Eye size={14} /> View
+                                            </Button>
+                                        )}
+                                        {canUploadDocuments && onDelete && (
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => onDelete(doc.id)}
+                                                className="p-2 h-9 w-9 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-full transition-all flex items-center justify-center shrink-0"
+                                                aria-label="Delete document"
+                                            >
+                                                <Trash2 size={16} />
+                                            </Button>
+                                        )}
+                                    </div>
                                 </div>
                             );
                         })}

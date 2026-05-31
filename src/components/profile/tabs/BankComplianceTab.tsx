@@ -106,6 +106,18 @@ export default function BankComplianceTab({
     
     const { data: companySettings } = useCompanySettings();
 
+    React.useEffect(() => {
+        if (bankData) setBankForm(bankData);
+    }, [bankData]);
+
+    React.useEffect(() => {
+        if (statutoryData) setStatForm(statutoryData);
+    }, [statutoryData]);
+
+    React.useEffect(() => {
+        if (salaryData) setSalaryForm(salaryData);
+    }, [salaryData]);
+
     const canEdit = currentUserRole?.toLowerCase() === 'admin' || currentUserRole?.toLowerCase() === 'hr';
 
     const handleBankChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -151,18 +163,40 @@ export default function BankComplianceTab({
     };
 
     const saveSalaryDetails = async () => {
+        // Filter out completely blank/untouched allowance and deduction rows
+        const filteredAllowances = (salaryForm.activeAllowances || []).filter(
+            (a) => (a.name && a.name.trim() !== "") || a.amount !== 0
+        );
+        const filteredDeductions = (salaryForm.activeDeductions || []).filter(
+            (d) => (d.name && d.name.trim() !== "") || d.amount !== 0
+        );
+
+        // Validate that any configured rows have a name and positive amount
+        const invalidAllowance = filteredAllowances.find((a) => !a.name || a.name.trim() === "" || a.name === "Select Allowance..." || a.amount <= 0);
+        if (invalidAllowance) {
+            toast.error('Please specify a valid name and positive amount for all active allowances.');
+            return;
+        }
+
+        const invalidDeduction = filteredDeductions.find((d) => !d.name || d.name.trim() === "" || d.name === "Select Deduction..." || d.amount <= 0);
+        if (invalidDeduction) {
+            toast.error('Please specify a valid name and positive amount for all active deductions.');
+            return;
+        }
+
         setIsSaving(true);
         try {
             await employeeService.update(employeeId, { 
                 'profile.financial.basicSalary': Number(salaryForm.basicSalary) || 0,
-                'profile.financial.activeAllowances': salaryForm.activeAllowances || [],
-                'profile.financial.activeDeductions': salaryForm.activeDeductions || []
+                'profile.financial.activeAllowances': filteredAllowances,
+                'profile.financial.activeDeductions': filteredDeductions
             });
             setIsEditingSalary(false);
             onRefresh();
             toast.success('Salary components saved successfully!');
-        } catch (error) {
-            toast.error('Failed to save salary details.');
+        } catch (error: any) {
+            const errorMsg = error?.response?.data?.message || 'Failed to save salary details.';
+            toast.error(errorMsg);
         } finally {
             setIsSaving(false);
         }
@@ -376,13 +410,13 @@ export default function BankComplianceTab({
                                                 <select
                                                     value={allowance.name}
                                                     onChange={(e) => handleAllowanceChange(idx, 'name', e.target.value)}
-                                                    className="flex-1 h-9 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm focus:ring-2 focus:ring-blue-500"
+                                                    className="flex-1 h-9 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 text-sm focus:ring-2 focus:ring-blue-500 px-2"
                                                 >
-                                                    <option value="">Select Allowance...</option>
+                                                    <option value="" className="bg-white dark:bg-gray-900 text-gray-950 dark:text-gray-100">Select Allowance...</option>
                                                     {availableAllowances.map((a: any) => (
-                                                        <option key={a.name} value={a.name}>{a.name}</option>
+                                                        <option key={a.name} value={a.name} className="bg-white dark:bg-gray-900 text-gray-950 dark:text-gray-100">{a.name}</option>
                                                     ))}
-                                                    <option value="Other">Other (Custom)</option>
+                                                    <option value="Other" className="bg-white dark:bg-gray-900 text-gray-950 dark:text-gray-100">Other (Custom)</option>
                                                 </select>
                                                 <Input 
                                                     name={`allowanceAmount_${idx}`} 
@@ -409,13 +443,13 @@ export default function BankComplianceTab({
                                                 <select
                                                     value={deduction.name}
                                                     onChange={(e) => handleDeductionChange(idx, 'name', e.target.value)}
-                                                    className="flex-1 h-9 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm focus:ring-2 focus:ring-blue-500"
+                                                    className="flex-1 h-9 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 text-sm focus:ring-2 focus:ring-blue-500 px-2"
                                                 >
-                                                    <option value="">Select Deduction...</option>
+                                                    <option value="" className="bg-white dark:bg-gray-900 text-gray-950 dark:text-gray-100">Select Deduction...</option>
                                                     {availableDeductions.map((d: any) => (
-                                                        <option key={d.name} value={d.name}>{d.name}</option>
+                                                        <option key={d.name} value={d.name} className="bg-white dark:bg-gray-900 text-gray-950 dark:text-gray-100">{d.name}</option>
                                                     ))}
-                                                    <option value="Other">Other (Custom)</option>
+                                                    <option value="Other" className="bg-white dark:bg-gray-900 text-gray-950 dark:text-gray-100">Other (Custom)</option>
                                                 </select>
                                                 <Input 
                                                     name={`deductionAmount_${idx}`} 

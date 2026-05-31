@@ -216,7 +216,7 @@ export default function PayrollDashboard() {
                                 variant="outline" 
                                 size="sm" 
                                 onClick={() => refetchAccrual()} 
-                                className="h-8 gap-1.5 text-xs font-semibold bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-850"
+                                className="h-8 gap-1.5 text-xs font-semibold bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-800"
                                 disabled={isAccrualLoading}
                             >
                                 <RefreshCw size={14} className={cn(isAccrualLoading && "animate-spin")} />
@@ -237,7 +237,6 @@ export default function PayrollDashboard() {
                                     <th className="px-6 py-4 text-center">Leaves (LWP)</th>
                                     <th className="px-6 py-4">Allowances</th>
                                     <th className="px-6 py-4">Accrued Gross</th>
-                                    <th className="px-6 py-4 text-orange-600 dark:text-orange-500">Loans Deduction</th>
                                     <th className="px-6 py-4 text-red-500">Total Deductions</th>
                                     <th className="px-6 py-4 text-emerald-600 dark:text-emerald-400">Accrued Net Pay</th>
                                     <th className="px-6 py-4 text-right">Last Accrued At</th>
@@ -246,24 +245,24 @@ export default function PayrollDashboard() {
                             <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
                                 {isAccrualLoading ? (
                                     <tr>
-                                        <td colSpan={9} className="px-6 py-12 text-center text-gray-500">
+                                        <td colSpan={8} className="px-6 py-12 text-center text-gray-500">
                                             <Loader2 className="w-8 h-8 animate-spin mx-auto text-blue-600 dark:text-blue-500" />
                                             <span className="block mt-2 text-xs font-semibold text-gray-400">Accruing real-time records...</span>
                                         </td>
                                     </tr>
                                 ) : isAccrualError ? (
                                     <tr>
-                                        <td colSpan={9} className="px-6 py-12 text-center text-red-500">
+                                        <td colSpan={8} className="px-6 py-12 text-center text-red-500">
                                             <AlertCircle className="w-8 h-8 mx-auto mb-2" />
                                             <span className="font-bold">Failed to load real-time accruals.</span>
                                         </td>
                                     </tr>
                                 ) : accruals.length === 0 ? (
                                     <tr>
-                                        <td colSpan={9} className="px-6 py-12 text-center text-gray-500">
+                                        <td colSpan={8} className="px-6 py-12 text-center text-gray-500">
                                             <div className="flex flex-col items-center justify-center">
                                                 <IndianRupee size={32} className="text-gray-400 mb-2" />
-                                                <p className="font-bold text-gray-850 dark:text-gray-200">No rolling payroll records generated yet.</p>
+                                                <p className="font-bold text-gray-950 dark:text-gray-200">No rolling payroll records generated yet.</p>
                                                 <p className="text-xs mt-0.5">The nightly cron calculates and updates accruals starting midnight.</p>
                                             </div>
                                         </td>
@@ -295,10 +294,7 @@ export default function PayrollDashboard() {
                                             <td className="px-6 py-4 font-mono font-bold text-gray-900 dark:text-gray-100">
                                                 {formatINR(acc.accruedGross || 0)}
                                             </td>
-                                            <td className="px-6 py-4 font-mono font-bold text-orange-600 dark:text-orange-500">
-                                                {(acc.loanDeduction || 0) > 0 ? formatINR(acc.loanDeduction) : <span className="text-xs text-gray-400 font-normal">—</span>}
-                                            </td>
-                                            <td className="px-6 py-4 font-mono font-bold text-red-500">
+                                            <td className="px-6 py-4 font-mono font-bold text-red-500 dark:text-red-400">
                                                 {formatINR(acc.accruedDeductions || 0)}
                                             </td>
                                             <td className="px-6 py-4 font-mono font-black text-emerald-600 dark:text-emerald-400">
@@ -329,11 +325,11 @@ export default function PayrollDashboard() {
                                     <select
                                         value={limit}
                                         onChange={(e) => { setLimit(Number(e.target.value)); setPage(1); }}
-                                        className="h-8 px-2 rounded border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 text-xs font-bold cursor-pointer focus:outline-none"
+                                        className="h-8 px-2 rounded border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-955 text-gray-900 dark:text-gray-100 text-xs font-bold cursor-pointer focus:outline-none"
                                     >
-                                        <option value={5}>5</option>
-                                        <option value={10}>10</option>
-                                        <option value={25}>25</option>
+                                        <option value={5} className="bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100">5</option>
+                                        <option value={10} className="bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100">10</option>
+                                        <option value={25} className="bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100">25</option>
                                     </select>
                                 </div>
 
@@ -391,10 +387,10 @@ export default function PayrollDashboard() {
                             <select
                                 value={finalizeMonthVal}
                                 onChange={(e) => setFinalizeMonthVal(Number(e.target.value))}
-                                className="w-full h-11 px-3 bg-gray-50 dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-600/20 dark:focus:ring-blue-500/40 cursor-pointer"
+                                className="w-full h-11 px-3 bg-gray-50 dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-lg text-sm font-medium text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-600/20 dark:focus:ring-blue-500/40 cursor-pointer"
                             >
                                 {MONTHS.map(m => (
-                                    <option key={m.value} value={m.value}>{m.label}</option>
+                                    <option key={m.value} value={m.value} className="bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100">{m.label}</option>
                                 ))}
                             </select>
                         </div>
@@ -404,11 +400,11 @@ export default function PayrollDashboard() {
                             <select
                                 value={finalizeYearVal}
                                 onChange={(e) => setFinalizeYearVal(Number(e.target.value))}
-                                className="w-full h-11 px-3 bg-gray-50 dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-600/20 dark:focus:ring-blue-500/40 cursor-pointer"
+                                className="w-full h-11 px-3 bg-gray-50 dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-lg text-sm font-medium text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-600/20 dark:focus:ring-blue-500/40 cursor-pointer"
                             >
-                                <option value={new Date().getFullYear() - 1}>{new Date().getFullYear() - 1}</option>
-                                <option value={new Date().getFullYear()}>{new Date().getFullYear()}</option>
-                                <option value={new Date().getFullYear() + 1}>{new Date().getFullYear() + 1}</option>
+                                <option value={new Date().getFullYear() - 1} className="bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100">{new Date().getFullYear() - 1}</option>
+                                <option value={new Date().getFullYear()} className="bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100">{new Date().getFullYear()}</option>
+                                <option value={new Date().getFullYear() + 1} className="bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100">{new Date().getFullYear() + 1}</option>
                             </select>
                         </div>
 
@@ -606,7 +602,7 @@ export default function PayrollDashboard() {
                                         <tr>
                                             <td colSpan={9} className="px-6 py-12 text-center text-gray-500">
                                                 <Loader2 className="w-8 h-8 animate-spin mx-auto text-blue-600 dark:text-blue-500" />
-                                                <span className="block mt-2 text-xs font-semibold text-gray-400 dark:text-gray-550">Loading calculation records...</span>
+                                                <span className="block mt-2 text-xs font-semibold text-gray-400 dark:text-gray-500">Loading calculation records...</span>
                                             </td>
                                         </tr>
                                     ) : batchRecords?.length === 0 ? (
@@ -618,8 +614,8 @@ export default function PayrollDashboard() {
                                     ) : (
                                         batchRecords?.map((rec: any, idx: number) => (
                                             <tr key={rec._id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/10 transition-colors">
-                                                <td className="px-4 py-3 text-gray-450 dark:text-gray-500 font-mono text-xs">{idx + 1}</td>
-                                                <td className="px-4 py-3 text-gray-600 dark:text-gray-455 font-mono text-xs">{rec.empIdString || 'N/A'}</td>
+                                                <td className="px-4 py-3 text-gray-400 dark:text-gray-500 font-mono text-xs">{idx + 1}</td>
+                                                <td className="px-4 py-3 text-gray-600 dark:text-gray-500 font-mono text-xs">{rec.empIdString || 'N/A'}</td>
                                                 <td className="px-4 py-3 font-semibold text-gray-900 dark:text-gray-100">{rec.employeeName}</td>
                                                 <td className="px-4 py-3 text-gray-600 dark:text-gray-400 text-xs font-medium">{rec.department || 'N/A'}</td>
                                                 <td className="px-4 py-3 text-center text-gray-700 dark:text-gray-300 font-mono text-xs">
@@ -639,7 +635,7 @@ export default function PayrollDashboard() {
                             <Button 
                                 variant="outline" 
                                 onClick={() => setSelectedBatchId(null)}
-                                className="h-10 px-5 font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-850"
+                                className="h-10 px-5 font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
                             >
                                 Close
                             </Button>
