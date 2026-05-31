@@ -56,7 +56,7 @@ const getProcessingStep = (progress: number) => {
 
 export default function PayrollDashboard() {
     const router = useRouter();
-    
+
     // RBAC
     const { user, isAuthenticated } = useAppSelector((state) => state.auth);
     const role = user?.role?.toLowerCase() || 'employee';
@@ -70,13 +70,13 @@ export default function PayrollDashboard() {
     const [isRunModalOpen, setIsRunModalOpen] = useState(false);
     const [runMonth, setRunMonth] = useState<number>(new Date().getMonth() + 1);
     const [runYear, setRunYear] = useState<number>(new Date().getFullYear());
-    
-    const availablePeriods = Array.from({length: 6}, (_, i) => {
+
+    const availablePeriods = Array.from({ length: 6 }, (_, i) => {
         const d = new Date();
         d.setMonth(d.getMonth() - i);
         return { month: d.getMonth() + 1, year: d.getFullYear() };
     });
-    
+
     const availableYears = Array.from(new Set(availablePeriods.map(p => p.year)));
     const availableMonths = MONTHS.filter(m => availablePeriods.some(p => p.month === m.value && p.year === runYear));
 
@@ -133,10 +133,10 @@ export default function PayrollDashboard() {
     const [selectedBatchId, setSelectedBatchId] = useState<string | null>(null);
     const selectedBatch = batches?.find((b: any) => b._id === selectedBatchId);
     const isSelectedBatchProcessing = selectedBatch?.status === 'Processing';
-    
+
     // Batch calculations hook (polls every 2s if selected batch is processing)
     const { data: batchRecords, isLoading: isRecordsLoading } = useBatchRecords(
-        selectedBatchId, 
+        selectedBatchId,
         isSelectedBatchProcessing
     );
 
@@ -157,7 +157,7 @@ export default function PayrollDashboard() {
 
     const handleRunPayrollSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        
+
         // Final secure validation
         if (runYear > currentYear || (runYear === currentYear && runMonth > currentMonth)) {
             toast.error("Payroll cannot be calculated for upcoming months.");
@@ -183,10 +183,10 @@ export default function PayrollDashboard() {
     };
 
     const getStatusBadge = (status: string) => {
-        switch(status) {
-            case 'Completed': return <Badge variant="success" className="gap-1"><CheckCircle2 size={14}/> Completed</Badge>;
-            case 'Processing': return <Badge variant="warning" className="gap-1 bg-yellow-100 dark:bg-yellow-950/40 text-yellow-800 dark:text-yellow-300 border border-yellow-200 dark:border-yellow-900/60"><Loader2 size={14} className="animate-spin"/> Processing</Badge>;
-            case 'Failed': return <Badge variant="error" className="gap-1"><AlertCircle size={14}/> Failed</Badge>;
+        switch (status) {
+            case 'Completed': return <Badge variant="success" className="gap-1"><CheckCircle2 size={14} /> Completed</Badge>;
+            case 'Processing': return <Badge variant="warning" className="gap-1 bg-yellow-100 dark:bg-yellow-950/40 text-yellow-800 dark:text-yellow-300 border border-yellow-200 dark:border-yellow-900/60"><Loader2 size={14} className="animate-spin" /> Processing</Badge>;
+            case 'Failed': return <Badge variant="error" className="gap-1"><AlertCircle size={14} /> Failed</Badge>;
             default: return <Badge variant="default">{status}</Badge>;
         }
     };
@@ -196,7 +196,7 @@ export default function PayrollDashboard() {
     return (
         <div className="min-h-[calc(100vh-4rem)] bg-gray-50/50 dark:bg-[#0a0a0a] text-gray-900 dark:text-gray-100 p-6 lg:p-8 transition-colors duration-300">
             <div className="max-w-7xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                
+
                 {/* Header */}
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-150/50 dark:border-gray-900 pb-4">
                     <div>
@@ -207,16 +207,16 @@ export default function PayrollDashboard() {
                             Manage and track asynchronous payroll calculation batches.
                         </p>
                     </div>
-                    
+
                     <div className="flex items-center gap-3">
-                        <Button 
-                            variant="primary" 
-                            onClick={() => setIsRunModalOpen(true)} 
+                        <Button
+                            variant="primary"
+                            onClick={() => setIsRunModalOpen(true)}
                             disabled={runPayrollMutation.isPending || isProcessing}
                             className={cn(
                                 "gap-2 shadow-sm font-semibold ml-1 transition-all duration-350",
-                                isProcessing 
-                                    ? "bg-gray-150 text-gray-400 border-gray-250 cursor-not-allowed dark:bg-gray-900 dark:text-gray-600 dark:border-gray-800" 
+                                isProcessing
+                                    ? "bg-gray-150 text-gray-400 border-gray-250 cursor-not-allowed dark:bg-gray-900 dark:text-gray-600 dark:border-gray-800"
                                     : "shadow-blue-500/25 dark:shadow-none"
                             )}
                         >
@@ -274,14 +274,14 @@ export default function PayrollDashboard() {
                                     </Button>
                                 </div>
                             </div>
-                            
+
                             {/* Modern Progress Bar */}
                             <div className="space-y-1">
                                 <div className="w-full bg-gray-200 dark:bg-gray-800 rounded-full h-2.5 overflow-hidden">
-                                    <div 
+                                    <div
                                         className="bg-blue-600 dark:bg-blue-500 h-2.5 rounded-full transition-all duration-500 ease-out"
-                                        style={{ 
-                                            width: `${Math.min(100, Math.round(((activeBatchRecords?.length || 0) / (activeProcessingBatch.totalEmployees || 1)) * 100))}%` 
+                                        style={{
+                                            width: `${Math.min(100, Math.round(((activeBatchRecords?.length || 0) / (activeProcessingBatch.totalEmployees || 1)) * 100))}%`
                                         }}
                                     />
                                 </div>
@@ -299,9 +299,9 @@ export default function PayrollDashboard() {
                                     <CheckCircle2 size={20} className="text-emerald-600 dark:text-emerald-455" />
                                     <span>Payroll Generation Completed Successfully!</span>
                                 </div>
-                                <Button 
-                                    variant="ghost" 
-                                    size="sm" 
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
                                     onClick={() => setRecentlyCompleted(null)}
                                     className="h-7 w-7 p-0 rounded-full text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/40"
                                 >
@@ -331,9 +331,9 @@ export default function PayrollDashboard() {
                                         View Calculations
                                     </Button>
                                     {recentlyCompleted.excelFileUrl && (
-                                        <Button 
-                                            variant="primary" 
-                                            size="sm" 
+                                        <Button
+                                            variant="primary"
+                                            size="sm"
                                             onClick={() => window.open(getExcelDownloadUrl(recentlyCompleted.excelFileUrl), '_blank')}
                                             className="bg-emerald-650 hover:bg-emerald-700 text-white border-none flex items-center gap-1.5 font-bold transition-all text-xs px-3 py-1.5 h-auto shadow-sm shadow-emerald-500/20"
                                         >
@@ -343,7 +343,7 @@ export default function PayrollDashboard() {
                                     )}
                                 </div>
                             </div>
-                            
+
                             <div className="flex justify-between items-center text-[10px] text-gray-400 dark:text-gray-550 border-t border-emerald-100 dark:border-emerald-900/40 pt-2 font-medium">
                                 <span>Status: <span className="text-emerald-600 dark:text-emerald-450 font-bold uppercase font-sans">Completed</span></span>
                                 <span>Hiding automatically in <span className="font-bold text-gray-600 dark:text-gray-400 font-mono">{countdown}s</span>...</span>
@@ -364,7 +364,7 @@ export default function PayrollDashboard() {
                         <table className="w-full text-left text-sm whitespace-nowrap">
                             <thead className="bg-gray-50 dark:bg-gray-800/40 text-gray-500 dark:text-gray-400 font-semibold border-b border-gray-100 dark:border-gray-800">
                                 <tr>
-                                    <th className="px-6 py-4">Batch ID</th>
+                                    <th className="px-6 py-4">Employee Code</th>
                                     <th className="px-6 py-4 text-gray-700 dark:text-gray-300 font-semibold">Period</th>
                                     <th className="px-6 py-4">Employees Processed</th>
                                     <th className="px-6 py-4">Generated By</th>
@@ -391,7 +391,7 @@ export default function PayrollDashboard() {
                                         <tr key={batch._id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/20 transition-colors">
                                             <td className="px-6 py-4 font-mono text-xs text-gray-500">{batch._id.slice(-6).toUpperCase()}</td>
                                             <td className="px-6 py-4 font-bold flex items-center gap-2 text-gray-900 dark:text-gray-100 transition-colors">
-                                                <Calendar size={14} className="text-gray-400 dark:text-gray-550"/>
+                                                <Calendar size={14} className="text-gray-400 dark:text-gray-550" />
                                                 <span>{MONTHS.find(m => m.value === batch.month)?.label} {batch.year}</span>
                                             </td>
                                             <td className="px-6 py-4">
@@ -420,9 +420,9 @@ export default function PayrollDashboard() {
                                                         View Calculations
                                                     </Button>
                                                     {batch.status === 'Completed' && batch.excelFileUrl && (
-                                                        <Button 
-                                                            variant="ghost" 
-                                                            size="sm" 
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
                                                             onClick={() => window.open(getExcelDownloadUrl(batch.excelFileUrl), '_blank')}
                                                             className="text-emerald-600 dark:text-emerald-450 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 flex items-center gap-1.5 font-bold transition-all"
                                                         >
@@ -450,44 +450,44 @@ export default function PayrollDashboard() {
                         <div className="text-sm text-gray-500 dark:text-gray-400 mb-2 leading-relaxed bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border border-blue-100 dark:border-blue-900">
                             <strong>Note:</strong> Generating payroll runs in the background. It will calculate dynamic allowances, deductions, and attendance records, then generate a downloadable Excel sheet for all active employees.
                         </div>
-                        
+
                         <div className="space-y-2">
-                                                            <label className="text-xs font-bold text-gray-450 dark:text-gray-400 uppercase tracking-wider">Select Month</label>
-                                                            <select
-                                                                value={runMonth}
-                                                                onChange={(e) => setRunMonth(Number(e.target.value))}
-                                                                className="w-full h-11 px-3 bg-gray-50 dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-600/20 dark:focus:ring-blue-500/40 cursor-pointer text-gray-900 dark:text-gray-100"
-                                                            >
-                                                                {availableMonths.map(m => (
-                                                                    <option key={m.value} value={m.value}>{m.label}</option>
-                                                                ))}
-                                                            </select>
-                                                        </div>
-                        
+                            <label className="text-xs font-bold text-gray-450 dark:text-gray-400 uppercase tracking-wider">Select Month</label>
+                            <select
+                                value={runMonth}
+                                onChange={(e) => setRunMonth(Number(e.target.value))}
+                                className="w-full h-11 px-3 bg-gray-50 dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-600/20 dark:focus:ring-blue-500/40 cursor-pointer text-gray-900 dark:text-gray-100"
+                            >
+                                {availableMonths.map(m => (
+                                    <option key={m.value} value={m.value}>{m.label}</option>
+                                ))}
+                            </select>
+                        </div>
+
                         <div className="space-y-2">
-                                                            <label className="text-xs font-bold text-gray-450 dark:text-gray-400 uppercase tracking-wider">Select Year</label>
-                                                            <select
-                                                                value={runYear}
-                                                                onChange={(e) => setRunYear(Number(e.target.value))}
-                                                                className="w-full h-11 px-3 bg-gray-50 dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-600/20 dark:focus:ring-blue-500/40 cursor-pointer text-gray-900 dark:text-gray-100"
-                                                            >
-                                                                {availableYears.map(y => (
-                                                                    <option key={y} value={y}>{y}</option>
-                                                                ))}
-                                                            </select>
-                                                        </div>
+                            <label className="text-xs font-bold text-gray-450 dark:text-gray-400 uppercase tracking-wider">Select Year</label>
+                            <select
+                                value={runYear}
+                                onChange={(e) => setRunYear(Number(e.target.value))}
+                                className="w-full h-11 px-3 bg-gray-50 dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-600/20 dark:focus:ring-blue-500/40 cursor-pointer text-gray-900 dark:text-gray-100"
+                            >
+                                {availableYears.map(y => (
+                                    <option key={y} value={y}>{y}</option>
+                                ))}
+                            </select>
+                        </div>
 
                         <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-800 mt-4">
-                            <Button 
+                            <Button
                                 type="button"
-                                variant="outline" 
+                                variant="outline"
                                 onClick={() => setIsRunModalOpen(false)}
                                 className="h-11 px-5"
                             >
                                 Cancel
                             </Button>
-                            <Button 
-                                type="submit" 
+                            <Button
+                                type="submit"
                                 variant="primary"
                                 disabled={runPayrollMutation.isPending}
                                 className="h-11 px-6 font-semibold shadow-sm shadow-blue-500/20"
@@ -529,7 +529,7 @@ export default function PayrollDashboard() {
                                 </div>
                             </div>
                         )}
-                        
+
                         <div className="overflow-x-auto border border-gray-150 dark:border-gray-800 rounded-xl shadow-sm bg-white dark:bg-gray-900">
                             <table className="w-full text-left text-sm whitespace-nowrap border-collapse">
                                 <thead className="bg-gray-50 dark:bg-gray-800/40 text-gray-500 dark:text-gray-400 font-semibold border-b border-gray-150 dark:border-gray-800">
@@ -580,8 +580,8 @@ export default function PayrollDashboard() {
                             </table>
                         </div>
                         <div className="flex justify-end pt-2">
-                            <Button 
-                                variant="outline" 
+                            <Button
+                                variant="outline"
                                 onClick={() => setSelectedBatchId(null)}
                                 className="h-10 px-5 font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-850"
                             >

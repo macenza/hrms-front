@@ -46,7 +46,7 @@ export default function NoticePage() {
     // Route Protection
     useEffect(() => {
         if (!isAuthenticated && typeof window !== 'undefined') {
-            router.replace('/login');
+            router.replace('/hrms-login');
         }
     }, [isAuthenticated, router]);
 

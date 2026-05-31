@@ -8,11 +8,14 @@ import { cn } from '@/utils/cn';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { logOut } from '@/store/authSlice';
 import { logoutUser } from '@/services/authService';
+import Cookies from 'js-cookie';
 
 import {
     LayoutDashboard, Users, CalendarCheck, CalendarDays, Briefcase,
-    DollarSign, CreditCard, Package, Bell, Settings, LogOut, Sun, Moon, X, User
+    DollarSign, CreditCard, Package, Bell, Settings, LogOut, Sun, Moon, X, User,
+    AlertTriangle
 } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface SidebarProps {
     isOpen: boolean;
@@ -25,6 +28,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     const dispatch = useAppDispatch();
     const { theme, setTheme } = useTheme();
     const [mounted, setMounted] = useState(false);
+    const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
 
     // Pull current user to determine Role-Based Access
     const { user } = useAppSelector((state) => state.auth);
@@ -37,6 +41,16 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     useEffect(() => {
         setMounted(true);
     }, []);
+
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape' && isLogoutModalOpen) {
+                setIsLogoutModalOpen(false);
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [isLogoutModalOpen]);
 
     const isDarkMode = mounted && theme === 'dark';
 
@@ -70,7 +84,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         return items.filter(item => item.show);
     }, [isAdminOrHR, user, role]);
 
-    const handleLogout = async () => {
+    const executeLogout = async () => {
         try {
             // Ask the backend to destroy the HttpOnly cookies
             await logoutUser(); 
@@ -80,12 +94,29 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             // Explicitly wipe the Redux state
             dispatch(logOut());
             
+            // Clear local storage and cookies to prevent ghost sessions
+            localStorage.removeItem('hrms_user');
+            localStorage.removeItem('hrms_token');
+            localStorage.removeItem('hrms_refreshToken');
+            Cookies.remove('hrms_token');
+            Cookies.remove('role');
+            
+            // Show premium success toast
+            toast.success("You have been logged out successfully.");
+
+            // Close the logout modal
+            setIsLogoutModalOpen(false);
+            
             // Close the sidebar
             if (typeof onClose === 'function') onClose();
             
             // Force Next.js to navigate to the login page securely
             router.push('/hrms-login');
         }
+    };
+
+    const handleLogout = () => {
+        setIsLogoutModalOpen(true);
     };
 
     return (
@@ -207,6 +238,50 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                     </button>
                 </div>
             </div>
+
+            {/* Logout Confirmation Modal */}
+            {isLogoutModalOpen && (
+                <div 
+                    className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-all duration-300 animate-in fade-in"
+                    onClick={() => setIsLogoutModalOpen(false)}
+                >
+                    <div 
+                        className="bg-white dark:bg-gray-900 border border-gray-150 dark:border-gray-800 rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden flex flex-col p-6 animate-in zoom-in-95 duration-200"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {/* Header Warning Icon */}
+                        <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-amber-100 dark:bg-amber-955/40 text-amber-500 dark:text-amber-400 mb-4">
+                            <AlertTriangle size={24} className="animate-pulse" />
+                        </div>
+
+                        {/* Title */}
+                        <h3 className="text-lg font-black text-center text-gray-900 dark:text-gray-100 tracking-tight mb-2">
+                            Confirm Logout
+                        </h3>
+
+                        {/* Message */}
+                        <p className="text-sm font-medium text-center text-gray-500 dark:text-gray-400 mb-6 leading-relaxed">
+                            Are you sure you want to log out?
+                        </p>
+
+                        {/* Action Buttons */}
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setIsLogoutModalOpen(false)}
+                                className="flex-1 px-4 py-2.5 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-bold rounded-xl transition duration-200 text-sm hover:bg-gray-50 dark:hover:bg-gray-750 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={executeLogout}
+                                className="flex-1 px-4 py-2.5 bg-red-500 hover:bg-red-600 text-white font-bold rounded-xl transition duration-200 text-sm shadow-md shadow-red-500/20 focus:outline-none focus:ring-2 focus:ring-red-500"
+                            >
+                                Logout
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </>
     );
 }

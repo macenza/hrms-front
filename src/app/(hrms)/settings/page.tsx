@@ -10,6 +10,7 @@ import { Card } from '@/components/ui/Card';
 import { setCompanySettings } from '@/store/settingsSlice';
 import { logOut } from '@/store/authSlice';
 import { logoutUser } from '@/services/authService';
+import Cookies from 'js-cookie';
 
 import GeneralSettings from '@/components/settings/GeneralSettings';
 import SecuritySettings from '@/components/settings/SecuritySettings';
@@ -98,6 +99,15 @@ export default function SettingsPage() {
                     console.error("Backend logout failed:", e);
                 } finally {
                     dispatch(logOut());
+                    
+                    // Clear local storage and cookies to prevent ghost sessions
+                    localStorage.removeItem('hrms_user');
+                    localStorage.removeItem('hrms_token');
+                    localStorage.removeItem('hrms_refreshToken');
+                    Cookies.remove('hrms_token');
+                    Cookies.remove('role');
+                    
+                    router.push('/hrms-login');
                 }
             }, 1500);
 
