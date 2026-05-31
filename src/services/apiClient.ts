@@ -101,7 +101,7 @@ apiClient.interceptors.response.use(
                     const newAccessToken = refreshResponse.data?.accessToken;
                     if (newAccessToken && typeof window !== 'undefined') {
                         localStorage.setItem('hrms_token', newAccessToken);
-                        Cookies.set('hrms_token', newAccessToken, { expires: 7, secure: true, sameSite: 'lax' });
+                        Cookies.set('hrms_token', newAccessToken, { expires: 7, secure: process.env.NODE_ENV === 'production', sameSite: 'lax' });
                     }
                     
                     processQueue(null);

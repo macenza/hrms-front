@@ -38,7 +38,7 @@ export default function CustomerAuthInitializer({ children }: { children: React.
                         // Keep cookies in sync
                         const currentToken = localStorage.getItem('customer_token');
                         if (currentToken) {
-                            Cookies.set('customer_token', currentToken, { expires: 7, secure: true, sameSite: 'lax' });
+                            Cookies.set('customer_token', currentToken, { expires: 7, secure: process.env.NODE_ENV === 'production', sameSite: 'lax' });
                         }
                     } else {
                         throw new Error("Invalid customer context");

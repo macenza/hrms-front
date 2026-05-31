@@ -62,10 +62,10 @@ export default function AuthInitializer({ children }: { children: React.ReactNod
                     // Keep cookies in sync for edge middleware
                     const currentToken = localStorage.getItem('hrms_token');
                     if (currentToken) {
-                        Cookies.set('hrms_token', currentToken, { expires: 7, secure: true, sameSite: 'lax' });
+                        Cookies.set('hrms_token', currentToken, { expires: 7, secure: process.env.NODE_ENV === 'production', sameSite: 'lax' });
                     }
                     if (verifiedUser?.role) {
-                        Cookies.set('hrms_role', verifiedUser.role.toLowerCase(), { expires: 7, secure: true, sameSite: 'lax' });
+                        Cookies.set('hrms_role', verifiedUser.role.toLowerCase(), { expires: 7, secure: process.env.NODE_ENV === 'production', sameSite: 'lax' });
                     }
 
                     // Client-side automatic redirect if user is on /hrms-login with valid session
