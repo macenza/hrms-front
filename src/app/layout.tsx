@@ -6,7 +6,8 @@ import './globals.css';
 
 import { ThemeProvider } from '@/components/theme/ThemeProvider';
 import StoreProvider from '@/store/StoreProvider';
-import AuthInitializer from '@/components/auth/AuthInitializer';
+import { SettingsProvider } from '@/providers/SettingsProvider';
+import ChatbotWidget from '@/components/ui/ChatbotWidget';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -26,9 +27,10 @@ export default function RootLayout({
             <body className={inter.className}>
                 <ThemeProvider>
                     <StoreProvider>
-                        <AuthInitializer>
+                        <SettingsProvider>
                             {children}
-                        </AuthInitializer>
+                            <ChatbotWidget />
+                        </SettingsProvider>
                     </StoreProvider>
                 </ThemeProvider>
                

@@ -15,13 +15,10 @@ export default function AuthLayout({
 
             <div className="w-full max-w-[440px] relative z-10">
                 {/* Branding / Logo Area */}
-                <div className="flex flex-col items-center mb-10">
-                    <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-200 mb-4">
+                <div className="flex flex-col items-center mb-8">
+                    <div className="w-12 h-12 bg-[#6D5DFD] rounded-xl flex items-center justify-center shadow-lg shadow-blue-200 dark:shadow-none mb-2 animate-pulse">
                         <span className="text-white font-black text-2xl tracking-tighter">M</span>
                     </div>
-                    <h2 className="text-xl font-black text-gray-900 dark:text-gray-100 tracking-tighter uppercase">
-                        MACENZA <span className="text-blue-600 dark:text-blue-400">HRMS</span>
-                    </h2>
                 </div>
 
                 {/* The Login/Signup Form gets injected here */}

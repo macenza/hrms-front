@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { CheckCircle2, XCircle, CalendarRange, Clock, Calendar } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
@@ -27,7 +27,7 @@ export interface AttendanceLogRecord {
 
 interface AttendanceTabProps {
     stats?: EmployeeAttendanceStats;
-    logs?: AttendanceLogRecord[];
+    logs?: AttendanceLogRecord[] | any;
     isLoading?: boolean; 
 }
 
@@ -71,7 +71,82 @@ export default function AttendanceTab({
     isLoading = false
 }: AttendanceTabProps) {
 
-    const safeStats = stats || { present: 0, absent: 0, onLeave: 0, lateCheckIns: 0 };
+    // Bulletproof Unwrapper: resolve the actual logs array from different potential API shapes
+    const attendanceList = useMemo(() => {
+        if (Array.isArray(logs)) return logs;
+        if (logs && typeof logs === 'object') {
+            const rawData = (logs as any).data ?? (logs as any).logs;
+            if (Array.isArray(rawData)) return rawData;
+        }
+        return [];
+    }, [logs]);
+
+    // Format logs into AttendanceLogRecord-compliant shape
+    const formattedLogs = useMemo(() => {
+        return attendanceList.map((record: any, index: number) => {
+            const dateStr = record.dateString || (record.date ? new Date(record.date).toLocaleDateString('en-CA') : '');
+            
+            // Format check-in/out times nicely
+            const formatTime = (time: any) => {
+                if (!time) return '---';
+                try {
+                    const d = new Date(time);
+                    if (isNaN(d.getTime())) return '---';
+                    return d.toLocaleTimeString('en-US', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: true
+                    });
+                } catch {
+                    return '---';
+                }
+            };
+
+            const formatHours = (minutes: number) => {
+                if (minutes === undefined || minutes === null) return '---';
+                const hrs = Math.floor(minutes / 60);
+                const mins = minutes % 60;
+                return `${hrs}h ${mins}m`;
+            };
+
+            // Safe values
+            const id = record._id || record.id || String(index);
+            const date = dateStr ? new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '---';
+            const checkIn = formatTime(record.checkInTime || record.checkIn || record.clockIn);
+            const checkOut = formatTime(record.checkOutTime || record.checkOut || record.clockOut);
+            const totalHours = formatHours(record.totalWorkedMinutes ?? record.workedMinutes);
+            const status = record.status || 'Present';
+
+            return {
+                id,
+                date,
+                checkIn,
+                checkOut,
+                totalHours,
+                status
+            } as AttendanceLogRecord;
+        });
+    }, [attendanceList]);
+
+    const safeStats = useMemo(() => {
+        if (stats) return stats;
+        
+        let present = 0;
+        let absent = 0;
+        let onLeave = 0;
+        let lateCheckIns = 0;
+
+        attendanceList.forEach((record: any) => {
+            const status = String(record.status || '').toLowerCase();
+            if (status === 'present') present++;
+            else if (status === 'absent') absent++;
+            else if (status === 'on leave' || status === 'onleave') onLeave++;
+            else if (status === 'late') { lateCheckIns++; present++; }
+            else if (status === 'half-day' || status === 'halfday') present++;
+        });
+
+        return { present, absent, onLeave, lateCheckIns };
+    }, [stats, attendanceList]);
 
     const statCards = [
         {
@@ -142,10 +217,10 @@ export default function AttendanceTab({
                                     <th className="px-6 py-4 uppercase text-xs tracking-wider">Status</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-gray-100 dark:divide-gray-800 bg-white dark:bg-gray-900 transition-colors">
+                             <tbody className="divide-y divide-gray-100 dark:divide-gray-800 bg-white dark:bg-gray-900 transition-colors">
                                 {isLoading ? (
                                     Array.from({ length: 5 }).map((_, idx) => <TableRowSkeleton key={idx} />)
-                                ) : logs.length === 0 ? (
+                                ) : formattedLogs.length === 0 ? (
                                     <tr>
                                         <td colSpan={5} className="px-6 py-16 text-center text-gray-500 dark:text-gray-400 transition-colors">
                                             <div className="flex flex-col items-center justify-center">
@@ -157,12 +232,12 @@ export default function AttendanceTab({
                                             </div>
                                         </td>
                                     </tr>
-                                                                ) : (
-                                    logs.map((log, index) => (
-                                        <tr key={log.id || log._id || index} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                                ) : (
+                                    formattedLogs.map((log, index) => (
+                                        <tr key={log.id || index} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
                                             <td className="px-6 py-4 text-gray-900 dark:text-gray-100 font-medium transition-colors">{log.date}</td>
-                                            <td className="px-6 py-4 text-gray-600 dark:text-gray-400 transition-colors">{log.checkIn || '-'}</td>
-                                            <td className="px-6 py-4 text-gray-600 dark:text-gray-400 transition-colors">{log.checkOut || '-'}</td>
+                                            <td className="px-6 py-4 text-gray-600 dark:text-gray-400 transition-colors">{log.checkIn}</td>
+                                            <td className="px-6 py-4 text-gray-600 dark:text-gray-400 transition-colors">{log.checkOut}</td>
                                             <td className="px-6 py-4 text-gray-600 dark:text-gray-300 font-medium transition-colors">{log.totalHours}</td>
                                             <td className="px-6 py-4">
                                                 <Badge variant={getStatusBadgeVariant(log.status)}>

@@ -79,6 +79,16 @@ export const employeeService = {
         }
     },
 
+    sendCredentials: async (payload: { name: string; email: string; password: string }) => {
+        try {
+            const response = await apiClient.post('/employees/send-credentials', payload);
+            return response.data;
+        } catch (error) {
+            console.error("Error sending credentials:", error);
+            throw error;
+        }
+    },
+
     /**
      * Fetch a single employee's profile by ID
      */
@@ -186,6 +196,26 @@ export const employeeService = {
             return response.data;
         } catch (error) {
             console.error(`Error deleting employee ${id}:`, error);
+            throw error;
+        }
+    },
+
+    deleteDocument: async (id: string, documentId: string) => {
+        try {
+            const response = await apiClient.delete(`/employees/${id}/documents/${documentId}`);
+            return response.data;
+        } catch (error) {
+            console.error(`Error deleting document ${documentId} for employee ${id}:`, error);
+            throw error;
+        }
+    },
+
+    deleteCertificate: async (id: string, certificateId: string) => {
+        try {
+            const response = await apiClient.delete(`/employees/${id}/certificates/${certificateId}`);
+            return response.data;
+        } catch (error) {
+            console.error(`Error deleting certificate ${certificateId} for employee ${id}:`, error);
             throw error;
         }
     },

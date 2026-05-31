@@ -1,6 +1,7 @@
 import React from 'react';
 import MainLayoutWrapper from '@/components/layout/MainLayoutWrapper';
 import { Toaster } from 'sonner';
+import AuthInitializer from '@/components/auth/AuthInitializer';
 
 interface MainLayoutProps {
     children: React.ReactNode;
@@ -8,9 +9,11 @@ interface MainLayoutProps {
 
 export default function MainLayout({ children }: MainLayoutProps) {
     return (
-        <MainLayoutWrapper>
-            <Toaster />
-            {children}
-        </MainLayoutWrapper>
+        <AuthInitializer>
+            <MainLayoutWrapper>
+                <Toaster />
+                {children}
+            </MainLayoutWrapper>
+        </AuthInitializer>
     );
 }

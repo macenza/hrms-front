@@ -28,7 +28,7 @@ export default function HeroSection() {
                     Streamline HR operations, automate workflows and empower your employees with a modern HRMS platform.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 mt-8">
-                    <Link
+                    {/* <Link
     href="/login"
     className="
     bg-[#6D5DFD]
@@ -43,14 +43,14 @@ export default function HeroSection() {
     "
   >
     Start Free Trial
-  </Link>
+  </Link> */}
                 {/* <button className="bg-[#6D5DFD] text-white px-6 py-3 rounded-xl font-semibold hover:bg-[#5B4DF0] transition">
                     Start Free Trial
                 </button> */}
                 {/* <button className="border border-[#D1D5DB] bg-white text-gray-900 px-6 py-3 rounded-xl font-semibold hover:bg-gray-100 transition">
                     Explore Demo
                 </button> */}
-             <Link
+             {/* <Link
   href="/login"
   className="
   flex
@@ -76,7 +76,7 @@ export default function HeroSection() {
   />
 
   <span>Explore Demo</span>
-</Link>
+</Link> */}
 
             </div>
                <div className="flex flex-wrap gap-4 mt-10">
@@ -163,9 +163,13 @@ export default function HeroSection() {
             </div>
             <div className="w-full lg:w-1/2 mt-14 lg:mt-0 flex justify-center">
   <img
-    src="/Dashboard.png"
+    src="/1.png"
     alt="Dashboard Preview"
-    className="w-full max-w-2xl object-contain"
+    className="w-full max-w-2xl object-contain  max-w-4xl
+            rounded-3xl
+            shadow-2xl
+            border
+            border-gray-200"
   />
 </div>
             

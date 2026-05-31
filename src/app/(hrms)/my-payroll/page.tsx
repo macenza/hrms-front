@@ -56,8 +56,7 @@ export default function MyPayrollPage() {
     const totalDeductions = payslips.reduce((sum: number, slip: PayrollRecord) => {
         const tax = slip.taxDeduction || 0;
         const unpaid = slip.unpaidLeaveDeduction || 0;
-        const loan = slip.loanDeduction || 0;
-        return sum + tax + unpaid + loan;
+        return sum + tax + unpaid;
     }, 0);
 
     const handleViewPayslip = (slip: PayrollRecord) => {
@@ -85,7 +84,7 @@ export default function MyPayrollPage() {
                 {/* YTD Earnings Card */}
                 <Card className="border-gray-100 dark:border-gray-800 bg-white/60 dark:bg-gray-900/60 backdrop-blur-xl shadow-lg dark:shadow-none hover:shadow-xl transition-all duration-300 group overflow-hidden">
                     <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-                        <CardTitle className="text-sm font-bold text-gray-550 dark:text-gray-400 uppercase tracking-wider">
+                        <CardTitle className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                             YTD Net Earnings ({currentYear})
                         </CardTitle>
                         <div className="p-2 rounded-lg bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-450 group-hover:scale-110 transition-transform duration-300">
@@ -106,7 +105,7 @@ export default function MyPayrollPage() {
                 {/* Last Disbursed Salary Card */}
                 <Card className="border-gray-100 dark:border-gray-800 bg-white/60 dark:bg-gray-900/60 backdrop-blur-xl shadow-lg dark:shadow-none hover:shadow-xl transition-all duration-300 group overflow-hidden">
                     <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-                        <CardTitle className="text-sm font-bold text-gray-550 dark:text-gray-400 uppercase tracking-wider">
+                        <CardTitle className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                             Last Disbursed Salary
                         </CardTitle>
                         <div className="p-2 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-450 group-hover:scale-110 transition-transform duration-300">
@@ -129,7 +128,7 @@ export default function MyPayrollPage() {
                 {/* Total Saved/Deducted Card */}
                 <Card className="border-gray-100 dark:border-gray-800 bg-white/60 dark:bg-gray-900/60 backdrop-blur-xl shadow-lg dark:shadow-none hover:shadow-xl transition-all duration-300 group overflow-hidden">
                     <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-                        <CardTitle className="text-sm font-bold text-gray-550 dark:text-gray-400 uppercase tracking-wider">
+                        <CardTitle className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                             Deductions Summary
                         </CardTitle>
                         <div className="p-2 rounded-lg bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-450 group-hover:scale-110 transition-transform duration-300">
@@ -184,7 +183,7 @@ export default function MyPayrollPage() {
                                 <tr>
                                     <td colSpan={6} className="px-6 py-16 text-center text-gray-500 dark:text-gray-400">
                                         <div className="flex flex-col items-center justify-center">
-                                            <div className="w-12 h-12 bg-gray-55/10 dark:bg-gray-800 rounded-full flex items-center justify-center mb-3">
+                                            <div className="w-12 h-12 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-3">
                                                 <IndianRupee size={24} className="text-gray-400 dark:text-gray-500" />
                                             </div>
                                             <p className="font-semibold text-gray-900 dark:text-gray-100 text-base">No payslips generated yet</p>
@@ -194,7 +193,7 @@ export default function MyPayrollPage() {
                                 </tr>
                             ) : (
                                 payslips.map((slip: PayrollRecord) => {
-                                    const deductSum = (slip.taxDeduction || 0) + (slip.unpaidLeaveDeduction || 0) + (slip.loanDeduction || 0);
+                                    const deductSum = (slip.taxDeduction || 0) + (slip.unpaidLeaveDeduction || 0);
                                     return (
                                         <tr key={slip.dbId} className="hover:bg-gray-50/70 dark:hover:bg-gray-800/40 transition-colors group">
                                             <td className="px-6 py-4 font-bold text-gray-900 dark:text-gray-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors flex items-center gap-2">
@@ -211,7 +210,7 @@ export default function MyPayrollPage() {
                                                 {formatINR(slip.netPayable)}
                                             </td>
                                             <td className="px-6 py-4">
-                                                <Badge variant="success" className="font-bold py-1 px-3 border border-green-55/20 text-emerald-600 bg-emerald-55/10 rounded-full gap-1">
+                                                <Badge variant="success" className="font-bold py-1 px-3 border border-emerald-500/20 text-emerald-600 bg-emerald-500/10 dark:bg-emerald-500/20 rounded-full gap-1">
                                                     Disbursed
                                                 </Badge>
                                             </td>

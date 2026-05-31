@@ -67,7 +67,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             { id: 'Attendance', href: '/attendance', icon: CalendarCheck, label: 'Attendance', show: isAdminOrHR },
             { id: 'Projects', href: '/projects', icon: Briefcase, label: 'Projects', show: true },
             { id: 'Leave', href: '/leave', icon: CalendarDays, label: 'Leave', show: true },
-            { id: 'Loan', href: '/loan', icon: CreditCard, label: 'Loan', show: true },
+            // { id: 'Loan', href: '/loan', icon: CreditCard, label: 'Loan', show: true },
             { id: 'Notice', href: '/notice', icon: Bell, label: 'Notice', show: true },
             { id: 'Settings', href: '/settings', icon: Settings, label: 'Settings', show: true },
         ];

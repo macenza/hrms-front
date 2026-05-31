@@ -25,6 +25,17 @@ export interface LoanRecord {
     approvedAmount?: number;
     interestRate?: number;
     isPaused?: boolean;
+    processedBy?: { name: string; email?: string } | null;
+    processedAt?: string | null;
+    emiSchedule?: Array<{
+        month: number;
+        date: string;
+        principal: number;
+        interest: number;
+        totalEMI: number;
+        remainingBalance: number;
+        status: string;
+    }> | null;
 }
 
 interface LoanTableProps {

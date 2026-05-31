@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-// 1. Expanded RBAC Blacklist aligning frontend with backend roles
+// 1. RBAC Blacklist for HRMS Employees
 const RESTRICTED_ROUTES: Record<string, string[]> = {
     employee: ['/employees', '/payroll', '/assets', '/admin', '/hr'],
     manager: ['/payroll', '/admin', '/hr'],
@@ -21,7 +21,7 @@ const CUSTOMER_PROTECTED_PREFIXES = [
 export function proxy(request: NextRequest) {
     const hrmsToken = request.cookies.get('hrms_token')?.value;
     const customerToken = request.cookies.get('customer_token')?.value;
-    const rawRole = request.cookies.get('role')?.value;
+    const rawRole = request.cookies.get('role')?.value || request.cookies.get('hrms_role')?.value;
     
     // Strict type normalization and fail-safe fallback
     const role = rawRole ? rawRole.toLowerCase() : 'unauthenticated';

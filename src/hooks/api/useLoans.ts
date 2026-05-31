@@ -51,6 +51,9 @@ export function useLoans(params: UseLoansParams) {
                 remarks: rec.remarks || '',
                 approvedAmount: rec.approvedAmount || rec.amount || 0,
                 interestRate: rec.interestRate || 0,
+                processedBy: rec.processedBy || null,
+                processedAt: rec.processedAt || null,
+                emiSchedule: rec.emiSchedule || null,
                 rawUser: rec.user
             }));
 

@@ -22,6 +22,8 @@ import {
     useTogglePauseEmi 
 } from '@/hooks/api/useLoans';
 import { toast } from 'sonner';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 export default function LoanPage() {
     const router = useRouter();
@@ -187,14 +189,159 @@ export default function LoanPage() {
     };
 
     const handleDownloadStatement = (record: LoanRecord) => {
-        toast.promise(
-            new Promise((resolve) => setTimeout(resolve, 1500)),
-            {
-                loading: 'Generating loan amortization statement PDF...',
-                success: `Statement_Loan_${record.id.slice(-6).toUpperCase()}.pdf downloaded successfully!`,
-                error: 'Failed to generate statement.',
+        try {
+            const doc = new jsPDF();
+            
+            // Header Section: Elegant Modern Typography
+            doc.setFillColor(30, 41, 59); // Slate-800
+            doc.rect(0, 0, 210, 40, 'F');
+            
+            doc.setTextColor(255, 255, 255);
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(22);
+            doc.text('MACENZA HRMS', 15, 25);
+            
+            doc.setFontSize(12);
+            doc.setFont('helvetica', 'normal');
+            doc.text('Loan Amortization Statement', 140, 25);
+            
+            // Metadata Card
+            doc.setTextColor(30, 41, 59);
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(11);
+            
+            doc.text('Employee Name:', 15, 55);
+            doc.setFont('helvetica', 'normal');
+            doc.text(record.employeeName, 50, 55);
+            
+            doc.setFont('helvetica', 'bold');
+            doc.text('Employee ID:', 15, 63);
+            doc.setFont('helvetica', 'normal');
+            doc.text(record.employeeId, 50, 63);
+            
+            doc.setFont('helvetica', 'bold');
+            doc.text('Total Loan Amount:', 15, 71);
+            doc.setFont('helvetica', 'normal');
+            doc.text(`INR ${record.amount.toLocaleString('en-IN')}`, 50, 71);
+            
+            doc.setFont('helvetica', 'bold');
+            doc.text('Approved Amount:', 110, 55);
+            doc.setFont('helvetica', 'normal');
+            doc.text(`INR ${(record.approvedAmount || record.amount).toLocaleString('en-IN')}`, 150, 55);
+            
+            doc.setFont('helvetica', 'bold');
+            doc.text('Interest Rate:', 110, 63);
+            doc.setFont('helvetica', 'normal');
+            doc.text(`${record.interestRate || 0}%`, 150, 63);
+            
+            doc.setFont('helvetica', 'bold');
+            doc.text('Processed By:', 110, 71);
+            doc.setFont('helvetica', 'normal');
+            doc.text(record.processedBy?.name || 'N/A', 150, 71);
+            
+            doc.setDrawColor(226, 232, 240); // slate-200 border
+            doc.line(15, 80, 195, 80);
+            
+            // Generate or extract Amortization Schedule
+            let schedule = [];
+            if (record.emiSchedule && record.emiSchedule.length > 0) {
+                schedule = record.emiSchedule;
+            } else {
+                // Fallback simulation if emiSchedule is not present
+                const amount = record.approvedAmount || record.amount || 0;
+                const tenure = record.tenureMonths || 12;
+                const interestRate = record.interestRate || 0;
+                let remBalance = amount;
+                const r = interestRate === 0 ? 0 : (interestRate / 100) / 12;
+                
+                // Calculate EMI
+                let emi;
+                if (interestRate === 0) {
+                    emi = amount / tenure;
+                } else {
+                    emi = (amount * r * Math.pow(1 + r, tenure)) / (Math.pow(1 + r, tenure) - 1);
+                }
+                
+                let startMonth = new Date();
+                if (record.deductionStart) {
+                    const parts = record.deductionStart.split('-');
+                    if (parts.length === 2) {
+                        startMonth = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, 1);
+                    }
+                }
+                
+                for (let i = 1; i <= tenure; i++) {
+                    const currentMonth = new Date(startMonth.getTime());
+                    currentMonth.setMonth(startMonth.getMonth() + i - 1);
+                    const monthLabel = currentMonth.toLocaleString('default', { month: 'short', year: 'numeric' });
+                    
+                    let interest = 0;
+                    let principal = 0;
+                    let totalEMI = emi;
+                    
+                    if (interestRate > 0) {
+                        interest = remBalance * r;
+                        principal = emi - interest;
+                    } else {
+                        interest = 0;
+                        principal = emi;
+                    }
+                    
+                    if (i === tenure) {
+                        principal = remBalance;
+                        totalEMI = principal + interest;
+                        remBalance = 0;
+                    } else {
+                        remBalance = remBalance - principal;
+                    }
+                    
+                    schedule.push({
+                        month: i,
+                        date: monthLabel,
+                        principal,
+                        interest,
+                        totalEMI,
+                        remainingBalance: remBalance
+                    });
+                }
             }
-        );
+            
+            const tableRows = schedule.map((row: any) => {
+                const monthText = row.date instanceof Date 
+                    ? new Date(row.date).toLocaleString('default', { month: 'short', year: 'numeric' })
+                    : String(row.date);
+                
+                return [
+                    `Month ${row.month}`,
+                    monthText,
+                    `INR ${row.principal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+                    `INR ${row.interest.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+                    `INR ${row.totalEMI.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+                    `INR ${row.remainingBalance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                ];
+            });
+            
+            autoTable(doc, {
+                startY: 90,
+                head: [['Month', 'Date', 'Principal', 'Interest', 'Total EMI', 'Balance']],
+                body: tableRows,
+                headStyles: { fillColor: [30, 41, 59], textColor: [255, 255, 255], fontStyle: 'bold' },
+                alternateRowStyles: { fillColor: [248, 250, 252] },
+                styles: { fontSize: 9, cellPadding: 4, font: 'helvetica' },
+                columnStyles: {
+                    2: { halign: 'right' },
+                    3: { halign: 'right' },
+                    4: { halign: 'right' },
+                    5: { halign: 'right' }
+                }
+            });
+            
+            doc.save(`Statement_Loan_${record.id.slice(-6).toUpperCase()}.pdf`);
+            toast.success(`Statement_Loan_${record.id.slice(-6).toUpperCase()}.pdf downloaded successfully!`);
+        } catch (error) {
+            console.error('Error generating PDF:', error);
+            toast.error('Failed to generate statement.');
+        }
     };
 
     const handleExportReport = () => {

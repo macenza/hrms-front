@@ -22,5 +22,20 @@ export const attendanceService = {
     clockOut: async () => {
         const response = await apiClient.post(ENDPOINTS.ATTENDANCE.CLOCK_OUT);
         return response.data;
+    },
+    
+    markAttendance: async (payload: {
+        employeeId: string;
+        dateString: string;
+        status: string;
+        checkInTime?: string;
+        checkOutTime?: string;
+        isLate?: boolean;
+        lateByMinutes?: number;
+        workFormat?: string;
+        notes?: string;
+    }) => {
+        const response = await apiClient.post('/attendance/mark', payload);
+        return response.data;
     }
 };
