@@ -14,7 +14,7 @@ export default function MyProfilePage() {
     // 2. Strict Route Protection
     useEffect(() => {
         if (!isAuthenticated && typeof window !== 'undefined') {
-            router.replace('/login');
+            router.replace('/hrms-login');
         }
     }, [isAuthenticated, router]);
 

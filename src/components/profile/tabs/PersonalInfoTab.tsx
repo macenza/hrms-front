@@ -96,7 +96,7 @@ export default function PersonalInfoTab({
                             <DetailItem label="Full Name" value={data.fullName} icon={User} />
                             <DetailItem label="Date of Birth" value={data.dob} icon={Calendar} />
                             <DetailItem label="Father's Name" value={data.fathersName} icon={User} />
-                            <DetailItem label="Registration No" value={data.registrationNo} icon={Hash} />
+                            <DetailItem label="Employee Code" value={data.registrationNo} icon={Hash} />
                         </div>
                     </CardContent>
                 </Card>

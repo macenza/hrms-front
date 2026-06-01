@@ -53,3 +53,13 @@ export function useDeleteNotice() {
         }
     });
 }
+
+export function useToggleNoticePin() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (id: string) => noticeService.toggleNoticePin(id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['notices'] });
+        }
+    });
+}

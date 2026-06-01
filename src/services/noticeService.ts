@@ -48,5 +48,10 @@ export const noticeService = {
     deleteNotice: async (id: string) => {
         const response = await apiClient.delete(`/notices/${id}`);
         return response.data;
+    },
+    
+    toggleNoticePin: async (id: string) => {
+        const response = await apiClient.patch(`/notices/${id}/pin`);
+        return response.data;
     }
 };

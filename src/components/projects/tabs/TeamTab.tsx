@@ -8,6 +8,15 @@ import { Input } from '@/components/ui/Input';
 import { toast } from 'sonner';
 import { useEmployees } from '@/hooks/api/useEmployees';
 
+const getAvatarUrl = (avatarPath: string) => {
+    if (!avatarPath) return '';
+    if (avatarPath.startsWith('http')) return avatarPath;
+    const apiBase = process.env.NEXT_PUBLIC_API_URL
+        ? process.env.NEXT_PUBLIC_API_URL.replace('/api', '')
+        : 'http://localhost:4000';
+    return `${apiBase}${avatarPath.startsWith('/') ? '' : '/'}${avatarPath}`;
+};
+
 interface TeamTabProps {
     projectId: string;
     teamAvatars: any[]; 
@@ -137,7 +146,7 @@ export default function TeamTab({ projectId, teamAvatars = [], onUpdateTeam, can
                                                     >
                                                         <div className="flex items-center gap-3">
                                                             <img
-                                                                src={emp.profile?.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${emp.name}`}
+                                                                src={emp.profile?.avatar ? getAvatarUrl(emp.profile.avatar) : `https://api.dicebear.com/7.x/initials/svg?seed=${emp.name}`}
                                                                 alt={emp.name}
                                                                 className="w-10 h-10 rounded-full object-cover border border-gray-200 dark:border-gray-800 shadow-sm transition-colors"
                                                                 onError={(e) => (e.currentTarget.src = `https://api.dicebear.com/7.x/initials/svg?seed=${emp.name}`)}
@@ -184,7 +193,7 @@ export default function TeamTab({ projectId, teamAvatars = [], onUpdateTeam, can
                                     className="relative group bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-xl p-4 flex flex-col items-center justify-center shadow-sm dark:shadow-none hover:border-blue-300 dark:hover:border-blue-900/50 transition-all duration-300"
                                 >
                                     <img
-                                        src={member.profile?.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${member.name}`}
+                                        src={member.profile?.avatar ? getAvatarUrl(member.profile.avatar) : `https://api.dicebear.com/7.x/initials/svg?seed=${member.name}`}
                                         alt={member.name}
                                         className="w-16 h-16 rounded-full object-cover shadow-sm dark:shadow-none mb-3 border-2 border-white dark:border-gray-900 transition-all"
                                         onError={(e) => (e.currentTarget.src = `https://api.dicebear.com/7.x/initials/svg?seed=${member.name}`)}

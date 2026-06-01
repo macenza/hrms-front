@@ -82,6 +82,7 @@ const step2Schema = z.object({
 });
 
 export default function AddEmployeeModal({ isOpen, onClose, onSubmit, isSubmitting = false }: AddEmployeeModalProps) {
+    console.log("🔵 AddEmployeeModal render, isOpen =", isOpen);
     const { user } = useAppSelector((state) => state.auth);
     const { data: companySettings } = useCompanySettings();
     const { data: activeEmployees } = useActiveEmployees();
@@ -111,7 +112,7 @@ export default function AddEmployeeModal({ isOpen, onClose, onSubmit, isSubmitti
     };
 
     const handleClose = () => {
-        if (isSubmitting) return; 
+        if (isSubmitting) return;
         setStep(1);
         setFormData(getInitialFormState(companySettings));
         setProfilePhoto(null);
@@ -141,17 +142,22 @@ export default function AddEmployeeModal({ isOpen, onClose, onSubmit, isSubmitti
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (!validateStep()) return;
-        
+
         if (step < 3) {
             setStep(prev => prev + 1);
             return;
         }
 
+        const firstName = formData.firstName.trim();
+        const capitalizedFirstName = firstName.charAt(0).toUpperCase() + firstName.slice(1);
+        const randomNum = Math.floor(1000 + Math.random() * 9000);
+        const generatedPassword = `Hrms${capitalizedFirstName}@${randomNum}`;
+
         const apiPayload = {
             name: `${formData.firstName.trim()} ${formData.lastName.trim()}`,
             email: formData.email,
             gender: formData.gender,
-            password: 'TempPassword123!',
+            password: generatedPassword,
             employeeId: formData.employeeId,
             role: formData.role.toLowerCase(),
             profile: {
@@ -182,26 +188,26 @@ export default function AddEmployeeModal({ isOpen, onClose, onSubmit, isSubmitti
                     <div className="relative flex items-center justify-between w-full">
                         {/* Background track */}
                         <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-0.5 bg-gray-200 dark:bg-gray-800 z-0 transition-colors duration-300"></div>
-                        
+
                         {/* Active track */}
                         <div
                             className="absolute left-0 top-1/2 -translate-y-1/2 h-0.5 bg-blue-600 z-0 transition-all duration-300"
                             style={{ width: step === 1 ? '0%' : step === 2 ? '50%' : '100%' }}
                         ></div>
-                        
+
                         {/* Steps */}
                         {[1, 2, 3].map((num) => (
                             <div key={num} className="relative z-10 flex flex-col items-center gap-2 bg-white dark:bg-gray-900 px-2 transition-colors duration-300">
                                 <div className={cn(
                                     "w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-colors border-2",
-                                    step >= num 
-                                        ? "bg-blue-600 border-blue-600 text-white" 
+                                    step >= num
+                                        ? "bg-blue-600 border-blue-600 text-white"
                                         : "bg-white border-gray-300 text-gray-400 dark:bg-gray-900 dark:border-gray-700 dark:text-gray-500"
                                 )}>
                                     {step > num ? <Check size={16} /> : num}
                                 </div>
                                 <span className={cn(
-                                    "text-xs font-semibold uppercase tracking-wider", 
+                                    "text-xs font-semibold uppercase tracking-wider",
                                     step >= num ? "text-blue-600" : "text-gray-400 dark:text-gray-500"
                                 )}>
                                     {num === 1 ? 'Personal Info' : num === 2 ? 'Job Details' : 'Documents'}
@@ -244,12 +250,12 @@ export default function AddEmployeeModal({ isOpen, onClose, onSubmit, isSubmitti
                                         <option value="+971">+971 (AE)</option>
                                     </select>
                                     <div className="flex-1">
-                                        <Input 
-                                            name="phone" 
-                                            value={formData.phone} 
-                                            onChange={handleChange} 
-                                            placeholder="12345 67890" 
-                                            disabled={isSubmitting} 
+                                        <Input
+                                            name="phone"
+                                            value={formData.phone}
+                                            onChange={handleChange}
+                                            placeholder="12345 67890"
+                                            disabled={isSubmitting}
                                             className="w-full"
                                         />
                                     </div>
@@ -257,11 +263,11 @@ export default function AddEmployeeModal({ isOpen, onClose, onSubmit, isSubmitti
                             </div>
                             <div className="flex flex-col gap-1.5 md:col-span-2">
                                 <label className="text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors">Gender</label>
-                                <select 
-                                    disabled={isSubmitting} 
-                                    name="gender" 
-                                    value={formData.gender} 
-                                    onChange={handleChange} 
+                                <select
+                                    disabled={isSubmitting}
+                                    name="gender"
+                                    value={formData.gender}
+                                    onChange={handleChange}
                                     className="h-10 px-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-600 text-sm bg-white dark:bg-gray-950 dark:border-gray-800 dark:text-gray-100 dark:focus:ring-blue-500 transition-colors"
                                 >
                                     <option value="Male">Male</option>
@@ -278,21 +284,21 @@ export default function AddEmployeeModal({ isOpen, onClose, onSubmit, isSubmitti
                     {step === 2 && (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-5 animate-in fade-in slide-in-from-right-4 duration-300">
                             {/* Note: The Input component should ideally handle its own disabled/readOnly dark mode styling, but we pass custom classes here just in case */}
-                            <Input 
-                                label="Employee ID" 
-                                name="employeeId" 
-                                value={formData.employeeId} 
-                                readOnly 
-                                className="bg-gray-50 text-gray-500 dark:bg-gray-800/50 dark:text-gray-400 border-gray-200 dark:border-gray-800" 
-                            />    
-                            
+                            <Input
+                                label="Employee ID"
+                                name="employeeId"
+                                value={formData.employeeId}
+                                readOnly
+                                className="bg-gray-50 text-gray-500 dark:bg-gray-800/50 dark:text-gray-400 border-gray-200 dark:border-gray-800"
+                            />
+
                             <div className="flex flex-col gap-1.5">
                                 <label className="text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors">Department</label>
-                                <select 
-                                    disabled={isSubmitting} 
-                                    name="department" 
-                                    value={formData.department} 
-                                    onChange={handleChange} 
+                                <select
+                                    disabled={isSubmitting}
+                                    name="department"
+                                    value={formData.department}
+                                    onChange={handleChange}
                                     className="h-10 px-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-600 text-sm bg-white dark:bg-gray-950 dark:border-gray-800 dark:text-gray-100 dark:focus:ring-blue-500 transition-colors"
                                 >
                                     {dynamicDepartments.map((dept: string) => (
@@ -305,11 +311,11 @@ export default function AddEmployeeModal({ isOpen, onClose, onSubmit, isSubmitti
 
                             <div className="flex flex-col gap-1.5">
                                 <label className="text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors">System Role</label>
-                                <select 
-                                    disabled={isSubmitting} 
-                                    name="role" 
-                                    value={formData.role} 
-                                    onChange={handleChange} 
+                                <select
+                                    disabled={isSubmitting}
+                                    name="role"
+                                    value={formData.role}
+                                    onChange={handleChange}
                                     className="h-10 px-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-600 text-sm bg-white dark:bg-gray-950 dark:border-gray-800 dark:text-gray-100 dark:focus:ring-blue-500 transition-colors"
                                 >
                                     {dynamicRoles.map((r: string) => {
@@ -333,11 +339,11 @@ export default function AddEmployeeModal({ isOpen, onClose, onSubmit, isSubmitti
 
                             <div className="flex flex-col gap-1.5">
                                 <label className="text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors">Employment Type</label>
-                                <select 
-                                    disabled={isSubmitting} 
-                                    name="employmentType" 
-                                    value={formData.employmentType} 
-                                    onChange={handleChange} 
+                                <select
+                                    disabled={isSubmitting}
+                                    name="employmentType"
+                                    value={formData.employmentType}
+                                    onChange={handleChange}
                                     className="h-10 px-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-600 text-sm bg-white dark:bg-gray-950 dark:border-gray-800 dark:text-gray-100 dark:focus:ring-blue-500 transition-colors"
                                 >
                                     <option value="Full-Time">Full-Time</option>
@@ -351,14 +357,14 @@ export default function AddEmployeeModal({ isOpen, onClose, onSubmit, isSubmitti
                                 <label className="text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors">Salary</label>
                                 <div className="relative">
                                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 text-sm">$</span>
-                                    <input 
-                                        disabled={isSubmitting} 
-                                        type="number" 
-                                        name="salary" 
-                                        value={formData.salary} 
-                                        onChange={handleChange} 
-                                        placeholder="50000" 
-                                        className="w-full h-10 pl-7 pr-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-600 text-sm bg-white dark:bg-gray-950 dark:border-gray-800 dark:text-gray-100 dark:focus:ring-blue-500 transition-colors" 
+                                    <input
+                                        disabled={isSubmitting}
+                                        type="number"
+                                        name="salary"
+                                        value={formData.salary}
+                                        onChange={handleChange}
+                                        placeholder="50000"
+                                        className="w-full h-10 pl-7 pr-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-600 text-sm bg-white dark:bg-gray-950 dark:border-gray-800 dark:text-gray-100 dark:focus:ring-blue-500 transition-colors"
                                     />
                                 </div>
                             </div>
@@ -369,11 +375,11 @@ export default function AddEmployeeModal({ isOpen, onClose, onSubmit, isSubmitti
 
                             <div className="flex flex-col gap-1.5">
                                 <label className="text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors">Reporting Manager</label>
-                                <select 
-                                    disabled={isSubmitting} 
-                                    name="reportingManager" 
-                                    value={formData.reportingManager} 
-                                    onChange={handleChange} 
+                                <select
+                                    disabled={isSubmitting}
+                                    name="reportingManager"
+                                    value={formData.reportingManager}
+                                    onChange={handleChange}
                                     className="h-10 px-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-600 text-sm bg-white dark:bg-gray-950 dark:border-gray-800 dark:text-gray-100 dark:focus:ring-blue-500 transition-colors"
                                 >
                                     <option value="">No Manager Assigned</option>
@@ -385,13 +391,13 @@ export default function AddEmployeeModal({ isOpen, onClose, onSubmit, isSubmitti
                                 </select>
                             </div>
 
-                            <Input 
-                                disabled={isSubmitting} 
-                                label="Work Location" 
-                                name="workLocation" 
-                                value={formData.workLocation} 
-                                onChange={handleChange} 
-                                placeholder="e.g. Head Office, Remote" 
+                            <Input
+                                disabled={isSubmitting}
+                                label="Work Location"
+                                name="workLocation"
+                                value={formData.workLocation}
+                                onChange={handleChange}
+                                placeholder="e.g. Head Office, Remote"
                             />
                         </div>
                     )}
@@ -421,7 +427,7 @@ export default function AddEmployeeModal({ isOpen, onClose, onSubmit, isSubmitti
                             Previous
                         </Button>
                     )}
-                    
+
                     <Button type="submit" variant="primary" disabled={isSubmitting}>
                         {isSubmitting ? (
                             <>
