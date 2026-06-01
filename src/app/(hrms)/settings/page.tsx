@@ -2,17 +2,21 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Building, Lock, Bell, ChevronRight, Loader2, Calculator } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { Building, Lock, Bell, ChevronRight, Loader2, Calculator, FileText } from 'lucide-react';
+import { toast } from 'sonner';
 import { cn } from '@/utils/cn';
 import { useAppSelector, useAppDispatch } from '@/store/hooks';
 import { Card } from '@/components/ui/Card'; 
 import { setCompanySettings } from '@/store/settingsSlice';
+import { logOut } from '@/store/authSlice';
+import { logoutUser } from '@/services/authService';
+import Cookies from 'js-cookie';
 
 import GeneralSettings from '@/components/settings/GeneralSettings';
 import SecuritySettings from '@/components/settings/SecuritySettings';
 import NotificationSettings from '@/components/settings/NotificationSettings';
 import PayrollSettings from '@/components/settings/PayrollSettings';
+import PoliciesSettings from '@/components/settings/PoliciesSettings';
 
 import { 
     useCompanySettings, 
@@ -27,6 +31,7 @@ const settingsTabs = [
     { id: 'security', label: 'Security & Access', icon: Lock, description: 'Passwords and active sessions' },
     { id: 'notifications', label: 'Notifications', icon: Bell, description: 'Email and system webhook alerts' },
     { id: 'payroll', label: 'Payroll Engine', icon: Calculator, description: 'Manage dynamic allowances and deductions' },
+    { id: 'policies', label: 'Policies', icon: FileText, description: 'View and manage organizational policies' },
 ] as const;
 
 type SettingsTabId = typeof settingsTabs[number]['id'];
@@ -45,7 +50,7 @@ export default function SettingsPage() {
     // Route Protection
     useEffect(() => {
         if (!isAuthenticated && typeof window !== 'undefined') {
-            router.replace('/login');
+            router.replace('/hrms-login');
         }
     }, [isAuthenticated, router]);
 
@@ -85,7 +90,27 @@ export default function SettingsPage() {
     const handleUpdatePassword = async (currentPass: string, newPass: string): Promise<boolean> => {
         try {
             await updatePasswordMutation.mutateAsync({ currentPassword: currentPass, newPassword: newPass });
-            toast.success('Password updated successfully');
+            toast.success('Password Updated Successfully. Logging out...');
+            
+            setTimeout(async () => {
+                try {
+                    await logoutUser();
+                } catch (e) {
+                    console.error("Backend logout failed:", e);
+                } finally {
+                    dispatch(logOut());
+                    
+                    // Clear local storage and cookies to prevent ghost sessions
+                    localStorage.removeItem('hrms_user');
+                    localStorage.removeItem('hrms_token');
+                    localStorage.removeItem('hrms_refreshToken');
+                    Cookies.remove('hrms_token');
+                    Cookies.remove('role');
+                    
+                    router.push('/hrms-login');
+                }
+            }, 1500);
+
             return true; 
         } catch (error: any) {
             toast.error(error.response?.data?.message || 'Failed to update password');
@@ -153,15 +178,7 @@ export default function SettingsPage() {
                             })}
                         </nav>
 
-                        {/* Admin Notice */}
-                        {isAdmin && (
-                            <div className="mt-6 p-4 bg-primary/5 rounded-2xl border border-primary/10 hidden lg:block transition-colors">
-                                <p className="text-xs font-bold text-primary uppercase tracking-widest mb-2 transition-colors">Workspace Admin</p>
-                                <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed transition-colors">
-                                    Changes made in the General tab affect the entire workspace for all employees.
-                                </p>
-                            </div>
-                        )}
+
                     </aside>
 
                     {/* Main Content Area */}
@@ -198,6 +215,9 @@ export default function SettingsPage() {
                                         initialData={companyData} 
                                         onSave={handleSaveCompanySettings}
                                     />
+                                )}
+                                {activeTab === 'policies' && (
+                                    <PoliciesSettings />
                                 )}
                             </div>
                         </Card>

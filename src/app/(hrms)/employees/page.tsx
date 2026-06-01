@@ -141,6 +141,7 @@ export default function EmployeesPage() {
         } catch (error: any) {
             console.error('Failed to add employee:', error);
             const serverMsg = error.response?.data?.message || 'An error occurred while creating the employee.';
+            console.error('❌ Server error details:', error.response?.data);
             toast.error(serverMsg);
         }
     };
@@ -160,8 +161,6 @@ export default function EmployeesPage() {
         toast.success('Employee list exported successfully!');
     };
 
-
-
     return (
         /* Premium Layout Wrapper: Handles deep dark mode backgrounds and smooth transitions */
         <div className="min-h-[calc(100vh-4rem)] bg-gray-50/50 dark:bg-[#0a0a0a] text-gray-900 dark:text-gray-100 p-6 lg:p-8 transition-colors duration-300">
@@ -172,7 +171,10 @@ export default function EmployeesPage() {
                         setSearchTerm(value);
                         setPage(1);
                     }}
-                    onAddClick={() => setIsModalOpen(true)} 
+                    onAddClick={() => {
+                        console.log("🟢 Add Employee Button Clicked!");
+                        setIsModalOpen(true);
+                    }} 
                     onExportClick={handleExport} 
                 />
 

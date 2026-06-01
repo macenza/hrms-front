@@ -18,7 +18,7 @@ export default function LeavePage() {
 
     useEffect(() => {
         if (!isAuthenticated && typeof window !== 'undefined') {
-            router.replace('/login');
+            router.replace('/hrms-login');
         }
     }, [isAuthenticated, router]);
 

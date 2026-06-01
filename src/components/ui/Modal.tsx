@@ -10,6 +10,7 @@ interface ModalProps {
 }
 
 export function Modal({ isOpen, onClose, title, children, className }: ModalProps) {
+    console.log("🟠 Modal component render, isOpen =", isOpen);
     useEffect(() => {
         if (isOpen) {
             document.body.style.overflow = "hidden";

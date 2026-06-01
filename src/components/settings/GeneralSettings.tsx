@@ -22,7 +22,7 @@ export interface CompanySettings {
 }
 
 interface GeneralSettingsProps {
-    initialData?: CompanySettings | null; 
+    initialData?: CompanySettings | null;
     onSave?: (data: FormData) => void;
 }
 
@@ -68,7 +68,7 @@ export default function GeneralSettings({
     const [logoFile, setLogoFile] = useState<File | null>(null);
     const [logoPreview, setLogoPreview] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
-    
+
     const { user } = useAppSelector((state) => state.auth);
     const userRole = user?.role?.toLowerCase() || '';
     const isUserAdmin = userRole === 'admin';
@@ -98,6 +98,7 @@ export default function GeneralSettings({
             }
 
             // Check if updates are locked (30 days lock)
+
             if (initialData.lastCompanyUpdate) {
                 const cooldownPeriod = 30 * 24 * 60 * 60 * 1000;
                 const cooldownEnd = new Date(new Date(initialData.lastCompanyUpdate).getTime() + cooldownPeriod);
@@ -113,6 +114,7 @@ export default function GeneralSettings({
             } else {
                 setIsBrandingLocked(false);
             }
+
         }
     }, [initialData]);
 
@@ -240,7 +242,7 @@ export default function GeneralSettings({
 
     return (
         <div className="animate-in fade-in duration-300 max-w-4xl">
-            
+
             <div className="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
                     <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 tracking-tight transition-colors">Company Workspace Settings</h2>
@@ -266,7 +268,7 @@ export default function GeneralSettings({
                     <div>
                         <h4 className="text-sm font-bold text-amber-800 dark:text-amber-300">Branding Cooldown Active</h4>
                         <p className="text-xs text-amber-700 dark:text-amber-400/90 mt-1 leading-relaxed">
-                            To ensure interface consistency across all user dashboards, company profile details (Company Name, Logo, and Brand Color) can only be updated once every 30 days. 
+                            To ensure interface consistency across all user dashboards, company profile details (Company Name, Logo, and Brand Color) can only be updated once every 30 days.
                             <strong> Updates unlocked in {cooldownDaysLeft} days.</strong>
                         </p>
                     </div>
@@ -274,7 +276,7 @@ export default function GeneralSettings({
             )}
 
             <form onSubmit={handleSubmit} className="space-y-8">
-                
+
                 {/* Logo & Brand Color Section */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     {/* Logo Segment */}
@@ -303,7 +305,7 @@ export default function GeneralSettings({
                                 disabled={!canEditBranding}
                             />
                         </div>
-                        
+
                         <div className="space-y-2 text-center sm:text-left">
                             <h3 className="font-bold text-gray-900 dark:text-gray-100">Company Logo</h3>
                             {canEditBranding ? (
@@ -354,7 +356,7 @@ export default function GeneralSettings({
                                 Set the base theme color used across sidebar highlights, action buttons, and loading bars.
                             </p>
                         </div>
-                        
+
                         <div className="mt-4 flex flex-col gap-3">
                             <div className="flex flex-wrap gap-2">
                                 {popularColors.map((color) => (
@@ -379,7 +381,7 @@ export default function GeneralSettings({
                                     </button>
                                 ))}
                             </div>
-                            
+
                             <div className="flex items-center gap-3">
                                 <input
                                     type="color"
@@ -407,7 +409,7 @@ export default function GeneralSettings({
                 <Card className="border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm dark:shadow-none transition-colors duration-300">
                     <CardContent className="p-6">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-                            
+
                             {/* Company Name */}
                             <div className="space-y-1.5">
                                 <label className="text-sm font-bold text-gray-700 dark:text-gray-300 transition-colors">Company Name</label>
@@ -420,7 +422,7 @@ export default function GeneralSettings({
                                     className="text-gray-900 dark:text-gray-100 disabled:bg-gray-50 dark:disabled:bg-gray-900/50 disabled:text-gray-500 dark:disabled:text-gray-400 transition-colors font-medium"
                                 />
                             </div>
-                            
+
                             {/* Regional Localization (Timezone) */}
                             <div className="space-y-1.5">
                                 <label className="text-sm font-bold text-gray-700 dark:text-gray-300 transition-colors">Default Timezone</label>

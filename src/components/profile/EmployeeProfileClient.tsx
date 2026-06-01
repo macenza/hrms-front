@@ -99,7 +99,7 @@ export default function EmployeeProfileClient({ id }: EmployeeProfileClientProps
                 profile: employee.profile
             };
             if (JSON.stringify(user?.profile) !== JSON.stringify(employee.profile) || user?.name !== employee.name) {
-                localStorage.setItem('user', JSON.stringify(updatedUser));
+                localStorage.setItem('hrms_user', JSON.stringify(updatedUser));
                 dispatch(setCredentials({ user: updatedUser as any }));
             }
         }
