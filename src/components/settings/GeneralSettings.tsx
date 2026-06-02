@@ -355,6 +355,10 @@ export default function GeneralSettings({
                             <p className="text-xs text-gray-500 dark:text-gray-400">
                                 Set the base theme color used across sidebar highlights, action buttons, and loading bars.
                             </p>
+                            <p className="text-[11px] text-amber-600 dark:text-amber-400 font-semibold flex items-center gap-1.5 mt-1 transition-colors">
+                                <ShieldAlert size={13} className="shrink-0" />
+                                Branding details (color, name, logo) can only be updated once every 30 days.
+                            </p>
                         </div>
 
                         <div className="mt-4 flex flex-col gap-3">
