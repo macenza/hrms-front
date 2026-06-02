@@ -43,7 +43,7 @@ export default function ShiftSettings() {
     const convert12To24 = (time12: string): string => {
         if (!time12) return '';
         const [time, modifier] = time12.split(' ');
-        let [hoursStr, minutes] = time.split(':');
+        const [hoursStr, minutes] = time.split(':');
         let hours = parseInt(hoursStr, 10);
         if (hours === 12) {
             hours = 0;
