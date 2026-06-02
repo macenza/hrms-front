@@ -199,4 +199,24 @@ export const employeeService = {
             throw error;
         }
     },
+
+    deleteDocument: async (id: string, documentId: string) => {
+        try {
+            const response = await apiClient.delete(`/employees/${id}/documents/${documentId}`);
+            return response.data;
+        } catch (error) {
+            console.error(`Error deleting document ${documentId} for employee ${id}:`, error);
+            throw error;
+        }
+    },
+
+    deleteCertificate: async (id: string, certificateId: string) => {
+        try {
+            const response = await apiClient.delete(`/employees/${id}/certificates/${certificateId}`);
+            return response.data;
+        } catch (error) {
+            console.error(`Error deleting certificate ${certificateId} for employee ${id}:`, error);
+            throw error;
+        }
+    },
 };

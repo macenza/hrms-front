@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { attendanceService } from '@/services/attendanceService';
 import { AttendanceRecord } from '@/components/attendance/AttendanceTable';
 
@@ -25,6 +25,7 @@ export function useDailyAttendance(date: string, enabled: boolean) {
 
                 return {
                     dbId: log._id,
+                    employeeUserId: log.user?._id || log.user?.id,
                     id: log.user?.employeeId || 'N/A',
                     name: log.user?.name || 'Unknown',
                     dept: log.user?.profile?.employment?.department || 'Unassigned',
@@ -39,5 +40,16 @@ export function useDailyAttendance(date: string, enabled: boolean) {
         },
         enabled, // RBAC Gate: Only runs if the user is HR/Admin
         staleTime: 5 * 60 * 1000, // 5 minutes cache
+    });
+}
+
+export function useMarkAttendance() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (payload: any) => attendanceService.markAttendance(payload),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['attendance', 'daily'] });
+            queryClient.invalidateQueries({ queryKey: ['attendance', 'dashboard'] });
+        }
     });
 }

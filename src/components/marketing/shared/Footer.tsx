@@ -204,18 +204,19 @@ export default function Footer() {
 
                         <div className="flex items-start gap-3">
                             <Mail size={16} className="mt-1 shrink-0" />
-                            <span>info@hrms.com</span>
+                            <span>info@macenza.com</span>
                         </div>
 
                         <div className="flex items-start gap-3">
                             <Phone size={16} className="mt-1 shrink-0" />
-                            <span>+91 98765 43210</span>
+                            <span>+91 9414660123</span>
                         </div>
 
                         <div className="flex items-start gap-3">
                             <MapPin size={16} className="mt-1 shrink-0" />
                             <span>
-                                123 Business Park, Ahmedabad, India
+                                Siddhart Nagar, Mayo Link Road, Ajmer, 
+                                Rajasthan, India, 305001
                             </span>
                         </div>
 

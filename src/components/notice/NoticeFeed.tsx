@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Pin, Calendar, User, MoreHorizontal, FileText } from 'lucide-react';
+import { Pin, Calendar, User, MoreHorizontal, FileText, Eye, Download } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import { Button } from '@/components/ui/Button'; 
 import { useAppSelector } from '@/store/hooks';
@@ -44,6 +44,31 @@ const FeedSkeleton = () => (
         ))}
     </div>
 );
+
+const getFullFileUrl = (url?: string | null) => {
+    if (!url) return '';
+    if (url.startsWith('http')) return url;
+    const backendBaseUrl = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api').replace(/\/api$/, '');
+    return `${backendBaseUrl}${url}`;
+};
+
+const handleDownload = async (url: string, filename: string) => {
+    try {
+        const response = await fetch(url);
+        const blob = await response.blob();
+        const blobUrl = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = blobUrl;
+        link.setAttribute('download', filename);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+        console.error('Download failed:', error);
+        window.open(url, '_blank');
+    }
+};
 
 export default function NoticeFeed({
     notices,
@@ -191,23 +216,47 @@ export default function NoticeFeed({
                             {notice.content}
                         </p>
                         
-                        {notice.attachmentUrl && (
-                            <a
-                                href={notice.attachmentUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center gap-3 mb-4 p-3 bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-lg w-fit hover:border-blue-600 dark:hover:border-blue-500 hover:shadow-sm dark:hover:shadow-none transition-all text-left outline-none focus-visible:ring-2 focus-visible:ring-blue-600 group"
-                            >
-                                <div className="p-2 bg-red-50 dark:bg-red-500/10 text-red-500 dark:text-red-400 rounded-md group-hover:scale-105 transition-all">
-                                    <FileText size={18} />
+                        {notice.attachmentUrl && (() => {
+                            const absoluteUrl = getFullFileUrl(notice.attachmentUrl);
+                            const filename = notice.attachmentUrl.split('/').pop() || 'attachment';
+                            const displayName = filename.replace(/^\d+-/, '');
+
+                            return (
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 mb-4 bg-gray-50 dark:bg-gray-950 border border-gray-200/80 dark:border-gray-800 rounded-xl transition-all">
+                                    <div className="flex items-center gap-3 truncate">
+                                        <div className="p-2.5 bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-lg shrink-0 border border-blue-100 dark:border-blue-900/30">
+                                            <FileText size={20} />
+                                        </div>
+                                        <div className="truncate">
+                                            <p className="text-sm font-semibold text-gray-800 dark:text-gray-200 truncate transition-colors" title={displayName}>
+                                                {displayName}
+                                            </p>
+                                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                                                Notice Attachment
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-2 shrink-0">
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => window.open(absoluteUrl, '_blank', 'noopener,noreferrer')}
+                                            className="gap-1.5 h-9 bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 text-xs font-bold px-3 transition-colors shadow-sm"
+                                        >
+                                            <Eye size={14} /> View
+                                        </Button>
+                                        <Button
+                                            variant="primary"
+                                            size="sm"
+                                            onClick={() => handleDownload(absoluteUrl, displayName)}
+                                            className="gap-1.5 h-9 text-xs font-bold px-3 transition-colors shadow-sm"
+                                        >
+                                            <Download size={14} /> Download
+                                        </Button>
+                                    </div>
                                 </div>
-                                <div className="flex flex-col">
-                                    <span className="text-sm font-semibold text-gray-700 dark:text-gray-300 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                                        View Attachment
-                                    </span>
-                                </div>
-                            </a>
-                        )}
+                            );
+                        })()}
                         
                         <div className="flex flex-wrap items-center gap-4 text-xs font-medium text-gray-500 dark:text-gray-400 pt-4 border-t border-gray-200/60 dark:border-gray-800 mt-auto transition-colors">
                             <div className="flex items-center gap-1.5">

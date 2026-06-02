@@ -76,7 +76,6 @@ const TableRowSkeleton = () => (
         <td className="px-6 py-4"><div className="h-4 w-20 bg-gray-200 dark:bg-gray-800 rounded animate-pulse"></div></td>
         <td className="px-6 py-4"><div className="h-4 w-16 bg-gray-200 dark:bg-gray-800 rounded animate-pulse"></div></td>
         <td className="px-6 py-4"><div className="h-4 w-16 bg-gray-200 dark:bg-gray-800 rounded animate-pulse"></div></td>
-        <td className="px-6 py-4"><div className="h-4 w-16 bg-gray-200 dark:bg-gray-800 rounded animate-pulse"></div></td>
         <td className="px-6 py-4"><div className="h-5 w-24 bg-gray-200 dark:bg-gray-800 rounded animate-pulse font-bold"></div></td>
         <td className="px-6 py-4"><div className="h-6 w-20 bg-gray-200 dark:bg-gray-800 rounded-full animate-pulse"></div></td>
         <td className="px-6 py-4 text-center"><div className="h-9 w-24 bg-gray-200 dark:bg-gray-800 rounded mx-auto animate-pulse"></div></td>
@@ -120,7 +119,7 @@ export default function PayrollTable({
                         placeholder="Search employee by name or ID"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full h-10 pl-10 pr-4 rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 text-sm placeholder:text-gray-400 dark:placeholder:text-gray-650 focus:outline-none focus:ring-2 focus:ring-blue-600/20 dark:focus:ring-blue-500/40 focus:border-blue-600 dark:focus:border-blue-500 transition-all shadow-sm dark:shadow-none"
+                        className="w-full h-10 pl-10 pr-4 rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 text-sm placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-600/20 dark:focus:ring-blue-500/40 focus:border-blue-600 dark:focus:border-blue-500 transition-all shadow-sm dark:shadow-none"
                     />
                 </div>  
                 
@@ -147,7 +146,6 @@ export default function PayrollTable({
                             <th className="px-6 py-4">Employee</th>
                             <th className="px-6 py-4">Gross Pay</th>
                             <th className="px-6 py-4">LWP Deduct</th>
-                            <th className="px-6 py-4">Loan EMI</th>
                             <th className="px-6 py-4">Taxes</th>
                             <th className="px-6 py-4">Net Pay</th>
                             <th className="px-6 py-4">Status</th>
@@ -159,7 +157,7 @@ export default function PayrollTable({
                             Array.from({ length: 5 }).map((_, idx) => <TableRowSkeleton key={idx} />)
                         ) : filteredData.length === 0 ? (
                             <tr>
-                                <td colSpan={8} className="px-6 py-16 text-center text-gray-500 dark:text-gray-400">
+                                <td colSpan={7} className="px-6 py-16 text-center text-gray-500 dark:text-gray-400">
                                     <div className="flex flex-col items-center justify-center">
                                         <div className="w-12 h-12 bg-gray-50 dark:bg-gray-800 rounded-full flex items-center justify-center mb-3 transition-colors">
                                             <IndianRupee size={24} className="text-gray-400 dark:text-gray-500" />
@@ -195,9 +193,6 @@ export default function PayrollTable({
                                         </td>
                                         <td className="px-6 py-4 text-red-500 dark:text-red-400/90 font-medium transition-colors">
                                             {record.unpaidLeaveDeduction > 0 ? `-${formatINR(record.unpaidLeaveDeduction)}` : '—'}
-                                        </td>
-                                        <td className="px-6 py-4 text-orange-500 dark:text-orange-400/90 font-medium transition-colors">
-                                            {record.loanDeduction > 0 ? `-${formatINR(record.loanDeduction)}` : '—'}
                                         </td>
                                         <td className="px-6 py-4 text-gray-500 dark:text-gray-400 font-medium transition-colors">
                                             {formatINR(record.taxDeduction)}

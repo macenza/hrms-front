@@ -10,21 +10,16 @@ const apiClient = axios.create({
     },
 });
 
-// Request Interceptor: Automatically attach Bearer accessToken from localStorage for cookieless clients (cross-domain)
+// Request Interceptor: Automatically attach Bearer token from localStorage for cookieless clients (cross-domain)
 apiClient.interceptors.request.use(
     (config) => {
         if (typeof window !== 'undefined') {
             const hrmsToken = localStorage.getItem('hrms_token');
             const customerToken = localStorage.getItem('customer_token');
             
-            // Prioritize customerToken if on a customer/marketing route, otherwise hrmsToken
-            const isCustomerRoute = window.location.pathname.startsWith('/customer-dashboard') || 
-                                    window.location.pathname.startsWith('/billing') || 
-                                    window.location.pathname.startsWith('/subscriptions') ||
-                                    window.location.pathname.startsWith('/login') ||
-                                    window.location.pathname.startsWith('/signup');
-            
-            const token = isCustomerRoute ? (customerToken || hrmsToken) : (hrmsToken || customerToken);
+            // Inspect Request URL directly to determine portal context strictly
+            const isCustomerApi = config.url?.includes('/api/customers') || config.url?.includes('/customers');
+            const token = isCustomerApi ? customerToken : hrmsToken;
             if (token) {
                 config.headers.Authorization = `Bearer ${token}`;
             }
@@ -74,6 +69,7 @@ apiClient.interceptors.response.use(
                     localStorage.removeItem('hrms_token');
                     localStorage.removeItem('hrms_refreshToken');
                     Cookies.remove('hrms_token');
+                    Cookies.remove('hrms_role');
                     Cookies.remove('role');
 
                     const isPublicRoute = PUBLIC_ROUTES.includes(window.location.pathname);
@@ -105,7 +101,7 @@ apiClient.interceptors.response.use(
                     const newAccessToken = refreshResponse.data?.accessToken;
                     if (newAccessToken && typeof window !== 'undefined') {
                         localStorage.setItem('hrms_token', newAccessToken);
-                        Cookies.set('hrms_token', newAccessToken, { expires: 7, secure: true, sameSite: 'lax' });
+                        Cookies.set('hrms_token', newAccessToken, { expires: 7, secure: process.env.NODE_ENV === 'production', sameSite: 'lax' });
                     }
                     
                     processQueue(null);
@@ -118,6 +114,7 @@ apiClient.interceptors.response.use(
                         localStorage.removeItem('hrms_token');
                         localStorage.removeItem('hrms_refreshToken');
                         Cookies.remove('hrms_token');
+                        Cookies.remove('hrms_role');
                         Cookies.remove('role');
 
                         const isPublicRoute = PUBLIC_ROUTES.includes(window.location.pathname);

@@ -136,6 +136,7 @@ export default function EmployeeProfileClient({ id }: EmployeeProfileClientProps
             formData.append('document', file);
             await uploadDocumentMutation.mutateAsync(formData);
             toast.success("Document uploaded successfully!");
+            refreshProfile();
         } catch (error) {
             toast.error("Failed to upload document. Please try again.");
         }
@@ -150,6 +151,7 @@ export default function EmployeeProfileClient({ id }: EmployeeProfileClientProps
             formData.append('description', 'Uploaded certificate');
             await uploadCertificateMutation.mutateAsync(formData);
             toast.success("Certificate uploaded successfully!");
+            refreshProfile();
         } catch (error: any) {
             if (error.response?.status === 404) {
                 toast.error("The certificate upload service is currently unavailable (404). Please contact your administrator.");
@@ -159,10 +161,33 @@ export default function EmployeeProfileClient({ id }: EmployeeProfileClientProps
         }
     };
 
+    const handleDeleteDocument = async (documentId: string) => {
+        if (!confirm("Are you sure you want to delete this document?")) return;
+        try {
+            await employeeService.deleteDocument(resolvedEmployeeId, documentId);
+            toast.success("Document deleted successfully!");
+            refreshProfile();
+        } catch (error) {
+            toast.error("Failed to delete document. Please try again.");
+        }
+    };
+
+    const handleDeleteCertificate = async (certificateId: string) => {
+        if (!confirm("Are you sure you want to delete this certificate?")) return;
+        try {
+            await employeeService.deleteCertificate(resolvedEmployeeId, certificateId);
+            toast.success("Certificate deleted successfully!");
+            refreshProfile();
+        } catch (error) {
+            toast.error("Failed to delete certificate. Please try again.");
+        }
+    };
+
     const handleAddNote = async (text: string) => {
         try {
             await addNoteMutation.mutateAsync(text);
             toast.success("Note added successfully!");
+            refreshProfile();
         } catch (error) {
             toast.error("Failed to add note. Please try again.");
         }
@@ -403,7 +428,7 @@ export default function EmployeeProfileClient({ id }: EmployeeProfileClientProps
                             isUploading={uploadDocumentMutation.isPending}
                             canUploadDocuments={isAdminOrHR}
                             onUpload={isAdminOrHR ? handleUploadDocument : undefined}
-                            onActionClick={(id) => console.log(`Open menu for document ${id}`)}
+                            onDelete={isAdminOrHR ? handleDeleteDocument : undefined}
                         />
                     )}
 
@@ -422,6 +447,7 @@ export default function EmployeeProfileClient({ id }: EmployeeProfileClientProps
                             canUpload={isAdminOrHR}
                             isUploading={uploadCertificateMutation.isPending}
                             onUpload={isAdminOrHR ? handleUploadCertificate : undefined}
+                            onDelete={isAdminOrHR ? handleDeleteCertificate : undefined}
                         />
                     )}
 

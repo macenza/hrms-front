@@ -137,3 +137,37 @@ export function useMyPayslips(enabled: boolean = true) {
         staleTime: 5 * 60 * 1000,
     });
 }
+
+export function useRealTimeAccrual(page: number, limit: number) {
+    return useQuery({
+        queryKey: ['payroll', 'real-time', page, limit],
+        queryFn: async () => {
+            const res = await payrollService.getRealTimeAccrual(page, limit);
+            return res || { data: [], totalCount: 0 };
+        },
+        staleTime: 30 * 1000,
+    });
+}
+
+export function usePayrollHistory(page: number, limit: number) {
+    return useQuery({
+        queryKey: ['payroll', 'history', page, limit],
+        queryFn: async () => {
+            const res = await payrollService.getPayrollHistory(page, limit);
+            return res || { data: [], totalCount: 0 };
+        },
+        staleTime: 2 * 60 * 1000,
+    });
+}
+
+export function useFinalizeMonth() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ month, year }: { month: number; year: number }) => 
+            payrollService.finalizeMonth(month, year),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['payroll', 'real-time'] });
+            queryClient.invalidateQueries({ queryKey: ['payroll', 'history'] });
+        }
+    });
+}

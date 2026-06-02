@@ -62,14 +62,14 @@ export default function AuthInitializer({ children }: { children: React.ReactNod
                     // Keep cookies in sync for edge middleware
                     const currentToken = localStorage.getItem('hrms_token');
                     if (currentToken) {
-                        Cookies.set('hrms_token', currentToken, { expires: 7, secure: true, sameSite: 'lax' });
+                        Cookies.set('hrms_token', currentToken, { expires: 7, secure: process.env.NODE_ENV === 'production', sameSite: 'lax' });
                     }
                     if (verifiedUser?.role) {
-                        Cookies.set('role', verifiedUser.role.toLowerCase(), { expires: 7, secure: true, sameSite: 'lax' });
+                        Cookies.set('hrms_role', verifiedUser.role.toLowerCase(), { expires: 7, secure: process.env.NODE_ENV === 'production', sameSite: 'lax' });
                     }
 
-                    // Client-side automatic redirect if user is on /login, /signup or /hrms-login with valid session
-                    const isAuthRoute = window.location.pathname.startsWith('/login') || window.location.pathname.startsWith('/signup') || window.location.pathname.startsWith('/hrms-login');
+                    // Client-side automatic redirect if user is on /hrms-login with valid session
+                    const isAuthRoute = window.location.pathname.startsWith('/hrms-login');
                     if (isAuthRoute) {
                         const searchParams = new URLSearchParams(window.location.search);
                         const redirectTo = searchParams.get('redirect_to') || '/dashboard';
@@ -83,7 +83,7 @@ export default function AuthInitializer({ children }: { children: React.ReactNod
                     localStorage.removeItem('hrms_token');
                     localStorage.removeItem('hrms_refreshToken');
                     Cookies.remove('hrms_token');
-                    Cookies.remove('role');
+                    Cookies.remove('hrms_role');
                     
                     const PUBLIC_ROUTES = ['/', '/login', '/signup', '/hrms-login', '/kiosk'];
                     // CRITICAL: Prevent zombie state if we are on a protected route
@@ -100,7 +100,7 @@ export default function AuthInitializer({ children }: { children: React.ReactNod
                 localStorage.removeItem('hrms_token');
                 localStorage.removeItem('hrms_refreshToken');
                 Cookies.remove('hrms_token');
-                Cookies.remove('role');
+                Cookies.remove('hrms_role');
 
                 const PUBLIC_ROUTES = ['/', '/login', '/signup', '/hrms-login', '/kiosk'];
                 if (typeof window !== 'undefined' && !PUBLIC_ROUTES.includes(window.location.pathname)) {

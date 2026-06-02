@@ -50,13 +50,16 @@ export default function DashboardPage() {
         : null;
 
     const roleDistribution = useMemo(() => {
+        if (stats?.roleDistribution && stats.roleDistribution.length > 0) {
+            return stats.roleDistribution;
+        }
         const source =
             attendanceData?.workingFormat &&
             Object.keys(attendanceData.workingFormat).length > 0
                 ? attendanceData.workingFormat
                 : stats?.usersByRole;
         return normalizeRoleDistribution(source);
-    }, [attendanceData?.workingFormat, stats?.usersByRole]);
+    }, [stats?.roleDistribution, attendanceData?.workingFormat, stats?.usersByRole]);
 
     const csvContent = useMemo(() => {
         if (!stats) return null;

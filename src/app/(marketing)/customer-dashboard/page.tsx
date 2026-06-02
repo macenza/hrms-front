@@ -14,8 +14,8 @@ import { Button } from '@/components/ui/Button';
 export default function CustomerDashboardPage() {
     const dispatch = useAppDispatch();
     const router = useRouter();
-    const customer = useAppSelector((state) => state.auth.customerUser);
-    const isCustomerAuthenticated = useAppSelector((state) => state.auth.isCustomerAuthenticated);
+    const customer = useAppSelector((state) => state.customerAuth.customer);
+    const isCustomerAuthenticated = useAppSelector((state) => state.customerAuth.isAuthenticated);
     const [mounted, setMounted] = useState(false);
 
     useEffect(() => {

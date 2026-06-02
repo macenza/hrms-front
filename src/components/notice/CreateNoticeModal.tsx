@@ -74,8 +74,8 @@ export default function CreateNoticeModal({ isOpen, onClose, onSuccess, editNoti
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files.length > 0) {
             const file = e.target.files[0];
-            if (file.size > 5 * 1024 * 1024) {
-                toast.error("File size must be less than 5MB");
+            if (file.size > 50 * 1024 * 1024) {
+                toast.error("File size must be less than 50MB");
                 return;
             }
             setFormData(prev => ({ ...prev, attachment: file }));
@@ -231,7 +231,7 @@ export default function CreateNoticeModal({ isOpen, onClose, onSuccess, editNoti
                                 {formData.attachment ? formData.attachment.name : "Click to upload document"}
                             </p>
                             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 transition-colors">
-                                {formData.attachment ? `${(formData.attachment.size / 1024 / 1024).toFixed(2)} MB` : "PDF, DOCX, or Images (Max 5MB)"}
+                                {formData.attachment ? `${(formData.attachment.size / 1024 / 1024).toFixed(2)} MB` : "PDF, DOCX, or Images (Max 50MB)"}
                             </p>
                         </div>
                     </div>
