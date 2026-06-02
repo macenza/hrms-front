@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { ArrowRight, Lock } from "lucide-react";
 import { useAppSelector } from "@/store/hooks";
 import { cn } from "@/utils/cn";
+import { useCompanySettings } from "@/hooks/api/useSettings";
 
 // Upgraded to handle deep dark mode contrasts
 const STATUS_STYLES: Record<string, string> = {
@@ -21,6 +22,7 @@ const STATUS_STYLES: Record<string, string> = {
 // Extracted from backend schema
 export interface RecentEmployee {
     _id: string;
+    employeeId?: string;
     name: string;
     jobTitle?: string;
     netSalary?: number;
@@ -53,11 +55,13 @@ export default function EmployeeSummary({
     isLoading = false,
     disableAnimations = false,
 }: EmployeeSummaryProps) {
+    const { data: companySettings } = useCompanySettings();
+    const currency = companySettings?.currency || 'USD';
     
     const router = useRouter();
     // Keep auth in Redux, it's global client state
     const { user } = useAppSelector((state) => state.auth);
-    const isAdmin = user?.role?.toLowerCase() === 'admin';
+    const isAdminOrHR = user?.role?.toLowerCase() === 'admin' || user?.role?.toLowerCase() === 'hr';
 
     const displayEmployees = useMemo(() => {
         if (!employees) return [];
@@ -67,9 +71,10 @@ export default function EmployeeSummary({
     const getInitials = (name: string) => name ? name.charAt(0).toUpperCase() : "?";
 
     const formatCurrency = (amount: number) => {
-        return new Intl.NumberFormat('en-US', {
+        const locale = currency.toUpperCase() === 'INR' ? 'en-IN' : 'en-US';
+        return new Intl.NumberFormat(locale, {
             style: 'currency',
-            currency: 'USD',
+            currency: currency.toUpperCase(),
             maximumFractionDigits: 0 
         }).format(amount);
     };
@@ -121,14 +126,18 @@ export default function EmployeeSummary({
                 <table className="w-full text-sm whitespace-nowrap">
                     <thead>
                         <tr className="border-b border-gray-100 dark:border-gray-800 transition-colors">
-                            {["Employee", "Role", "Salary", "Status"].map((col) => (
-                                <th
-                                    key={col}
-                                    className="text-left pb-2 text-[11px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 transition-colors"
-                                >
-                                    {col}
-                                </th>
-                            ))}
+                            <th className="text-left pb-2 pr-4 text-[11px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 transition-colors">
+                                Employee
+                            </th>
+                            <th className="text-left pb-2 pr-4 text-[11px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 transition-colors hidden sm:table-cell">
+                                Role
+                            </th>
+                            <th className="text-left pb-2 pr-4 text-[11px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 transition-colors hidden sm:table-cell">
+                                Salary
+                            </th>
+                            <th className="text-left pb-2 text-[11px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 transition-colors hidden sm:table-cell">
+                                Status
+                            </th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50 dark:divide-gray-800/50">
@@ -171,25 +180,30 @@ export default function EmployeeSummary({
                                                         initial
                                                     )}
                                                 </div>
-                                                <span className="font-medium text-gray-700 dark:text-gray-200 transition-colors">
-                                                    {emp.name}
-                                                </span>
+                                                <div className="flex flex-col">
+                                                    <span className="font-medium text-sm text-gray-700 dark:text-gray-200 transition-colors leading-tight">
+                                                        {emp.name}
+                                                    </span>
+                                                    <span className="text-[10px] text-gray-400 dark:text-gray-500 font-mono tracking-tight mt-0.5">
+                                                        {emp.employeeId || 'No ID'}
+                                                    </span>
+                                                </div>
                                             </div>
                                         </td>    
-                                        <td className="py-2.5 pr-4 text-sm font-medium text-gray-500 dark:text-gray-400 transition-colors">
+                                        <td className="py-2.5 pr-4 text-sm font-medium text-gray-500 dark:text-gray-400 transition-colors hidden sm:table-cell">
                                             {emp.jobTitle || 'N/A'}
                                         </td>            
-                                        <td className="py-2.5 pr-4 font-medium text-gray-700 dark:text-gray-300 transition-colors">
-                                            {isAdmin ? (
+                                        <td className="py-2.5 pr-4 font-medium text-gray-700 dark:text-gray-300 transition-colors hidden sm:table-cell">
+                                            {isAdminOrHR ? (
                                                 formatCurrency(emp.netSalary || 0)
                                             ) : (
-                                                <div className="flex items-center gap-1.5 text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-800/50 px-2 py-1 rounded w-max transition-colors" title="Requires Admin Privileges">
+                                                <div className="flex items-center gap-1.5 text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-800/50 px-2 py-1 rounded w-max transition-colors" title="Requires Admin/HR Privileges">
                                                     <Lock className="w-3 h-3" />
                                                     <span className="text-xs">Masked</span>
                                                 </div>
                                             )}
                                         </td>
-                                        <td className="py-2.5">
+                                        <td className="py-2.5 hidden sm:table-cell">
                                             <span className={cn(
                                                 "inline-flex px-2.5 py-0.5 rounded-full text-[11px] font-bold tracking-wide uppercase border transition-colors",
                                                 STATUS_STYLES[emp.status || 'ACTIVE'] || STATUS_STYLES.ACTIVE
