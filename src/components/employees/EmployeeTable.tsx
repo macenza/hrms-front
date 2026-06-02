@@ -23,6 +23,8 @@ export interface Employee {
     joiningDate: string;
     status: EmployeeStatus;
     dob?: string;
+    shiftId?: string | null;
+    batchNo?: string;
 }
 
 export interface PaginationState {

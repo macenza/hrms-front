@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { cn } from '@/utils/cn';
 import { useActiveEmployees } from '@/hooks/api/useEmployees';
 import { useMarkAttendance } from '@/hooks/api/useAttendance';
+import { useShifts } from '@/hooks/api/useShifts';
 import { toast } from 'sonner';
 
 // Aligned with backend Mongoose Schema enum
@@ -26,6 +27,7 @@ export interface AttendanceRecord {
     status: AttendanceStatus;
     dbId: string; // MongoDB _id
     employeeUserId?: string; // MongoDB user _id
+    shiftId?: string | null;
 }
 
 interface AttendanceTableProps {
@@ -91,6 +93,9 @@ export default function AttendanceTable({
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedDept, setSelectedDept] = useState('All');
     const [selectedStatus, setSelectedStatus] = useState('All');
+    const [selectedShift, setSelectedShift] = useState('All');
+
+    const { data: shifts = [] } = useShifts();
 
     // Pagination State - minimum 50 entries
     const [currentPage, setCurrentPage] = useState(1);
@@ -198,14 +203,15 @@ export default function AttendanceTable({
                 record.id.toLowerCase().includes(searchTerm.toLowerCase());
             const matchesDept = selectedDept === 'All' || record.dept === selectedDept;
             const matchesStatus = selectedStatus === 'All' || record.status === selectedStatus;
-            return matchesSearch && matchesDept && matchesStatus;
+            const matchesShift = selectedShift === 'All' || record.shiftId === selectedShift;
+            return matchesSearch && matchesDept && matchesStatus && matchesShift;
         });
-    }, [data, searchTerm, selectedDept, selectedStatus]);
+    }, [data, searchTerm, selectedDept, selectedStatus, selectedShift]);
 
     // Reset page to 1 on filter or page size changes
     React.useEffect(() => {
         setCurrentPage(1);
-    }, [searchTerm, selectedDept, selectedStatus, entriesPerPage, selectedDate]);
+    }, [searchTerm, selectedDept, selectedStatus, selectedShift, entriesPerPage, selectedDate]);
 
     const paginatedData = useMemo(() => {
         const startIndex = (currentPage - 1) * entriesPerPage;
@@ -299,6 +305,21 @@ export default function AttendanceTable({
                             <option value="On Leave">On Leave</option>
                             <option value="Late">Late</option>
                             <option value="Absent">Absent</option>
+                        </select>
+                        <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 pointer-events-none" />
+                    </div>
+
+                    {/* Shift Filter */}
+                    <div className="relative">
+                        <select
+                            value={selectedShift}
+                            onChange={(e) => setSelectedShift(e.target.value)}
+                            className="h-10 pl-3 pr-8 appearance-none bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-600/20 dark:focus:ring-blue-500/40 focus:border-blue-600 dark:focus:border-blue-500 shadow-sm dark:shadow-none transition-all cursor-pointer"
+                        >
+                            <option value="All">All Shifts</option>
+                            {shifts?.map((shift: any) => (
+                                <option key={shift._id} value={shift._id}>{shift.name} ({shift.startTime} - {shift.endTime})</option>
+                            ))}
                         </select>
                         <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 pointer-events-none" />
                     </div>
@@ -472,9 +493,11 @@ export default function AttendanceTable({
                                             className="w-full h-10 pl-3 pr-8 appearance-none bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-lg text-sm font-semibold text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 dark:focus:border-blue-500 shadow-sm transition-all"
                                         >
                                             <option value="">-- Choose Employee --</option>
-                                            {activeEmployees.map((emp: any) => (
-                                                <option key={emp.id} value={emp.id}>{emp.name} ({emp.empId})</option>
-                                            ))}
+                                            {activeEmployees
+                                                .filter((emp: any) => selectedShift === 'All' || emp.shiftId === selectedShift)
+                                                .map((emp: any) => (
+                                                    <option key={emp.id} value={emp.id}>{emp.name} ({emp.empId})</option>
+                                                ))}
                                         </select>
                                         <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                                     </div>

@@ -183,11 +183,11 @@ export default function Footer() {
                             Help Center
                         </Link>
 
-                        <Link href="/" className="footer-link hover:text-[#8B7BFF]">
+                        <Link href="/privacy-policy" target="_blank" rel="noopener noreferrer" className="footer-link hover:text-[#8B7BFF]">
                             Privacy Policy
                         </Link>
 
-                        <Link href="/" className="footer-link hover:text-[#8B7BFF]">
+                        <Link href="/terms-and-conditions" target="_blank" rel="noopener noreferrer" className="footer-link hover:text-[#8B7BFF]">
                             Terms of Service
                         </Link>
 

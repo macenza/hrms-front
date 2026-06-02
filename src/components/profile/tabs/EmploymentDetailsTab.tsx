@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Briefcase, MapPin, User, Calendar, Hash, Tag, Plus, Building, X, Loader2 } from 'lucide-react';
+import { Briefcase, MapPin, User, Calendar, Hash, Tag, Plus, Building, X, Loader2, Clock } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -17,6 +17,9 @@ export interface EmploymentDetailsData {
     employmentType: string;
     workLocation: string;
     skills: string[];
+    shiftName?: string;
+    shiftTiming?: string;
+    batchNo?: string;
 }
 
 interface EmploymentDetailsTabProps {
@@ -121,6 +124,16 @@ export default function EmploymentDetailsTab({
                             <DetailItem label="Date of Joining" value={data.dateOfJoining} icon={Calendar} />
                             <DetailItem label="Department" value={data.department} icon={Building} />
                             <DetailItem label="Employment Type" value={data.employmentType} />
+                            <DetailItem
+                                label="Shift"
+                                value={data.shiftName ? `${data.shiftName} (${data.shiftTiming})` : 'No Shift Assigned'}
+                                icon={Clock}
+                            />
+                            <DetailItem
+                                label="Batch No."
+                                value={data.batchNo}
+                                icon={Tag}
+                            />
                             <div className="sm:col-span-2 pt-2 border-t border-gray-100 dark:border-gray-800 transition-colors">
                                 <DetailItem
                                     label="Work Location"

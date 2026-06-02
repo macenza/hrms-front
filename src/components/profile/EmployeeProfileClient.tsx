@@ -377,12 +377,19 @@ export default function EmployeeProfileClient({ id }: EmployeeProfileClientProps
                                 skills: employment.skills || [],
                                 dateOfJoining: employment.joiningDate
                                     ? new Date(employment.joiningDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
-                                    : ''
+                                    : '',
+                                shiftName: employment.shiftName || '',
+                                shiftTiming: employment.shiftTiming || '',
+                                batchNo: employment.batchNo || ''
                             }}
                             onUpdateSkills={async (newSkills) => {
                                 try {
                                     await employeeService.update(resolvedEmployeeId, {
-                                        'profile.employment.skills': newSkills
+                                        profile: {
+                                            employment: {
+                                                skills: newSkills
+                                            }
+                                        }
                                     });
                                     toast.success("Skills updated successfully!");
                                     refreshProfile();

@@ -17,6 +17,7 @@ import SecuritySettings from '@/components/settings/SecuritySettings';
 import NotificationSettings from '@/components/settings/NotificationSettings';
 import PayrollSettings from '@/components/settings/PayrollSettings';
 import PoliciesSettings from '@/components/settings/PoliciesSettings';
+import ShiftSettings from '@/components/settings/ShiftSettings';
 
 import { 
     useCompanySettings, 
@@ -182,7 +183,7 @@ export default function SettingsPage() {
                     </aside>
 
                     {/* Main Content Area */}
-                    <main className="flex-1 w-full">
+                    <main className="flex-1 w-full space-y-6">
                         <Card className="border-gray-200 dark:border-gray-800 shadow-sm dark:shadow-none min-h-[65vh] bg-white dark:bg-gray-900 overflow-hidden relative transition-colors duration-300">
                             
                             {/* Loading Overlay */}
@@ -221,6 +222,7 @@ export default function SettingsPage() {
                                 )}
                             </div>
                         </Card>
+                        {activeTab === 'general' && <ShiftSettings />}
                     </main>
 
                 </div>

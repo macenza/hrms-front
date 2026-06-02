@@ -9,6 +9,7 @@ import ProfilePhotoUploadStep from '@/components/employees/ProfilePhotoUploadSte
 import { useAppSelector } from '@/store/hooks';
 import { useCompanySettings } from '@/hooks/api/useSettings';
 import { useActiveEmployees } from '@/hooks/api/useEmployees';
+import { useShifts } from '@/hooks/api/useShifts';
 import { z } from 'zod';
 
 export interface EmployeeFormData {
@@ -27,6 +28,8 @@ export interface EmployeeFormData {
     joiningDate: string;
     reportingManager: string;
     workLocation: string;
+    shiftId: string;
+    batchNo: string;
 }
 
 export interface AddEmployeeSubmitMeta {
@@ -59,6 +62,8 @@ const getInitialFormState = (settings: any): EmployeeFormData => {
         joiningDate: new Date().toISOString().split('T')[0],
         reportingManager: '',
         workLocation: '',
+        shiftId: '',
+        batchNo: '',
     };
 };
 
@@ -79,6 +84,8 @@ const step2Schema = z.object({
     employmentType: z.enum(['Full-Time', 'Part-Time', 'Contract', 'Internship']),
     reportingManager: z.string().trim().optional(),
     workLocation: z.string().trim().optional(),
+    shiftId: z.string().trim().optional(),
+    batchNo: z.string().trim().optional(),
 });
 
 export default function AddEmployeeModal({ isOpen, onClose, onSubmit, isSubmitting = false }: AddEmployeeModalProps) {
@@ -86,6 +93,7 @@ export default function AddEmployeeModal({ isOpen, onClose, onSubmit, isSubmitti
     const { user } = useAppSelector((state) => state.auth);
     const { data: companySettings } = useCompanySettings();
     const { data: activeEmployees } = useActiveEmployees();
+    const { data: shifts = [] } = useShifts();
 
     const dynamicRoles = companySettings?.roles || ['employee', 'manager', 'hr', 'admin'];
     const dynamicDepartments = companySettings?.departments || ['HR', 'Engineering', 'Marketing', 'Sales', 'Finance'];
@@ -169,8 +177,17 @@ export default function AddEmployeeModal({ isOpen, onClose, onSubmit, isSubmitti
                     department: formData.department,
                     joiningDate: formData.joiningDate,
                     employmentType: formData.employmentType,
+                    batchNo: formData.batchNo.trim(),
                     ...(formData.reportingManager ? { reportingManager: formData.reportingManager } : {}),
                     ...(formData.workLocation ? { workLocation: formData.workLocation } : {}),
+                    ...(formData.shiftId ? {
+                        shiftId: formData.shiftId,
+                        shiftName: shifts.find((s: any) => s._id === formData.shiftId)?.name || '',
+                        shiftTiming: (() => {
+                            const found = shifts.find((s: any) => s._id === formData.shiftId);
+                            return found ? `${found.startTime} - ${found.endTime}` : '';
+                        })()
+                    } : {}),
                 }
             }
         };
@@ -399,6 +416,33 @@ export default function AddEmployeeModal({ isOpen, onClose, onSubmit, isSubmitti
                                 onChange={handleChange}
                                 placeholder="e.g. Head Office, Remote"
                             />
+
+                            <Input
+                                disabled={isSubmitting}
+                                label="Batch No."
+                                name="batchNo"
+                                value={formData.batchNo}
+                                onChange={handleChange}
+                                placeholder="e.g. 101, 102"
+                            />
+
+                            <div className="flex flex-col gap-1.5">
+                                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors">Shift Timing</label>
+                                <select
+                                    disabled={isSubmitting}
+                                    name="shiftId"
+                                    value={formData.shiftId}
+                                    onChange={handleChange}
+                                    className="h-10 px-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-600 text-sm bg-white dark:bg-gray-950 dark:border-gray-800 dark:text-gray-100 dark:focus:ring-blue-500 transition-colors"
+                                >
+                                    <option value="">No Shift Assigned</option>
+                                    {shifts?.map((shift: any) => (
+                                        <option key={shift._id} value={shift._id}>
+                                            {shift.name} ({shift.startTime} - {shift.endTime})
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
                         </div>
                     )}
 
