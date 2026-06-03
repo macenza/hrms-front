@@ -1,7 +1,7 @@
 // src/app/(hrms)/payroll/page.tsx
 'use client';
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { 
     Download, 
@@ -34,6 +34,9 @@ import {
 } from '@/hooks/api/usePayroll';
 import { cn } from '@/utils/cn';
 import { toast } from 'sonner';
+import PayrollSummaryCards from '@/components/payroll/PayrollSummaryCards';
+import PayrollDataTable, { type PayrollAccrualRow } from '@/components/payroll/PayrollDataTable';
+import PayrollDetailsDrawer from '@/components/payroll/PayrollDetailsDrawer';
 
 const MONTHS = [
     { value: 1, label: 'January' },
@@ -85,6 +88,7 @@ export default function PayrollDashboard() {
     // Pagination for Real-Time main table
     const [page, setPage] = useState(1);
     const [limit, setLimit] = useState(10);
+    const [payrollSearch, setPayrollSearch] = useState('');
 
     // Pagination for History Snapshot Table inside modal
     const [historyPage, setHistoryPage] = useState(1);
@@ -94,6 +98,15 @@ export default function PayrollDashboard() {
     const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
     const [isFinalizeModalOpen, setIsFinalizeModalOpen] = useState(false);
     const [isRunModalOpen, setIsRunModalOpen] = useState(false);
+
+    // Employee details drawer
+    const [selectedEmployee, setSelectedEmployee] = useState<PayrollAccrualRow | null>(null);
+    const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+
+    const handleRowClick = (row: PayrollAccrualRow) => {
+        setSelectedEmployee(row);
+        setIsDrawerOpen(true);
+    };
 
     // History Modal Tab: 'batches' | 'snapshots'
     const [activeHistoryTab, setActiveHistoryTab] = useState<'batches' | 'snapshots'>('batches');
@@ -118,6 +131,14 @@ export default function PayrollDashboard() {
     const accruals = accrualData?.data || [];
     const accrualsTotal = accrualData?.totalCount || 0;
     const accrualsPages = Math.ceil(accrualsTotal / limit) || 1;
+
+    // Summary card data computed from current page accruals
+    const summaryData = useMemo(() => ({
+        totalEmployees: accrualsTotal,
+        totalGrossAccrued: accruals.reduce((sum: number, a: any) => sum + (a.accruedGross || 0), 0),
+        totalDeductions: accruals.reduce((sum: number, a: any) => sum + (a.accruedDeductions || 0), 0),
+        totalNetPayroll: accruals.reduce((sum: number, a: any) => sum + (a.accruedNetPay || 0), 0),
+    }), [accruals, accrualsTotal]);
 
     // History Pagination variables
     const historyBatches = historyData?.data || [];
@@ -323,6 +344,24 @@ export default function PayrollDashboard() {
                     </div>
                 </div>
 
+                {/* ── Payroll Summary Cards ── */}
+                <PayrollSummaryCards data={summaryData} isLoading={isAccrualLoading} />
+
+                {/* ── Payroll Data Table ── */}
+                <PayrollDataTable
+                    data={accruals}
+                    isLoading={isAccrualLoading}
+                    isError={isAccrualError}
+                    page={page}
+                    totalCount={accrualsTotal}
+                    pageSize={limit}
+                    onPageChange={(p) => setPage(p)}
+                    onPageSizeChange={(s) => { setLimit(s); setPage(1); }}
+                    searchTerm={payrollSearch}
+                    onSearchChange={setPayrollSearch}
+                    onRowClick={handleRowClick}
+                />
+
                 {/* Real-time Payroll Processing UI block (Asynchronous Batch calculations progress banner) */}
                 {activeProcessingBatch ? (
                     <Card className="border-blue-200 dark:border-blue-900/60 bg-gradient-to-r from-blue-50/80 to-indigo-50/80 dark:from-blue-950/20 dark:to-indigo-950/20 shadow-md animate-in fade-in zoom-in duration-300">
@@ -444,172 +483,7 @@ export default function PayrollDashboard() {
                     </Card>
                 ) : null}
 
-                {/* Real-time Payroll Accruals Table (Live Table of Daily Payroll) */}
-                <Card className="border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm text-gray-900 dark:text-gray-100">
-                    <CardHeader className="flex flex-row items-center justify-between">
-                        <CardTitle className="text-lg flex items-center gap-2 text-gray-900 dark:text-gray-100 font-bold transition-colors">
-                            <Clock size={20} className="text-blue-600 dark:text-blue-500" />
-                            Real-Time Accruals ({MONTHS[new Date().getMonth()].label} {new Date().getFullYear()})
-                        </CardTitle>
-                        <div className="flex items-center gap-3">
-                            <Button 
-                                variant="outline" 
-                                size="sm" 
-                                onClick={() => refetchAccrual()} 
-                                className="h-8 gap-1.5 text-xs font-semibold bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-800"
-                                disabled={isAccrualLoading}
-                            >
-                                <RefreshCw size={14} className={cn(isAccrualLoading && "animate-spin")} />
-                                <span>Refresh</span>
-                            </Button>
-                            <span className="flex h-2.5 w-2.5 relative">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-blue-500"></span>
-                            </span>
-                        </div>
-                    </CardHeader>
-                    <CardContent className="p-0 overflow-x-auto">
-                        <table className="w-full text-left text-sm whitespace-nowrap">
-                            <thead className="bg-gray-50/50 dark:bg-gray-800/40 text-gray-500 dark:text-gray-400 font-semibold border-b border-gray-150 dark:border-gray-800">
-                                <tr>
-                                    <th className="px-6 py-4">Employee</th>
-                                    <th className="px-6 py-4 text-center">Attendance (Period)</th>
-                                    <th className="px-6 py-4 text-center">Leaves (LWP)</th>
-                                    <th className="px-6 py-4">Allowances</th>
-                                    <th className="px-6 py-4">Accrued Gross</th>
-                                    <th className="px-6 py-4 text-red-500">Total Deductions</th>
-                                    <th className="px-6 py-4 text-emerald-600 dark:text-emerald-400">Accrued Net Pay</th>
-                                    <th className="px-6 py-4 text-right">Last Accrued At</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                                {isAccrualLoading ? (
-                                    <tr>
-                                        <td colSpan={8} className="px-6 py-12 text-center text-gray-500">
-                                            <Loader2 className="w-8 h-8 animate-spin mx-auto text-blue-600 dark:text-blue-500" />
-                                            <span className="block mt-2 text-xs font-semibold text-gray-400">Accruing real-time records...</span>
-                                        </td>
-                                    </tr>
-                                ) : isAccrualError ? (
-                                    <tr>
-                                        <td colSpan={8} className="px-6 py-12 text-center text-red-500">
-                                            <AlertCircle className="w-8 h-8 mx-auto mb-2" />
-                                            <span className="font-bold">Failed to load real-time accruals.</span>
-                                        </td>
-                                    </tr>
-                                ) : accruals.length === 0 ? (
-                                    <tr>
-                                        <td colSpan={8} className="px-6 py-12 text-center text-gray-500">
-                                            <div className="flex flex-col items-center justify-center">
-                                                <IndianRupee size={32} className="text-gray-400 mb-2" />
-                                                <p className="font-bold text-gray-950 dark:text-gray-200">No rolling payroll records generated yet.</p>
-                                                <p className="text-xs mt-0.5">The nightly cron calculates and updates accruals starting midnight.</p>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ) : (
-                                    accruals.map((acc: any) => (
-                                        <tr key={acc._id} className="hover:bg-gray-50/30 dark:hover:bg-gray-800/10 transition-colors">
-                                            <td className="px-6 py-4">
-                                                <p className="font-bold text-gray-900 dark:text-gray-100">{acc.employee?.name || 'Unknown'}</p>
-                                                <p className="text-xs text-gray-550 dark:text-gray-400 font-mono mt-0.5">{acc.employee?.employeeId || 'N/A'}</p>
-                                            </td>
-                                            <td className="px-6 py-4 text-center">
-                                                <span className="font-mono text-xs font-bold text-gray-800 dark:text-gray-200 bg-blue-50 dark:bg-blue-900/20 px-2.5 py-1 rounded-full border border-blue-100 dark:border-blue-900/40">
-                                                    {acc.daysAttended || 0} / {acc.daysConsidered || 0} Days
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4 text-center">
-                                                {(acc.lwpDays || 0) > 0 ? (
-                                                    <span className="font-mono text-xs font-bold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 px-2.5 py-1 rounded-full border border-red-100 dark:border-red-900/40">
-                                                        {acc.lwpDays} {acc.lwpDays === 1 ? 'Day' : 'Days'}
-                                                    </span>
-                                                ) : (
-                                                    <span className="text-xs text-gray-400 font-medium">None</span>
-                                                )}
-                                            </td>
-                                            <td className="px-6 py-4 font-mono font-bold text-gray-700 dark:text-gray-300">
-                                                {formatINR(acc.accruedAllowances || 0)}
-                                            </td>
-                                            <td className="px-6 py-4 font-mono font-bold text-gray-900 dark:text-gray-100">
-                                                {formatINR(acc.accruedGross || 0)}
-                                            </td>
-                                            <td className="px-6 py-4 font-mono font-bold text-red-500 dark:text-red-400">
-                                                {formatINR(acc.accruedDeductions || 0)}
-                                            </td>
-                                            <td className="px-6 py-4 font-mono font-black text-emerald-600 dark:text-emerald-400">
-                                                {formatINR(acc.accruedNetPay || 0)}
-                                            </td>
-                                            <td className="px-6 py-4 text-right text-xs text-gray-500 font-medium">
-                                                {acc.lastCalculatedDate ? new Date(acc.lastCalculatedDate).toLocaleString() : 'N/A'}
-                                            </td>
-                                        </tr>
-                                    ))
-                                )}
-                            </tbody>
-                        </table>
-                    </CardContent>
-
-                    {/* Pagination Controls */}
-                    {accrualsTotal > 0 && (
-                        <div className="px-6 py-4 bg-gray-50/50 dark:bg-gray-900/30 border-t border-gray-150 dark:border-gray-800 flex flex-col sm:flex-row items-center justify-between gap-4 transition-colors">
-                            <div className="text-xs font-semibold text-gray-500 dark:text-gray-400">
-                                Showing <span className="text-gray-900 dark:text-gray-100 font-bold">{(page - 1) * limit + 1}</span> to{' '}
-                                <span className="text-gray-900 dark:text-gray-100 font-bold">{Math.min(page * limit, accrualsTotal)}</span> of{' '}
-                                <span className="text-gray-900 dark:text-gray-100 font-bold">{accrualsTotal}</span> records
-                            </div>
-                            
-                            <div className="flex items-center gap-4">
-                                <div className="flex items-center gap-2">
-                                    <span className="text-xs text-gray-400 dark:text-gray-550 font-medium">Rows per page:</span>
-                                    <select
-                                        value={limit}
-                                        onChange={(e) => { setLimit(Number(e.target.value)); setPage(1); }}
-                                        className="h-8 px-2 rounded border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-955 text-gray-900 dark:text-gray-100 text-xs font-bold cursor-pointer focus:outline-none"
-                                    >
-                                        <option value={5} className="bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100">5</option>
-                                        <option value={10} className="bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100">10</option>
-                                        <option value={25} className="bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100">25</option>
-                                    </select>
-                                </div>
-
-                                <div className="flex items-center gap-1.5">
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => setPage(prev => Math.max(1, prev - 1))}
-                                        disabled={page === 1}
-                                        className="h-8 w-8 p-0"
-                                    >
-                                        <ChevronLeft size={16} />
-                                    </Button>
-                                    
-                                    {Array.from({ length: accrualsPages }).map((_, idx) => (
-                                        <Button
-                                            key={idx}
-                                            variant={page === idx + 1 ? 'primary' : 'outline'}
-                                            size="sm"
-                                            onClick={() => setPage(idx + 1)}
-                                            className={cn("h-8 w-8 p-0 font-bold text-xs", page === idx + 1 ? 'bg-blue-600 text-white border-blue-600' : 'bg-white dark:bg-gray-900')}
-                                        >
-                                            {idx + 1}
-                                        </Button>
-                                    ))}
-
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => setPage(prev => Math.min(accrualsPages, prev + 1))}
-                                        disabled={page === accrualsPages}
-                                        className="h-8 w-8 p-0"
-                                    >
-                                        <ChevronRight size={16} />
-                                    </Button>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-                </Card>
+               
 
                 {/* Finalize Month Modal */}
                 <Modal
@@ -1099,6 +973,13 @@ export default function PayrollDashboard() {
                         </div>
                     </div>
                 </Modal>
+
+                {/* ── Employee Payroll Details Drawer ── */}
+                <PayrollDetailsDrawer
+                    isOpen={isDrawerOpen}
+                    onClose={() => { setIsDrawerOpen(false); setSelectedEmployee(null); }}
+                    data={selectedEmployee}
+                />
 
             </div>
         </div>
