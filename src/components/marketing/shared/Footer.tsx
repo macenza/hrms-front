@@ -6,10 +6,10 @@ import {
     MapPin,
 } from "lucide-react";
 import {
-  FaFacebookF,
-  FaTwitter,
-  FaLinkedinIn,
-  FaInstagram,
+    FaFacebookF,
+    FaTwitter,
+    FaLinkedinIn,
+    FaInstagram,
 } from "react-icons/fa";
 
 export default function Footer() {
@@ -35,8 +35,8 @@ export default function Footer() {
                     {/* Social Icons */}
                     <div className="flex items-center gap-4">
 
-                         <div
-    className="
+                        <div
+                            className="
     w-9
     h-9
     rounded-full
@@ -49,32 +49,13 @@ export default function Footer() {
     cursor-pointer
     transition
     "
-  >
-    <FaFacebookF size={16} />
-  </div>
-
-
-                         <div
-    className="
-    w-9
-    h-9
-    rounded-full
-    bg-white/10
-    flex
-    items-center
-    justify-center
-    footer-link
-    hover:text-[#8B7BFF]
-    cursor-pointer
-    transition
-    "
-  >
-    <FaTwitter size={16} />
-  </div>
+                        >
+                            <FaFacebookF size={16} />
+                        </div>
 
 
                         <div
-    className="
+                            className="
     w-9
     h-9
     rounded-full
@@ -87,13 +68,13 @@ export default function Footer() {
     cursor-pointer
     transition
     "
-  >
-    <FaLinkedinIn size={16} />
-  </div>
+                        >
+                            <FaTwitter size={16} />
+                        </div>
 
 
                         <div
-    className="
+                            className="
     w-9
     h-9
     rounded-full
@@ -106,9 +87,28 @@ export default function Footer() {
     cursor-pointer
     transition
     "
-  >
-    <FaInstagram size={16} />
-  </div>
+                        >
+                            <FaLinkedinIn size={16} />
+                        </div>
+
+
+                        <div
+                            className="
+    w-9
+    h-9
+    rounded-full
+    bg-white/10
+    flex
+    items-center
+    justify-center
+    footer-link
+    hover:text-[#8B7BFF]
+    cursor-pointer
+    transition
+    "
+                        >
+                            <FaInstagram size={16} />
+                        </div>
 
                     </div>
                 </div>
@@ -121,7 +121,7 @@ export default function Footer() {
 
                     <div className="flex flex-col gap-3 text-gray-300 text-sm">
 
-                        <Link href="/" className="footer-link hover:text-[#8B7BFF]">
+                        <Link href="/features" className="footer-link hover:text-[#8B7BFF]">
                             Features
                         </Link>
 
@@ -129,7 +129,7 @@ export default function Footer() {
                             Modules
                         </Link>
 
-                        <Link href="/" className="footer-link hover:text-[#8B7BFF]">
+                        <Link href="/pricing" className="footer-link hover:text-[#8B7BFF]">
                             Pricing
                         </Link>
 
@@ -148,7 +148,7 @@ export default function Footer() {
 
                     <div className="flex flex-col gap-3 text-gray-300 text-sm">
 
-                        <Link href="/" className="footer-link hover:text-[#8B7BFF]">
+                        <Link href="/about" className="footer-link hover:text-[#8B7BFF]">
                             About Us
                         </Link>
 
@@ -160,7 +160,7 @@ export default function Footer() {
                             Blog
                         </Link>
 
-                        <Link href="/" className="footer-link hover:text-[#8B7BFF]">
+                        <Link href="/contact" className="footer-link hover:text-[#8B7BFF]">
                             Contact Us
                         </Link>
 
@@ -215,7 +215,7 @@ export default function Footer() {
                         <div className="flex items-start gap-3">
                             <MapPin size={16} className="mt-1 shrink-0" />
                             <span>
-                                Siddhart Nagar, Mayo Link Road, Ajmer, 
+                                Siddhart Nagar, Mayo Link Road, Ajmer,
                                 Rajasthan, India, 305001
                             </span>
                         </div>

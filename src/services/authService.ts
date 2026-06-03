@@ -80,6 +80,7 @@ export interface CustomerRegisterPayload {
     password: string;
     companyName: string;
     subscriptionPlan: string;
+    phone?: string;
 }
 
 export interface CustomerAuthResponse {
