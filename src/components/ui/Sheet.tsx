@@ -17,10 +17,10 @@ interface SheetProps {
     showCloseButton?: boolean;
 }
 
-interface SheetHeaderProps extends React.ComponentProps<'div'> {}
-interface SheetTitleProps extends React.ComponentProps<'h2'> {}
-interface SheetDescriptionProps extends React.ComponentProps<'p'> {}
-interface SheetFooterProps extends React.ComponentProps<'div'> {}
+type SheetHeaderProps = React.ComponentProps<'div'>;
+type SheetTitleProps = React.ComponentProps<'h2'>;
+type SheetDescriptionProps = React.ComponentProps<'p'>;
+type SheetFooterProps = React.ComponentProps<'div'>;
 
 // ─── SIDE-SPECIFIC STYLES ───────────────────────────────────────
 const SIDE_STYLES: Record<SheetSide, { panel: string; enter: string; exit: string }> = {
