@@ -34,7 +34,8 @@ export function useDailyAttendance(date: string, enabled: boolean) {
                     checkOut: log.checkOutTime ? new Date(log.checkOutTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : null,
                     hours: minutes > 0 ? `${Number(hoursValue).toFixed(1)}h` : '0h',
                     late: log.isLate ? 'Yes' : null,
-                    status: log.isLate ? 'Late' : log.status
+                    status: log.isLate ? 'Late' : log.status,
+                    shiftId: log.user?.profile?.employment?.shiftId || null
                 };
             });
         },

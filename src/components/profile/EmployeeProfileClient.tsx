@@ -329,7 +329,7 @@ export default function EmployeeProfileClient({ id }: EmployeeProfileClientProps
             <Card className="border-gray-200 dark:border-gray-800 shadow-sm bg-white dark:bg-gray-900 overflow-hidden min-h-[500px] transition-colors duration-300">
                 {/* Mobile Tab Menu Logic... */}
                 
-                <div className="hidden lg:flex overflow-x-auto hide-scrollbar border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 transition-colors">
+                <div className="flex overflow-x-auto hide-scrollbar border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 transition-colors">
                     {visibleTabs.map((tab) => (
                         <button
                             key={tab.id}
@@ -377,12 +377,19 @@ export default function EmployeeProfileClient({ id }: EmployeeProfileClientProps
                                 skills: employment.skills || [],
                                 dateOfJoining: employment.joiningDate
                                     ? new Date(employment.joiningDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
-                                    : ''
+                                    : '',
+                                shiftName: employment.shiftName || '',
+                                shiftTiming: employment.shiftTiming || '',
+                                batchNo: employment.batchNo || ''
                             }}
                             onUpdateSkills={async (newSkills) => {
                                 try {
                                     await employeeService.update(resolvedEmployeeId, {
-                                        'profile.employment.skills': newSkills
+                                        profile: {
+                                            employment: {
+                                                skills: newSkills
+                                            }
+                                        }
                                     });
                                     toast.success("Skills updated successfully!");
                                     refreshProfile();

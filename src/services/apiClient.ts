@@ -59,7 +59,7 @@ apiClient.interceptors.response.use(
                 return Promise.reject(error);
             }
 
-            const PUBLIC_ROUTES = ['/', '/login', '/signup', '/hrms-login'];
+            const PUBLIC_ROUTES = ['/', '/login', '/signup', '/hrms-login', '/privacy-policy', '/terms-and-conditions'];
 
             // Prevent infinite refresh loops
             if (originalRequest.url?.includes(ENDPOINTS.AUTH.REFRESH)) {

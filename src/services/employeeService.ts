@@ -55,7 +55,9 @@ export const employeeService = {
                 joiningDate: user.profile?.employment?.joiningDate
                     ? new Date(user.profile.employment.joiningDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
                     : 'N/A',
-                status: user.isActive ? 'Active' : 'Inactive'
+                status: user.isActive ? 'Active' : 'Inactive',
+                shiftId: user.profile?.employment?.shiftId || null,
+                batchNo: user.profile?.employment?.batchNo || ''
             }));
 
             return {

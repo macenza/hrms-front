@@ -59,7 +59,12 @@ export default function CustomerAuthInitializer({ children }: { children: React.
                 }
             } else {
                 dispatch(logOutCustomer());
-                setIsHydrated(true);
+                const isProtected = typeof window !== 'undefined' && window.location.pathname.startsWith('/customer-dashboard');
+                if (isProtected) {
+                    window.location.href = '/login?error=session_expired';
+                } else {
+                    setIsHydrated(true);
+                }
             }
         };
 

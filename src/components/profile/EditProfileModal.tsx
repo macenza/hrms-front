@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import { employeeService } from '@/services/employeeService';
 import { useCompanySettings } from '@/hooks/api/useSettings';
 import { useActiveEmployees } from '@/hooks/api/useEmployees';
+import { useShifts } from '@/hooks/api/useShifts';
 import { z } from 'zod';
 
 interface EditProfileModalProps {
@@ -40,6 +41,8 @@ const profileEditSchema = z.object({
     joiningDate: z.string().trim().optional().or(z.literal('')),
     workLocation: z.string().trim().optional(),
     reportingManager: z.string().trim().optional().or(z.literal('')),
+    shiftId: z.string().trim().optional().or(z.literal('')),
+    batchNo: z.string().trim().optional(),
 });
 
 export default function EditProfileModal({
@@ -52,6 +55,7 @@ export default function EditProfileModal({
     const [isSaving, setIsSaving] = useState(false);
     const { data: companySettings } = useCompanySettings();
     const { data: activeEmployees } = useActiveEmployees();
+    const { data: shifts = [] } = useShifts();
 
     const dynamicRoles = companySettings?.roles || ['employee', 'manager', 'hr', 'admin'];
     const dynamicDepartments = companySettings?.departments || ['HR', 'Engineering', 'Marketing', 'Sales', 'Finance'];
@@ -75,7 +79,9 @@ export default function EditProfileModal({
         employmentType: 'Full-Time',
         joiningDate: '',
         workLocation: '',
-        reportingManager: ''
+        reportingManager: '',
+        shiftId: '',
+        batchNo: ''
     });
 
     useEffect(() => {
@@ -103,7 +109,9 @@ export default function EditProfileModal({
                 employmentType: employment.employmentType || 'Full-Time',
                 joiningDate: employment.joiningDate ? new Date(employment.joiningDate).toISOString().split('T')[0] : '',
                 workLocation: employment.workLocation || '',
-                reportingManager: managerId
+                reportingManager: managerId,
+                shiftId: employment.shiftId || '',
+                batchNo: employment.batchNo || ''
             });
         }
     }, [employee]);
@@ -143,7 +151,20 @@ export default function EditProfileModal({
                         employmentType: form.employmentType,
                         joiningDate: form.joiningDate || undefined,
                         workLocation: form.workLocation,
-                        reportingManager: form.reportingManager || null
+                        reportingManager: form.reportingManager || null,
+                        batchNo: form.batchNo,
+                        ...(form.shiftId ? {
+                            shiftId: form.shiftId,
+                            shiftName: shifts.find((s: any) => s._id === form.shiftId)?.name || '',
+                            shiftTiming: (() => {
+                                const found = shifts.find((s: any) => s._id === form.shiftId);
+                                return found ? `${found.startTime} - ${found.endTime}` : '';
+                            })()
+                        } : {
+                            shiftId: null,
+                            shiftName: '',
+                            shiftTiming: ''
+                        })
                     }
                 }
             };
@@ -395,14 +416,47 @@ export default function EditProfileModal({
                                 </div>
                             )}
 
-                            <div className="md:col-span-2">
-                                <Input
-                                    label="Work Location"
-                                    value={form.workLocation}
-                                    onChange={(e) => setForm({ ...form, workLocation: e.target.value })}
-                                    disabled={!isAdminOrHR}
-                                />
-                            </div>
+                            <Input
+                                label="Work Location"
+                                value={form.workLocation}
+                                onChange={(e) => setForm({ ...form, workLocation: e.target.value })}
+                                disabled={!isAdminOrHR}
+                            />
+
+                            <Input
+                                label="Batch No."
+                                value={form.batchNo}
+                                onChange={(e) => setForm({ ...form, batchNo: e.target.value })}
+                                disabled={!isAdminOrHR}
+                                placeholder="e.g. 101, 102"
+                            />
+
+                            {isAdminOrHR ? (
+                                <div className="space-y-1.5 md:col-span-2">
+                                    <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Shift Timing</label>
+                                    <select
+                                        value={form.shiftId}
+                                        onChange={(e) => setForm({ ...form, shiftId: e.target.value })}
+                                        className="w-full h-10 px-3 border border-gray-200 dark:border-gray-800 rounded-lg text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-950 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 outline-none transition-all cursor-pointer"
+                                    >
+                                        <option value="">No Shift Assigned</option>
+                                        {shifts?.map((shift: any) => (
+                                            <option key={shift._id} value={shift._id}>
+                                                {shift.name} ({shift.startTime} - {shift.endTime})
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                            ) : (
+                                <div className="md:col-span-2">
+                                    <Input
+                                        label="Shift Timing"
+                                        value={employee?.profile?.employment?.shiftName ? `${employee.profile.employment.shiftName} (${employee.profile.employment.shiftTiming})` : 'No Shift Assigned'}
+                                        disabled
+                                        className="bg-gray-50 text-gray-500 dark:bg-gray-800/50 dark:text-gray-400 border-gray-200 dark:border-gray-800 cursor-not-allowed"
+                                    />
+                                </div>
+                            )}
                         </div>
                     </div>
 
