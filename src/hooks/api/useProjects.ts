@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { projectService } from '@/services/projectService';
 import { ProjectFormData } from '@/components/projects/AddProjectModal';
 import { fetchProjectManagers } from '@/lib/projectManagers';
+import { getAvatarUrl } from '@/utils/avatarUtils';
 
 export function useProjectsData() {
     return useQuery({
@@ -18,7 +19,7 @@ export function useProjectsData() {
                 targetEndDate: p.targetEndDate ? new Date(p.targetEndDate).toISOString().split('T')[0] : 'No Date',
                 progress: p.progress || 0,
                 status: p.status,
-                team: p.teamMembers?.map((m: any) => m.profile?.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${m.name || 'avatar'}`) || [],
+                team: p.teamMembers?.map((m: any) => getAvatarUrl(m.profile?.avatar) || `https://api.dicebear.com/7.x/initials/svg?seed=${m.name || 'avatar'}`) || [],
                 tasks: p.tasks || { total: 0, open: 0 }
             }));
         },

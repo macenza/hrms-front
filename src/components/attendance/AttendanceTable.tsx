@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/utils/cn';
+import { useBreakpoint } from '@/hooks/useMediaQuery';
 import { useActiveEmployees } from '@/hooks/api/useEmployees';
 import { useMarkAttendance } from '@/hooks/api/useAttendance';
 import { toast } from 'sonner';
@@ -91,6 +92,7 @@ export default function AttendanceTable({
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedDept, setSelectedDept] = useState('All');
     const [selectedStatus, setSelectedStatus] = useState('All');
+    const breakpoint = useBreakpoint();
 
     // Pagination State - minimum 50 entries
     const [currentPage, setCurrentPage] = useState(1);
@@ -257,9 +259,10 @@ export default function AttendanceTable({
                             setWorkFormat('Office');
                             setIsMarkModalOpen(true);
                         }}
-                        className="h-10 text-xs font-extrabold gap-1.5 shadow-sm shadow-blue-500/25 dark:shadow-none mr-2 flex items-center justify-center"
+                        className="h-10 text-xs font-extrabold gap-1.5 shadow-sm shadow-blue-500/25 dark:shadow-none mr-2 flex items-center justify-center whitespace-nowrap"
                     >
-                        <Plus size={14} strokeWidth={3} /> Mark Attendance
+                        <Plus size={14} strokeWidth={3} />
+                        <span className="hidden sm:inline">Mark Attendance</span>
                     </Button>
 
                     {/* Date Picker */}
@@ -305,90 +308,165 @@ export default function AttendanceTable({
                 </div>
             </div>
 
-            {/* Table */}
-            <div className="overflow-x-auto">
-                <table className="w-full text-left text-sm whitespace-nowrap">
-                    <thead className="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-400 font-medium transition-colors">
-                        <tr>
-                            <th className="px-6 py-4 uppercase text-xs tracking-wider">Employee</th>
-                            <th className="px-6 py-4 uppercase text-xs tracking-wider">Department</th>
-                            <th className="px-6 py-4 uppercase text-xs tracking-wider">Check In</th>
-                            <th className="px-6 py-4 uppercase text-xs tracking-wider">Check Out</th>
-                            <th className="px-6 py-4 uppercase text-xs tracking-wider">Total Hours</th>
-                            <th className="px-6 py-4 uppercase text-xs tracking-wider">Late</th>
-                            <th className="px-6 py-4 uppercase text-xs tracking-wider">Status</th>
-                            <th className="px-6 py-4 text-center uppercase text-xs tracking-wider">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100 dark:divide-gray-800 bg-white dark:bg-gray-900 transition-colors">
-                        {isInitialLoad ? (
-                            Array.from({ length: 5 }).map((_, idx) => <TableRowSkeleton key={idx} />)
-                        ) : paginatedData.length === 0 ? (
-                            <tr>
-                                <td colSpan={8} className="px-6 py-16 text-center text-gray-500 dark:text-gray-400 transition-colors">
-                                    <div className="flex flex-col items-center justify-center">
-                                        <div className="w-12 h-12 bg-gray-50 dark:bg-gray-800 rounded-full flex items-center justify-center mb-3 transition-colors">
-                                            <Calendar size={24} className="text-gray-400 dark:text-gray-500" />
-                                        </div>
-                                        <p className="font-semibold text-gray-900 dark:text-gray-100 text-base transition-colors">No attendance records found</p>
-                                        <p className="text-sm mt-1">There are no records matching your current filters.</p>
+            {/* Mobile Card View / Table */}
+            {breakpoint === 'mobile' ? (
+                <div className="p-3 space-y-3">
+                    {isInitialLoad ? (
+                        Array.from({ length: 5 }).map((_, idx) => (
+                            <div key={idx} className="animate-pulse p-4 rounded-xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800">
+                                <div className="flex items-center gap-3 mb-3">
+                                    <div className="w-9 h-9 rounded-full bg-gray-200 dark:bg-gray-800" />
+                                    <div className="space-y-1.5 flex-1">
+                                        <div className="h-4 w-28 rounded bg-gray-200 dark:bg-gray-800" />
+                                        <div className="h-3 w-20 rounded bg-gray-100 dark:bg-gray-800/50" />
                                     </div>
-                                </td>
-                            </tr>
-                        ) : (
-                            paginatedData.map((record) => (
-                                <tr key={record.dbId} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors group">
-                                    <td className="px-6 py-4 flex items-center gap-3">
-                                        <div className={cn(
-                                            "w-9 h-9 rounded-full flex items-center justify-center font-bold text-xs shrink-0 shadow-sm dark:shadow-none transition-colors",
-                                            getAvatarColor(record.name)
-                                        )}>
-                                            {getInitials(record.name)}
+                                </div>
+                                <div className="flex justify-between">
+                                    <div className="h-4 w-24 rounded bg-gray-200 dark:bg-gray-800" />
+                                    <div className="h-5 w-16 rounded-full bg-gray-200 dark:bg-gray-800" />
+                                </div>
+                            </div>
+                        ))
+                    ) : paginatedData.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-16 text-gray-500 dark:text-gray-400">
+                            <div className="w-12 h-12 bg-gray-50 dark:bg-gray-800 rounded-full flex items-center justify-center mb-3">
+                                <Calendar size={24} className="text-gray-400 dark:text-gray-500" />
+                            </div>
+                            <p className="font-semibold text-gray-900 dark:text-gray-100">No attendance records found</p>
+                            <p className="text-sm mt-1">No records matching your filters.</p>
+                        </div>
+                    ) : (
+                        paginatedData.map((record) => (
+                            <div
+                                key={record.dbId}
+                                className="p-4 rounded-xl bg-gray-50/50 dark:bg-gray-800/20 border border-gray-100 dark:border-gray-800 hover:bg-gray-100 dark:hover:bg-gray-800/40 transition-colors"
+                            >
+                                <div className="flex items-center justify-between mb-2.5">
+                                    <div className="flex items-center gap-2.5 min-w-0">
+                                        <div className="min-w-0">
+                                            <p className="font-semibold text-gray-900 dark:text-gray-100 truncate text-sm" title={record.name}>{record.name}</p>
+                                            <p className="text-xs text-gray-500 dark:text-gray-400">{record.id}</p>
                                         </div>
-                                        <div>
-                                            <p className="font-semibold text-gray-900 dark:text-gray-100 transition-colors">{record.name}</p>
-                                            <p className="text-xs text-gray-500 dark:text-gray-400 transition-colors">{record.id}</p>
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4 text-gray-600 dark:text-gray-300 transition-colors">{record.dept}</td>
-                                    <td className="px-6 py-4 font-medium text-gray-900 dark:text-gray-100 transition-colors">
-                                        {record.checkIn || '-'}
-                                    </td>
-                                    <td className="px-6 py-4 text-gray-600 dark:text-gray-400 transition-colors">
-                                        {record.checkOut || '-'}
-                                    </td>
-                                    <td className="px-6 py-4 text-gray-600 dark:text-gray-300 font-medium transition-colors">
-                                        {record.hours}
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <span className={cn(
-                                            "font-medium transition-colors",
-                                            record.late ? "text-red-500 dark:text-red-400" : "text-gray-400 dark:text-gray-500"
-                                        )}>
-                                            {record.late || '-'}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <Badge variant={getStatusBadgeVariant(record.status)}>
-                                            {record.status}
+                                    </div>
+                                    <div className="flex items-center gap-1.5 shrink-0">
+                                        <Badge variant="success" className="shrink-0">
+                                            Present
                                         </Badge>
-                                    </td>
-                                    <td className="px-6 py-4 text-center">
-                                        <Button 
-                                            variant="ghost" 
-                                            size="sm" 
-                                            onClick={() => handleEditClick(record)}
-                                            className="font-bold text-xs h-8 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/10 px-3 rounded-lg transition-all"
-                                        >
-                                            Adjust
-                                        </Button>
+                                        {(record.status === 'Late' || (record.late && record.late !== '-')) && (
+                                            <Badge variant="warning" className="shrink-0">
+                                                Late
+                                            </Badge>
+                                        )}
+                                        {record.status !== 'Present' && record.status !== 'Late' && (
+                                            <Badge variant={getStatusBadgeVariant(record.status)} className="shrink-0">
+                                                {record.status}
+                                            </Badge>
+                                        )}
+                                    </div>
+                                </div>
+                                <div className="flex items-center justify-between text-xs">
+                                    <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
+                                        <Clock size={12} />
+                                        <span className="font-medium">{record.checkIn || '--:--'} – {record.checkOut || '--:--'}</span>
+                                    </div>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => handleEditClick(record)}
+                                        className="font-bold text-xs h-7 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/10 px-2 rounded-lg"
+                                    >
+                                        Adjust
+                                    </Button>
+                                </div>
+                            </div>
+                        ))
+                    )}
+                </div>
+            ) : (
+                /* Desktop / Tablet Table */
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left text-sm whitespace-nowrap">
+                        <thead className="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-400 font-medium transition-colors">
+                            <tr>
+                                <th className="px-6 py-4 uppercase text-xs tracking-wider">Employee</th>
+                                <th className="px-6 py-4 uppercase text-xs tracking-wider hidden lg:table-cell">Department</th>
+                                <th className="px-6 py-4 uppercase text-xs tracking-wider">Check In</th>
+                                <th className="px-6 py-4 uppercase text-xs tracking-wider">Check Out</th>
+                                <th className="px-6 py-4 uppercase text-xs tracking-wider hidden lg:table-cell">Total Hours</th>
+                                <th className="px-6 py-4 uppercase text-xs tracking-wider">Late</th>
+                                <th className="px-6 py-4 uppercase text-xs tracking-wider">Status</th>
+                                <th className="px-6 py-4 text-center uppercase text-xs tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100 dark:divide-gray-800 bg-white dark:bg-gray-900 transition-colors">
+                            {isInitialLoad ? (
+                                Array.from({ length: 5 }).map((_, idx) => <TableRowSkeleton key={idx} />)
+                            ) : paginatedData.length === 0 ? (
+                                <tr>
+                                    <td colSpan={8} className="px-6 py-16 text-center text-gray-500 dark:text-gray-400 transition-colors">
+                                        <div className="flex flex-col items-center justify-center">
+                                            <div className="w-12 h-12 bg-gray-50 dark:bg-gray-800 rounded-full flex items-center justify-center mb-3 transition-colors">
+                                                <Calendar size={24} className="text-gray-400 dark:text-gray-500" />
+                                            </div>
+                                            <p className="font-semibold text-gray-900 dark:text-gray-100 text-base transition-colors">No attendance records found</p>
+                                            <p className="text-sm mt-1">There are no records matching your current filters.</p>
+                                        </div>
                                     </td>
                                 </tr>
-                            ))
-                        )}
-                    </tbody>
-                </table>
-            </div>
+                            ) : (
+                                paginatedData.map((record) => (
+                                    <tr key={record.dbId} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors group">
+                                        <td className="px-6 py-4 flex items-center gap-3">
+                                            <div className={cn(
+                                                "w-9 h-9 rounded-full flex items-center justify-center font-bold text-xs shrink-0 shadow-sm dark:shadow-none transition-colors",
+                                                getAvatarColor(record.name)
+                                            )}>
+                                                {getInitials(record.name)}
+                                            </div>
+                                            <div>
+                                                <p className="font-semibold text-gray-900 dark:text-gray-100 transition-colors">{record.name}</p>
+                                                <p className="text-xs text-gray-500 dark:text-gray-400 transition-colors">{record.id}</p>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4 text-gray-600 dark:text-gray-300 transition-colors hidden lg:table-cell">{record.dept}</td>
+                                        <td className="px-6 py-4 font-medium text-gray-900 dark:text-gray-100 transition-colors">
+                                            {record.checkIn || '-'}
+                                        </td>
+                                        <td className="px-6 py-4 text-gray-600 dark:text-gray-400 transition-colors">
+                                            {record.checkOut || '-'}
+                                        </td>
+                                        <td className="px-6 py-4 text-gray-600 dark:text-gray-300 font-medium transition-colors hidden lg:table-cell">
+                                            {record.hours}
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            {record.late && record.late !== '-' ? (
+                                                <Badge variant="warning">Late</Badge>
+                                            ) : (
+                                                <span className="text-gray-400 dark:text-gray-500 font-medium">-</span>
+                                            )}
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <Badge variant={record.status === 'Late' ? 'success' : getStatusBadgeVariant(record.status)}>
+                                                {record.status === 'Late' ? 'Present' : record.status}
+                                            </Badge>
+                                        </td>
+                                        <td className="px-6 py-4 text-center">
+                                            <Button 
+                                                variant="ghost" 
+                                                size="sm" 
+                                                onClick={() => handleEditClick(record)}
+                                                className="font-bold text-xs h-8 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/10 px-3 rounded-lg transition-all"
+                                            >
+                                                Adjust
+                                            </Button>
+                                        </td>
+                                    </tr>
+                                ))
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            )}
 
             {/* Pagination Toolbar */}
             {!isInitialLoad && filteredData.length > 0 && (

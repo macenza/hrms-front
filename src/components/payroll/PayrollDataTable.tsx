@@ -34,6 +34,7 @@ import {
     Loader2,
 } from 'lucide-react';
 import { cn } from '@/utils/cn';
+import { useBreakpoint } from '@/hooks/useMediaQuery';
 
 // ─── TYPES ──────────────────────────────────────────────────────
 type PayrollStatus = 'Draft' | 'Accruing' | 'Processed' | 'Paid';
@@ -384,6 +385,8 @@ export default function PayrollDataTable({
     onSearchChange,
     onRowClick,
 }: PayrollDataTableProps) {
+    const breakpoint = useBreakpoint();
+    const isMobile = breakpoint === 'mobile';
     const [sorting, setSorting] = useState<SortingState>([]);
 
     // Global filter that searches across employee name, ID, and department
@@ -483,72 +486,164 @@ export default function PayrollDataTable({
                 </div>
             </CardContent>
 
-            {/* ── Table (shadcn + TanStack) ───────────────── */}
-            <div className="overflow-x-auto">
-                <Table>
-                    <TableHeader>
-                        {table.getHeaderGroups().map((headerGroup) => (
-                            <TableRow key={headerGroup.id} className="bg-gray-50/75 dark:bg-gray-800/40 hover:bg-gray-50/75 dark:hover:bg-gray-800/40">
-                                {headerGroup.headers.map((header) => (
-                                    <TableHead key={header.id} className="text-xs uppercase tracking-wider font-bold h-12">
-                                        {header.isPlaceholder
-                                            ? null
-                                            : flexRender(
-                                                  header.column.columnDef.header,
-                                                  header.getContext()
-                                              )}
-                                    </TableHead>
-                                ))}
-                            </TableRow>
-                        ))}
-                    </TableHeader>
-                    <TableBody>
-                        {isLoading ? (
-                            <TableSkeleton />
-                        ) : isError ? (
-                            <TableRow>
-                                <TableCell colSpan={columns.length} className="h-40 text-center">
-                                    <p className="font-semibold text-red-500 text-base">Failed to load payroll records.</p>
-                                    <p className="text-sm mt-1 text-gray-500 dark:text-gray-400">Please try refreshing the page.</p>
-                                </TableCell>
-                            </TableRow>
-                        ) : table.getRowModel().rows?.length ? (
-                            table.getRowModel().rows.map((row) => (
-                                <TableRow
+            {/* ── Mobile Card View ────────────────────────── */}
+            {isMobile ? (
+                <div className="p-3 space-y-3">
+                    {isLoading ? (
+                        Array.from({ length: 5 }).map((_, i) => (
+                            <div key={i} className="animate-pulse p-4 rounded-xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800">
+                                <div className="flex items-center gap-3 mb-3">
+                                    <div className="w-9 h-9 rounded-full bg-gray-200 dark:bg-gray-800" />
+                                    <div className="space-y-1.5 flex-1">
+                                        <div className="h-4 w-28 rounded bg-gray-200 dark:bg-gray-800" />
+                                        <div className="h-3 w-20 rounded bg-gray-100 dark:bg-gray-800/50" />
+                                    </div>
+                                </div>
+                                <div className="flex justify-between">
+                                    <div className="h-4 w-20 rounded bg-gray-200 dark:bg-gray-800" />
+                                    <div className="h-4 w-20 rounded bg-gray-200 dark:bg-gray-800" />
+                                </div>
+                            </div>
+                        ))
+                    ) : isError ? (
+                        <div className="p-8 text-center">
+                            <p className="font-semibold text-red-500">Failed to load payroll records.</p>
+                            <p className="text-sm mt-1 text-gray-500 dark:text-gray-400">Please try refreshing.</p>
+                        </div>
+                    ) : table.getRowModel().rows?.length ? (
+                        table.getRowModel().rows.map((row) => {
+                            const accrual = row.original;
+                            const emp = accrual.employee;
+                            const name = emp?.name || 'Unknown';
+                            const empId = emp?.employeeId || 'N/A';
+                            const status = deriveStatus(accrual);
+                            const cfg = STATUS_CONFIG[status];
+                            const period = `${MONTH_NAMES[accrual.month - 1] || ''} ${accrual.year}`;
+
+                            return (
+                                <div
                                     key={row.id}
+                                    onClick={() => onRowClick?.(accrual)}
                                     className={cn(
-                                        'group',
-                                        onRowClick && 'cursor-pointer hover:bg-blue-50/50 dark:hover:bg-blue-500/5 transition-colors'
+                                        'p-4 rounded-xl bg-gray-50/50 dark:bg-gray-800/20 border border-gray-100 dark:border-gray-800',
+                                        'hover:bg-gray-100 dark:hover:bg-gray-800/40 transition-colors active:scale-[0.99]',
+                                        onRowClick && 'cursor-pointer'
                                     )}
-                                    onClick={() => onRowClick?.(row.original)}
                                 >
-                                    {row.getVisibleCells().map((cell) => (
-                                        <TableCell key={cell.id} className="py-4">
-                                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                                        </TableCell>
+                                    {/* Top row: Employee + Status */}
+                                    <div className="flex items-center justify-between mb-3">
+                                        <div className="flex items-center gap-2.5 min-w-0">
+                                            <div className={cn('w-9 h-9 rounded-full flex items-center justify-center font-bold text-xs shrink-0', getAvatarColor(name))}>
+                                                {getInitials(name)}
+                                            </div>
+                                            <div className="min-w-0">
+                                                <p className="font-bold text-gray-900 dark:text-gray-100 text-sm truncate" title={name}>{name}</p>
+                                                <p className="text-xs text-gray-500 dark:text-gray-400">{empId}</p>
+                                            </div>
+                                        </div>
+                                        <span className={cn('inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border shrink-0', cfg.classes)}>
+                                            {status === 'Accruing' && (
+                                                <span className="relative flex h-1.5 w-1.5">
+                                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75" />
+                                                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-blue-500" />
+                                                </span>
+                                            )}
+                                            {cfg.label}
+                                        </span>
+                                    </div>
+                                    {/* Bottom row: Period + Pay */}
+                                    <div className="flex items-center justify-between text-xs">
+                                        <span className="font-mono font-bold text-gray-500 dark:text-gray-400 bg-blue-50 dark:bg-blue-900/20 px-2 py-0.5 rounded-full border border-blue-100 dark:border-blue-900/40">
+                                            {period}
+                                        </span>
+                                        <div className="text-right">
+                                            <span className="text-gray-500 dark:text-gray-400 mr-1">Net:</span>
+                                            <span className="font-mono font-black text-emerald-600 dark:text-emerald-400 text-sm">
+                                                {formatINR(accrual.accruedNetPay)}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })
+                    ) : (
+                        <div className="flex flex-col items-center justify-center py-12">
+                            <div className="w-12 h-12 bg-gray-50 dark:bg-gray-800 rounded-full flex items-center justify-center mb-3">
+                                <IndianRupee size={24} className="text-gray-400 dark:text-gray-500" />
+                            </div>
+                            <p className="font-semibold text-gray-900 dark:text-gray-100">No payroll records found</p>
+                            <p className="text-sm mt-1 text-gray-500 dark:text-gray-400">Payroll data will appear here once accruals are generated.</p>
+                        </div>
+                    )}
+                </div>
+            ) : (
+                /* ── Desktop/Tablet Table (shadcn + TanStack) ───── */
+                <div className="overflow-x-auto">
+                    <Table>
+                        <TableHeader>
+                            {table.getHeaderGroups().map((headerGroup) => (
+                                <TableRow key={headerGroup.id} className="bg-gray-50/75 dark:bg-gray-800/40 hover:bg-gray-50/75 dark:hover:bg-gray-800/40">
+                                    {headerGroup.headers.map((header) => (
+                                        <TableHead key={header.id} className="text-xs uppercase tracking-wider font-bold h-12">
+                                            {header.isPlaceholder
+                                                ? null
+                                                : flexRender(
+                                                      header.column.columnDef.header,
+                                                      header.getContext()
+                                                  )}
+                                        </TableHead>
                                     ))}
                                 </TableRow>
-                            ))
-                        ) : (
-                            <TableRow>
-                                <TableCell colSpan={columns.length} className="h-40 text-center">
-                                    <div className="flex flex-col items-center justify-center">
-                                        <div className="w-12 h-12 bg-gray-50 dark:bg-gray-800 rounded-full flex items-center justify-center mb-3 transition-colors">
-                                            <IndianRupee size={24} className="text-gray-400 dark:text-gray-500" />
+                            ))}
+                        </TableHeader>
+                        <TableBody>
+                            {isLoading ? (
+                                <TableSkeleton />
+                            ) : isError ? (
+                                <TableRow>
+                                    <TableCell colSpan={columns.length} className="h-40 text-center">
+                                        <p className="font-semibold text-red-500 text-base">Failed to load payroll records.</p>
+                                        <p className="text-sm mt-1 text-gray-500 dark:text-gray-400">Please try refreshing the page.</p>
+                                    </TableCell>
+                                </TableRow>
+                            ) : table.getRowModel().rows?.length ? (
+                                table.getRowModel().rows.map((row) => (
+                                    <TableRow
+                                        key={row.id}
+                                        className={cn(
+                                            'group',
+                                            onRowClick && 'cursor-pointer hover:bg-blue-50/50 dark:hover:bg-blue-500/5 transition-colors'
+                                        )}
+                                        onClick={() => onRowClick?.(row.original)}
+                                    >
+                                        {row.getVisibleCells().map((cell) => (
+                                            <TableCell key={cell.id} className="py-4">
+                                                {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                                            </TableCell>
+                                        ))}
+                                    </TableRow>
+                                ))
+                            ) : (
+                                <TableRow>
+                                    <TableCell colSpan={columns.length} className="h-40 text-center">
+                                        <div className="flex flex-col items-center justify-center">
+                                            <div className="w-12 h-12 bg-gray-50 dark:bg-gray-800 rounded-full flex items-center justify-center mb-3 transition-colors">
+                                                <IndianRupee size={24} className="text-gray-400 dark:text-gray-500" />
+                                            </div>
+                                            <p className="font-semibold text-gray-900 dark:text-gray-100 text-base">
+                                                No payroll records found
+                                            </p>
+                                            <p className="text-sm mt-1 text-gray-500 dark:text-gray-400">
+                                                Payroll data will appear here once attendance accruals are generated.
+                                            </p>
                                         </div>
-                                        <p className="font-semibold text-gray-900 dark:text-gray-100 text-base">
-                                            No payroll records found
-                                        </p>
-                                        <p className="text-sm mt-1 text-gray-500 dark:text-gray-400">
-                                            Payroll data will appear here once attendance accruals are generated.
-                                        </p>
-                                    </div>
-                                </TableCell>
-                            </TableRow>
-                        )}
-                    </TableBody>
-                </Table>
-            </div>
+                                    </TableCell>
+                                </TableRow>
+                            )}
+                        </TableBody>
+                    </Table>
+                </div>
+            )}
 
             {/* ── Pagination ──────────────────────────────── */}
             {totalCount > 0 && (

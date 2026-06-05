@@ -2,9 +2,10 @@
 "use client";
 
 import React, { useMemo } from 'react';
-import { BarChart2, Loader2, ArrowRight } from 'lucide-react';
+import { Loader2, ArrowRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/utils/cn';
+import { useBreakpoint, useMediaQuery } from '@/hooks/useMediaQuery';
 
 // Aligning interface with Mongoose Backend Output
 export interface AttendanceLog {
@@ -45,6 +46,9 @@ export default function AttendanceList({
 }: AttendanceListProps) {
     
     const router = useRouter();
+    const breakpoint = useBreakpoint();
+    const isMobile = breakpoint === 'mobile';
+    const isVerySmall = useMediaQuery('(max-width: 399px)');
 
     const displayList = useMemo(() => {
         if (!listData) return [];
@@ -76,8 +80,7 @@ export default function AttendanceList({
                             <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-800 animate-pulse shrink-0" />
                             <div className="w-24 h-4 bg-gray-200 dark:bg-gray-800 rounded animate-pulse" />
                         </div>
-                        <div className="w-12 h-4 bg-gray-200 dark:bg-gray-800 rounded animate-pulse" />
-                        <div className="w-12 h-4 bg-gray-200 dark:bg-gray-800 rounded animate-pulse" />
+                        <div className="w-28 h-4 bg-gray-200 dark:bg-gray-800 rounded animate-pulse" />
                     </div>
                 ))}
             </div>
@@ -108,84 +111,105 @@ export default function AttendanceList({
                 </button>
             </div>
 
-            {/* Table Header */}
-            <div className="grid grid-cols-4 text-[11px] font-bold uppercase tracking-wider pb-2 border-b text-gray-400 dark:text-gray-500 border-gray-100 dark:border-gray-800 transition-colors">
-                <span className="col-span-1">{isEmployee ? "Date" : "Employee"}</span>
-                <span className='text-center'>Clock IN</span>
-                <span className='text-center'>Clock OUT</span>
-                <span className='text-center'>Report</span>
-            </div>
+            {/* Mobile Card View */}
+            {isMobile ? (
+                <div className="flex flex-col gap-2">
+                    {displayList.length === 0 ? (
+                        <div className="text-center text-sm text-gray-400 dark:text-gray-500 py-8 flex flex-col items-center justify-center border-2 border-dashed border-gray-100 dark:border-gray-800 rounded-xl transition-colors">
+                            No check-ins found.
+                        </div>
+                    ) : (
+                        displayList.map((row) => {
+                            const userName = row.user?.name || 'Unknown';
+                            const initial = getInitials(userName);
 
-            {/* List Body */}
-            <div className='flex flex-col gap-1'>
-                {displayList.length === 0 ? (
-                    <div className="text-center text-sm text-gray-400 dark:text-gray-500 py-8 flex flex-col items-center justify-center border-2 border-dashed border-gray-100 dark:border-gray-800 rounded-xl mt-2 transition-colors">
-                        No check-ins found.
-                    </div>
-                ) : (
-                    displayList.map((row) => {
-                        const userName = row.user?.name || 'Unknown';
-                        const initial = getInitials(userName);
-                        
-                        return (
-                            <div
-                                key={row._id}
-                                className="grid grid-cols-4 items-center py-2.5 rounded-xl px-2 transition-colors duration-150 hover:bg-gray-50 dark:hover:bg-gray-800/50 group"
-                            >
-                                <div className="flex items-center gap-2.5">
-                                    {!isEmployee && (
-                                        <div className={cn(
-                                            "w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 transition-colors",
-                                            getAvatarColor(userName)
-                                        )}>
-                                            {row.user?.profile?.avatar ? (
-                                                <img 
-                                                    src={row.user.profile.avatar.startsWith('http') 
-                                                        ? row.user.profile.avatar 
-                                                        : `${process.env.NEXT_PUBLIC_API_URL ? process.env.NEXT_PUBLIC_API_URL.replace('/api', '') : 'http://localhost:4000'}${row.user.profile.avatar}`} 
-                                                    alt={userName} 
-                                                    className="w-full h-full rounded-full object-cover" 
-                                                />
-                                            ) : (
-                                                initial
-                                            )}
-                                        </div>
-                                    )}
-                                    <span className="text-sm font-medium truncate max-w-[80px] sm:max-w-[120px] text-gray-700 dark:text-gray-200 transition-colors">
-                                        {isEmployee 
-                                            ? new Date(row.checkInTime).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) 
-                                            : userName}
+                            return (
+                                <div
+                                    key={row._id}
+                                    onClick={() => {
+                                        if (isEmployee) router.push('/profile/attendance');
+                                        else router.push(`/employees/${row.user._id}`);
+                                    }}
+                                    className="flex items-center justify-between p-3 rounded-xl bg-gray-50 dark:bg-gray-800/30 border border-gray-100 dark:border-gray-800 hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors cursor-pointer"
+                                >
+                                    <div className="flex items-center gap-2.5 min-w-0">
+                                        {!isEmployee && !isVerySmall && (
+                                            <div className={cn(
+                                                "w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 transition-colors",
+                                                getAvatarColor(userName)
+                                            )}>
+                                                {initial}
+                                            </div>
+                                        )}
+                                        <span className="text-sm font-medium truncate text-gray-700 dark:text-gray-200 transition-colors" title={userName}>
+                                            {isEmployee 
+                                                ? new Date(row.checkInTime).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) 
+                                                : userName}
+                                        </span>
+                                    </div>
+                                    <span className="text-xs font-medium text-gray-500 dark:text-gray-400 whitespace-nowrap shrink-0 ml-2">
+                                        {formatTime(row.checkInTime)} – {formatTime(row.checkOutTime)}
                                     </span>
                                 </div>
+                            );
+                        })
+                    )}
+                </div>
+            ) : (
+                /* Desktop / Tablet Table View */
+                <>
+                    {/* Table Header — merged Time column, no Report column */}
+                    <div className="grid grid-cols-2 text-[11px] font-bold uppercase tracking-wider pb-2 border-b text-gray-400 dark:text-gray-500 border-gray-100 dark:border-gray-800 transition-colors">
+                        <span>{isEmployee ? "Date" : "Employee"}</span>
+                        <span className='text-right'>Time</span>
+                    </div>
 
-                                <span className="text-sm text-center font-medium text-gray-600 dark:text-gray-300 transition-colors">
-                                    {formatTime(row.checkInTime)}
-                                </span>
-                                
-                                <span className="text-sm text-center font-medium text-gray-500 dark:text-gray-400 transition-colors">
-                                    {formatTime(row.checkOutTime)}
-                                </span>
-
-                                <div className="flex justify-center">
-                                    <button
-                                        onClick={() => {
-                                            if (isEmployee) {
-                                                router.push('/profile/attendance');
-                                            } else {
-                                                router.push(`/employees/${row.user._id}`);
-                                            }
-                                        }}
-                                        className="w-7 h-7 rounded-lg flex items-center justify-center transition-all bg-blue-50 dark:bg-gray-800 text-blue-500 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-300"
-                                        aria-label={isEmployee ? "View my details" : `View report for ${userName}`}
-                                    >
-                                        <BarChart2 className="w-4 h-4" />
-                                    </button>
-                                </div>
+                    {/* List Body */}
+                    <div className='flex flex-col gap-1'>
+                        {displayList.length === 0 ? (
+                            <div className="text-center text-sm text-gray-400 dark:text-gray-500 py-8 flex flex-col items-center justify-center border-2 border-dashed border-gray-100 dark:border-gray-800 rounded-xl mt-2 transition-colors">
+                                No check-ins found.
                             </div>
-                        );
-                    })
-                )}
-            </div>
+                        ) : (
+                            displayList.map((row) => {
+                                const userName = row.user?.name || 'Unknown';
+                                const initial = getInitials(userName);
+                                
+                                return (
+                                    <div
+                                        key={row._id}
+                                        onClick={() => {
+                                            if (isEmployee) router.push('/profile/attendance');
+                                            else router.push(`/employees/${row.user._id}`);
+                                        }}
+                                        className="grid grid-cols-2 items-center py-2.5 rounded-xl px-2 transition-colors duration-150 hover:bg-gray-50 dark:hover:bg-gray-800/50 group cursor-pointer"
+                                    >
+                                        <div className="flex items-center gap-2.5">
+                                            {!isEmployee && !isVerySmall && (
+                                                <div className={cn(
+                                                    "w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 transition-colors",
+                                                    getAvatarColor(userName)
+                                                )}>
+                                                    {initial}
+                                                </div>
+                                            )}
+                                            <span className="text-sm font-medium truncate max-w-[120px] lg:max-w-[180px] text-gray-700 dark:text-gray-200 transition-colors" title={userName}>
+                                                {isEmployee 
+                                                    ? new Date(row.checkInTime).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) 
+                                                    : userName}
+                                            </span>
+                                        </div>
+
+                                        <span className="text-sm text-right font-medium text-gray-600 dark:text-gray-300 transition-colors">
+                                            {formatTime(row.checkInTime)} – {formatTime(row.checkOutTime)}
+                                        </span>
+                                    </div>
+                                );
+                            })
+                        )}
+                    </div>
+                </>
+            )}
         </div>
     );
 }

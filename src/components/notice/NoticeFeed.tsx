@@ -133,23 +133,6 @@ export default function NoticeFeed({
                             </div>
                             
                             <div className="flex items-center gap-1">
-                                {isHrOrAdmin && onPinToggle && (
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className={cn(
-                                            "p-1.5 h-8 w-8 rounded-full transition-all duration-200",
-                                            notice.isPinned
-                                                ? "text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/20"
-                                                : "text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
-                                        )}
-                                        onClick={() => onPinToggle(notice._id)}
-                                        title={notice.isPinned ? "Unpin Notice" : "Pin Notice"}
-                                        aria-label={notice.isPinned ? "Unpin Notice" : "Pin Notice"}
-                                    >
-                                        <Pin size={16} className={cn(notice.isPinned && "fill-current")} />
-                                    </Button>
-                                )}
                                 
                                 {showMenu && (
                                     <div className="relative">

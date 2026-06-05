@@ -2,7 +2,7 @@
 
 export default function CTASection() {
   return (
-    <section className="w-full px-20 py-6">
+    <section className="w-full px-4 sm:px-8 lg:px-20 py-6">
       <div className="max-w-6xl mx-auto">
         <div className="bg-gradient-to-r from-indigo-700 to-purple-600 rounded-2xl px-6 py-8 md:px-10 md:py-10 shadow-lg">
           

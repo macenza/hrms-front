@@ -64,3 +64,30 @@
     @apply w-full;
   }
 }
+
+/* 7. Responsive Utilities */
+@layer utilities {
+  /* Scrollable container with invisible scrollbar */
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Multi-line text truncation */
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+}
+
+/* 8. Global Overflow Prevention — prevents horizontal scroll on mobile */
+html,
+body {
+  overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
+}

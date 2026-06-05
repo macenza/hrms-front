@@ -13,7 +13,7 @@ import Cookies from 'js-cookie';
 import {
     LayoutDashboard, Users, CalendarCheck, CalendarDays, Briefcase,
     DollarSign, CreditCard, Package, Bell, Settings, LogOut, Sun, Moon, X, User,
-    AlertTriangle
+    AlertTriangle, CalendarHeart
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -77,6 +77,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             { id: 'Attendance', href: '/attendance', icon: CalendarCheck, label: 'Attendance', show: isAdminOrHR },
             { id: 'Projects', href: '/projects', icon: Briefcase, label: 'Projects', show: true },
             { id: 'Leave', href: '/leave', icon: CalendarDays, label: 'Leave', show: true },
+            { id: 'Holidays', href: '/holidays', icon: CalendarHeart, label: 'Holidays', show: true },
             // { id: 'Loan', href: '/loan', icon: CreditCard, label: 'Loan', show: true },
             { id: 'Notice', href: '/notice', icon: Bell, label: 'Notice', show: true },
             { id: 'Settings', href: '/settings', icon: Settings, label: 'Settings', show: true },
