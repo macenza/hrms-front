@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { Plus, Calendar, Loader2 } from 'lucide-react';
 import { cn } from '@/utils/cn';
+import { useBreakpoint } from '@/hooks/useMediaQuery';
 import { Button } from '@/components/ui/Button';
 import TaskModal from './TaskModal';
 import {
@@ -88,6 +89,9 @@ export default function KanbanBoard({
     const [columns, setColumns] = useState<KanbanBoardData>({});
     const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
     const [editingTask, setEditingTask] = useState<TaskRecord | null>(null);
+    const [activeTab, setActiveTab] = useState<TaskStatus>(UI_COLUMN_ORDER[0]);
+    const breakpoint = useBreakpoint();
+    const isMobile = breakpoint === 'mobile';
 
     useEffect(() => {
         setIsMounted(true);
@@ -207,100 +211,179 @@ export default function KanbanBoard({
                 </Button>
             </div>
             
-            <DragDropContext onDragEnd={onDragEnd}>
-                <div className="flex gap-6 overflow-x-auto pb-4 hide-scrollbar flex-1 items-start">
-                    {Object.entries(columns).map(([columnId, column]) => (
-                        <div key={columnId} className="w-[320px] shrink-0 bg-gray-100/80 dark:bg-gray-800/40 rounded-2xl flex flex-col max-h-[75vh] border border-gray-200/50 dark:border-gray-800 transition-colors">
-                            <div className="p-4 flex items-center justify-between border-b border-gray-200/50 dark:border-gray-800/50 transition-colors">
-                                <div className="flex items-center gap-2">
-                                    <h3 className="font-bold text-gray-800 dark:text-gray-200 transition-colors">{column.title}</h3>
-                                    <span className="bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-xs font-bold px-2 py-0.5 rounded-md transition-colors">
-                                        {column.items.length}
+            {/* Mobile: Tabbed View */}
+            {isMobile ? (
+                <div className="flex-1">
+                    {/* Status Tabs */}
+                    <div className="flex overflow-x-auto hide-scrollbar border-b border-gray-200 dark:border-gray-800 mb-4 -mx-1">
+                        {UI_COLUMN_ORDER.map((statusId) => {
+                            const col = columns[statusId];
+                            if (!col) return null;
+                            const isActive = activeTab === statusId;
+                            return (
+                                <button
+                                    key={statusId}
+                                    onClick={() => setActiveTab(statusId)}
+                                    className={cn(
+                                        'px-4 py-2.5 text-xs font-bold whitespace-nowrap transition-all border-b-2 shrink-0',
+                                        isActive
+                                            ? 'text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400'
+                                            : 'text-gray-500 dark:text-gray-400 border-transparent hover:text-gray-700 dark:hover:text-gray-300'
+                                    )}
+                                >
+                                    {col.title}
+                                    <span className={cn(
+                                        'ml-1.5 text-[10px] px-1.5 py-0.5 rounded-md font-extrabold',
+                                        isActive
+                                            ? 'bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400'
+                                            : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400'
+                                    )}>
+                                        {col.items.length}
                                     </span>
-                                </div>
-                            </div>
-                            
-                            <Droppable droppableId={columnId}>
-                                {(provided, snapshot) => (
-                                    <div
-                                        {...provided.droppableProps}
-                                        ref={provided.innerRef}
-                                        className={cn(
-                                            "flex-1 p-3 space-y-3 overflow-y-auto min-h-[150px] transition-colors rounded-b-2xl",
-                                            snapshot.isDraggingOver ? "bg-blue-50/50 dark:bg-blue-900/10" : ""
-                                        )}
-                                    >
-                                        {column.items.map((item, index) => {
-                                            const isManager = ['admin', 'manager', 'hr'].includes(currentUserRole?.toLowerCase() || '');
-                                            const isTaskAssignee = item.assignee 
-                                                ? (typeof item.assignee === 'object' 
-                                                    ? (item.assignee._id === currentUserId || item.assignee.id === currentUserId) 
-                                                    : item.assignee === currentUserId)
-                                                : false;
-                                            const isDragDisabled = !isManager && !isTaskAssignee;
+                                </button>
+                            );
+                        })}
+                    </div>
 
-                                            return (
-                                                <Draggable key={item.id} draggableId={item.id} index={index} isDragDisabled={isDragDisabled}>
-                                                    {(provided, snapshot) => {
-                                                        const isOverdue = new Date(item.dueDate) < new Date() && columnId !== 'Completed';
-                                                        
-                                                        return (
-                                                            <div
-                                                                ref={provided.innerRef}
-                                                                {...provided.draggableProps}
-                                                                {...provided.dragHandleProps}
-                                                                className={cn(
-                                                                    "bg-white dark:bg-gray-900 p-4 rounded-xl shadow-sm dark:shadow-none border border-gray-100 dark:border-gray-800 group hover:shadow-md dark:hover:shadow-none hover:border-blue-300 dark:hover:border-blue-900/50 transition-all select-none",
-                                                                    isDragDisabled ? "cursor-default opacity-85" : "cursor-grab active:cursor-grabbing",
-                                                                    snapshot.isDragging ? "rotate-2 shadow-xl dark:shadow-2xl ring-2 ring-blue-500/50 dark:ring-blue-400/50 cursor-grabbing" : ""
-                                                                )}
-                                                                onClick={() => {
-                                                                    setEditingTask(item);
-                                                                    setIsTaskModalOpen(true);
-                                                                }}
-                                                            >
-                                                                <h4 className="font-bold text-gray-900 dark:text-gray-100 mb-4 leading-snug transition-colors">
-                                                                    {item.title}
-                                                                </h4>
-                                                                
-                                                                <div className="flex items-center justify-between pt-3 border-t border-gray-50 dark:border-gray-800/50 transition-colors">
-                                                                    <div className={cn(
-                                                                        "flex items-center gap-1 text-xs font-medium transition-colors",
-                                                                        isOverdue ? "text-red-500 dark:text-red-400 font-bold" : "text-gray-400 dark:text-gray-500"
-                                                                    )}>
-                                                                        <Calendar size={14} /> {item.dueDate || 'No date'}
-                                                                    </div>
+                    {/* Active Tab Cards */}
+                    <div className="space-y-3 pb-4">
+                        {columns[activeTab]?.items.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center py-16 text-gray-400 dark:text-gray-500">
+                                <p className="text-sm font-medium">No tasks in {activeTab}</p>
+                            </div>
+                        ) : (
+                            columns[activeTab]?.items.map((item) => {
+                                const isOverdue = new Date(item.dueDate) < new Date() && activeTab !== 'Completed';
+                                return (
+                                    <div
+                                        key={item.id}
+                                        onClick={() => {
+                                            setEditingTask(item);
+                                            setIsTaskModalOpen(true);
+                                        }}
+                                        className="bg-white dark:bg-gray-900 p-4 rounded-xl shadow-sm dark:shadow-none border border-gray-100 dark:border-gray-800 active:scale-[0.99] transition-all cursor-pointer"
+                                    >
+                                        <h4 className="font-bold text-gray-900 dark:text-gray-100 mb-3 leading-snug text-sm">
+                                            {item.title}
+                                        </h4>
+                                        <div className="flex items-center justify-between pt-2.5 border-t border-gray-50 dark:border-gray-800/50">
+                                            <div className={cn(
+                                                'flex items-center gap-1 text-xs font-medium',
+                                                isOverdue ? 'text-red-500 dark:text-red-400 font-bold' : 'text-gray-400 dark:text-gray-500'
+                                            )}>
+                                                <Calendar size={13} />
+                                                {item.dueDate || 'No date'}
+                                            </div>
+                                            <div className={cn(
+                                                'w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold',
+                                                getAvatarColor(item.assigneeName)
+                                            )} title={item.assigneeName}>
+                                                {getInitials(item.assigneeName)}
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })
+                        )}
+                    </div>
+                </div>
+            ) : (
+                /* Desktop: DnD Kanban */
+                <DragDropContext onDragEnd={onDragEnd}>
+                    <div className="flex gap-6 overflow-x-auto pb-4 hide-scrollbar flex-1 items-start">
+                        {Object.entries(columns).map(([columnId, column]) => (
+                            <div key={columnId} className="w-[320px] shrink-0 bg-gray-100/80 dark:bg-gray-800/40 rounded-2xl flex flex-col max-h-[75vh] border border-gray-200/50 dark:border-gray-800 transition-colors">
+                                <div className="p-4 flex items-center justify-between border-b border-gray-200/50 dark:border-gray-800/50 transition-colors">
+                                    <div className="flex items-center gap-2">
+                                        <h3 className="font-bold text-gray-800 dark:text-gray-200 transition-colors">{column.title}</h3>
+                                        <span className="bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-xs font-bold px-2 py-0.5 rounded-md transition-colors">
+                                            {column.items.length}
+                                        </span>
+                                    </div>
+                                </div>
+                                
+                                <Droppable droppableId={columnId}>
+                                    {(provided, snapshot) => (
+                                        <div
+                                            {...provided.droppableProps}
+                                            ref={provided.innerRef}
+                                            className={cn(
+                                                "flex-1 p-3 space-y-3 overflow-y-auto min-h-[150px] transition-colors rounded-b-2xl",
+                                                snapshot.isDraggingOver ? "bg-blue-50/50 dark:bg-blue-900/10" : ""
+                                            )}
+                                        >
+                                            {column.items.map((item, index) => {
+                                                const isManager = ['admin', 'manager', 'hr'].includes(currentUserRole?.toLowerCase() || '');
+                                                const isTaskAssignee = item.assignee 
+                                                    ? (typeof item.assignee === 'object' 
+                                                        ? (item.assignee._id === currentUserId || item.assignee.id === currentUserId) 
+                                                        : item.assignee === currentUserId)
+                                                    : false;
+                                                const isDragDisabled = !isManager && !isTaskAssignee;
+
+                                                return (
+                                                    <Draggable key={item.id} draggableId={item.id} index={index} isDragDisabled={isDragDisabled}>
+                                                        {(provided, snapshot) => {
+                                                            const isOverdue = new Date(item.dueDate) < new Date() && columnId !== 'Completed';
+                                                            
+                                                            return (
+                                                                <div
+                                                                    ref={provided.innerRef}
+                                                                    {...provided.draggableProps}
+                                                                    {...provided.dragHandleProps}
+                                                                    className={cn(
+                                                                        "bg-white dark:bg-gray-900 p-4 rounded-xl shadow-sm dark:shadow-none border border-gray-100 dark:border-gray-800 group hover:shadow-md dark:hover:shadow-none hover:border-blue-300 dark:hover:border-blue-900/50 transition-all select-none",
+                                                                        isDragDisabled ? "cursor-default opacity-85" : "cursor-grab active:cursor-grabbing",
+                                                                        snapshot.isDragging ? "rotate-2 shadow-xl dark:shadow-2xl ring-2 ring-blue-500/50 dark:ring-blue-400/50 cursor-grabbing" : ""
+                                                                    )}
+                                                                    onClick={() => {
+                                                                        setEditingTask(item);
+                                                                        setIsTaskModalOpen(true);
+                                                                    }}
+                                                                >
+                                                                    <h4 className="font-bold text-gray-900 dark:text-gray-100 mb-4 leading-snug transition-colors">
+                                                                        {item.title}
+                                                                    </h4>
                                                                     
-                                                                    <div className="flex -space-x-2">
-                                                                        <div 
-                                                                            className={cn(
-                                                                                "relative w-6 h-6 rounded-full border-2 border-white dark:border-gray-900 flex items-center justify-center text-[10px] font-bold overflow-hidden transition-colors",
-                                                                                getAvatarColor(item.assigneeName)
-                                                                            )} 
-                                                                            title={item.assigneeName}
-                                                                        >
-                                                                            {item.assigneeAvatar ? (
-                                                                                <img src={item.assigneeAvatar} alt={item.assigneeName} className="w-full h-full object-cover" />
-                                                                            ) : (
-                                                                                getInitials(item.assigneeName)
-                                                                            )}
+                                                                    <div className="flex items-center justify-between pt-3 border-t border-gray-50 dark:border-gray-800/50 transition-colors">
+                                                                        <div className={cn(
+                                                                            "flex items-center gap-1 text-xs font-medium transition-colors",
+                                                                            isOverdue ? "text-red-500 dark:text-red-400 font-bold" : "text-gray-400 dark:text-gray-500"
+                                                                        )}>
+                                                                            <Calendar size={14} /> {item.dueDate || 'No date'}
+                                                                        </div>
+                                                                        
+                                                                        <div className="flex -space-x-2">
+                                                                            <div 
+                                                                                className={cn(
+                                                                                    "relative w-6 h-6 rounded-full border-2 border-white dark:border-gray-900 flex items-center justify-center text-[10px] font-bold overflow-hidden transition-colors",
+                                                                                    getAvatarColor(item.assigneeName)
+                                                                                )} 
+                                                                                title={item.assigneeName}
+                                                                            >
+                                                                                {item.assigneeAvatar ? (
+                                                                                    <img src={item.assigneeAvatar} alt={item.assigneeName} className="w-full h-full object-cover" />
+                                                                                ) : (
+                                                                                    getInitials(item.assigneeName)
+                                                                                )}
+                                                                            </div>
                                                                         </div>
                                                                     </div>
                                                                 </div>
-                                                            </div>
-                                                        );
-                                                    }}
-                                                </Draggable>
-                                            );
-                                        })}
-                                        {provided.placeholder}
-                                    </div>
-                                )}
-                            </Droppable>
-                        </div>
-                    ))}
-                </div>
-            </DragDropContext>
+                                                            );
+                                                        }}
+                                                    </Draggable>
+                                                );
+                                            })}
+                                            {provided.placeholder}
+                                        </div>
+                                    )}
+                                </Droppable>
+                            </div>
+                        ))}
+                    </div>
+                </DragDropContext>
+            )}
             
             <TaskModal
                 isOpen={isTaskModalOpen}

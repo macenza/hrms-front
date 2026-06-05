@@ -6,6 +6,7 @@ import { useLeaveRequests, useUpdateLeaveStatus } from '@/hooks/api/useLeave';
 import { Leave } from '@/types';
 import { Loader2, CheckCircle2, XCircle, Clock, Filter, ChevronLeft, ChevronRight, Search, ArrowUpDown, RefreshCw } from 'lucide-react';
 import { cn } from '@/utils/cn';
+import { useBreakpoint } from '@/hooks/useMediaQuery';
 import { toast } from 'sonner';
 
 type SortKey = 'leaveType' | 'startDate' | 'numberOfDays' | 'status' | 'requestedAt' | 'employeeName';
@@ -84,6 +85,8 @@ export default function LeaveTable() {
     const [currentPage, setCurrentPage] = useState(1);
     const [entriesPerPage, setEntriesPerPage] = useState(10);
     const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: 'asc' | 'desc' } | null>({ key: 'requestedAt', direction: 'desc' });
+    const breakpoint = useBreakpoint();
+    const isMobile = breakpoint === 'mobile';
 
     // Client-side processing
     let processedLeaves = [...leaves];
@@ -248,127 +251,212 @@ export default function LeaveTable() {
 
             {isError && <div className="p-4 m-4 bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 rounded-xl text-sm font-medium border border-red-100 dark:border-red-900/50 transition-colors">Failed to load leave records.</div>}
             
-            {/* Table Area */}
-            <div className="overflow-x-auto min-h-[400px]">
-                <table className="w-full text-left border-collapse whitespace-nowrap">
-                    <thead>
-                        <tr className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400 font-semibold select-none transition-colors">
-                            {isHrOrAdmin && viewMode === 'all' && (
-                                <th className="p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors group" onClick={() => handleSort('employeeName')}>
+            {/* Mobile Card View / Table */}
+            {isMobile ? (
+                <div className="p-3 space-y-3 min-h-[400px]">
+                    {isLoading ? (
+                        Array.from({ length: 5 }).map((_, idx) => (
+                            <div key={idx} className="animate-pulse p-4 rounded-xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800">
+                                <div className="flex justify-between mb-3">
+                                    <div className="h-4 w-28 rounded bg-gray-200 dark:bg-gray-800" />
+                                    <div className="h-5 w-16 rounded-full bg-gray-200 dark:bg-gray-800" />
+                                </div>
+                                <div className="h-3 w-40 rounded bg-gray-100 dark:bg-gray-800/50 mb-2" />
+                                <div className="h-3 w-24 rounded bg-gray-100 dark:bg-gray-800/50" />
+                            </div>
+                        ))
+                    ) : currentData.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-16 text-gray-500 dark:text-gray-400">
+                            <Filter size={32} className="text-gray-300 dark:text-gray-600 mb-3" />
+                            <p className="font-semibold text-gray-900 dark:text-gray-100">No leave records found.</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Try adjusting your filters.</p>
+                        </div>
+                    ) : (
+                        currentData.map((leave) => {
+                            const empData = typeof (leave as any).user === 'object' ? (leave as any).user : null;
+                            const empName = empData?.name || 'Unknown';
+
+                            return (
+                                <div
+                                    key={leave._id}
+                                    className="p-4 rounded-xl bg-gray-50/50 dark:bg-gray-800/20 border border-gray-100 dark:border-gray-800"
+                                >
+                                    {/* Top: Employee name + Status */}
+                                    <div className="flex items-start justify-between mb-2">
+                                        <div className="min-w-0 flex-1">
+                                            {isHrOrAdmin && viewMode === 'all' && (
+                                                <p className="font-bold text-gray-900 dark:text-gray-100 truncate text-sm" title={empName}>{empName}</p>
+                                            )}
+                                            <div className="flex items-center gap-2 mt-0.5">
+                                                <span className="text-xs font-semibold text-gray-600 dark:text-gray-300">{leave.leaveType}</span>
+                                                <span className="text-gray-300 dark:text-gray-600">•</span>
+                                                <span className="text-xs text-gray-500 dark:text-gray-400">{leave.numberOfDays} day{leave.numberOfDays !== 1 ? 's' : ''}</span>
+                                            </div>
+                                        </div>
+                                        <div className="shrink-0 ml-2">
+                                            {getStatusBadge(leave.status)}
+                                        </div>
+                                    </div>
+
+                                    {/* Date range */}
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+                                        {new Date(leave.startDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
+                                        {' → '}
+                                        {new Date(leave.endDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                    </p>
+
+                                    {/* Reason (truncated) */}
+                                    {leave.reason && (
+                                        <p className="text-xs text-gray-400 dark:text-gray-500 line-clamp-2 mb-2" title={leave.reason}>
+                                            {leave.reason}
+                                        </p>
+                                    )}
+
+                                    {/* Actions for HR */}
+                                    {isHrOrAdmin && viewMode === 'all' && leave.status === 'Pending' && (
+                                        <div className="flex items-center gap-3 mt-2 pt-2 border-t border-gray-100 dark:border-gray-800">
+                                            <button
+                                                onClick={() => handleUpdateStatus(leave._id, 'Approved')}
+                                                className="flex-1 px-3 py-2 text-xs font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 hover:bg-emerald-600 hover:text-white rounded-lg border border-emerald-200 dark:border-emerald-500/20 transition-all text-center"
+                                            >
+                                                Approve
+                                            </button>
+                                            <button
+                                                onClick={() => handleUpdateStatus(leave._id, 'Rejected')}
+                                                className="flex-1 px-3 py-2 text-xs font-bold text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-500/10 hover:bg-red-600 hover:text-white rounded-lg border border-red-200 dark:border-red-900/50 transition-all text-center"
+                                            >
+                                                Reject
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })
+                    )}
+                </div>
+            ) : (
+                /* Desktop / Tablet Table */
+                <div className="overflow-x-auto min-h-[400px]">
+                    <table className="w-full text-left border-collapse whitespace-nowrap">
+                        <thead>
+                            <tr className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400 font-semibold select-none transition-colors">
+                                {isHrOrAdmin && viewMode === 'all' && (
+                                    <th className="p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors group" onClick={() => handleSort('employeeName')}>
+                                        <div className="flex items-center gap-1">
+                                            Employee <ArrowUpDown size={14} className="text-gray-300 dark:text-gray-600 group-hover:text-gray-500 dark:group-hover:text-gray-300 transition-colors" />
+                                        </div>
+                                    </th>
+                                )}
+                                <th className="p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors group" onClick={() => handleSort('leaveType')}>
                                     <div className="flex items-center gap-1">
-                                        Employee <ArrowUpDown size={14} className="text-gray-300 dark:text-gray-600 group-hover:text-gray-500 dark:group-hover:text-gray-300 transition-colors" />
+                                        Leave Type <ArrowUpDown size={14} className="text-gray-300 dark:text-gray-600 group-hover:text-gray-500 dark:group-hover:text-gray-300 transition-colors" />
                                     </div>
                                 </th>
-                            )}
-                            <th className="p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors group" onClick={() => handleSort('leaveType')}>
-                                <div className="flex items-center gap-1">
-                                    Leave Type <ArrowUpDown size={14} className="text-gray-300 dark:text-gray-600 group-hover:text-gray-500 dark:group-hover:text-gray-300 transition-colors" />
-                                </div>
-                            </th>
-                            <th className="p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors group" onClick={() => handleSort('startDate')}>
-                                <div className="flex items-center gap-1">
-                                    Duration <ArrowUpDown size={14} className="text-gray-300 dark:text-gray-600 group-hover:text-gray-500 dark:group-hover:text-gray-300 transition-colors" />
-                                </div>
-                            </th>
-                            <th className="p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors group" onClick={() => handleSort('numberOfDays')}>
-                                <div className="flex items-center gap-1">
-                                    Days <ArrowUpDown size={14} className="text-gray-300 dark:text-gray-600 group-hover:text-gray-500 dark:group-hover:text-gray-300 transition-colors" />
-                                </div>
-                            </th>
-                            <th className="p-4">Reason</th>
-                            <th className="p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors group" onClick={() => handleSort('status')}>
-                                <div className="flex items-center gap-1">
-                                    Status <ArrowUpDown size={14} className="text-gray-300 dark:text-gray-600 group-hover:text-gray-500 dark:group-hover:text-gray-300 transition-colors" />
-                                </div>
-                            </th>
-                            <th className="p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors group" onClick={() => handleSort('requestedAt')}>
-                                <div className="flex items-center gap-1">
-                                    Requested <ArrowUpDown size={14} className="text-gray-300 dark:text-gray-600 group-hover:text-gray-500 dark:group-hover:text-gray-300 transition-colors" />
-                                </div>
-                            </th>
-                            {isHrOrAdmin && viewMode === 'all' && (
-                                <th className="p-4 text-center">Actions</th>
-                            )}
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100 dark:divide-gray-800 transition-colors">
-                        {isLoading ? (
-                            Array.from({ length: 5 }).map((_, idx) => <TableRowSkeleton key={idx} isHrOrAdmin={isHrOrAdmin} viewMode={viewMode} />)
-                        ) : currentData.length === 0 ? (
-                            <tr>
-                                <td colSpan={isHrOrAdmin && viewMode === 'all' ? 8 : 6} className="p-16 text-center text-gray-500 dark:text-gray-400 transition-colors">
-                                    <div className="flex flex-col items-center justify-center">
-                                        <Filter size={32} className="text-gray-300 dark:text-gray-600 mb-3 transition-colors" />
-                                        <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 transition-colors">No leave records found.</p>
-                                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 transition-colors">Try adjusting your search or filters.</p>
+                                <th className="p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors group" onClick={() => handleSort('startDate')}>
+                                    <div className="flex items-center gap-1">
+                                        Duration <ArrowUpDown size={14} className="text-gray-300 dark:text-gray-600 group-hover:text-gray-500 dark:group-hover:text-gray-300 transition-colors" />
                                     </div>
-                                </td>
+                                </th>
+                                <th className="p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors group" onClick={() => handleSort('numberOfDays')}>
+                                    <div className="flex items-center gap-1">
+                                        Days <ArrowUpDown size={14} className="text-gray-300 dark:text-gray-600 group-hover:text-gray-500 dark:group-hover:text-gray-300 transition-colors" />
+                                    </div>
+                                </th>
+                                <th className="p-4 hidden lg:table-cell">Reason</th>
+                                <th className="p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors group" onClick={() => handleSort('status')}>
+                                    <div className="flex items-center gap-1">
+                                        Status <ArrowUpDown size={14} className="text-gray-300 dark:text-gray-600 group-hover:text-gray-500 dark:group-hover:text-gray-300 transition-colors" />
+                                    </div>
+                                </th>
+                                <th className="p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors group hidden lg:table-cell" onClick={() => handleSort('requestedAt')}>
+                                    <div className="flex items-center gap-1">
+                                        Requested <ArrowUpDown size={14} className="text-gray-300 dark:text-gray-600 group-hover:text-gray-500 dark:group-hover:text-gray-300 transition-colors" />
+                                    </div>
+                                </th>
+                                {isHrOrAdmin && viewMode === 'all' && (
+                                    <th className="p-4 text-center">Actions</th>
+                                )}
                             </tr>
-                        ) : (
-                            currentData.map((leave) => (
-                                <tr key={leave._id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                                    {isHrOrAdmin && viewMode === 'all' && (
-                                        <td className="p-4">
-                                            <div className="text-sm font-bold text-gray-900 dark:text-gray-100 transition-colors">
-                                                {typeof (leave as any).user === 'object' && (leave as any).user !== null ? ((leave as any).user as any).name : 'Unknown Employee'}
-                                            </div>
-                                            <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 uppercase transition-colors">
-                                                ID: {typeof (leave as any).user === 'object' && (leave as any).user !== null ? (((leave as any).user as any).employeeId || String(((leave as any).user as any)._id).slice(-6)) : String((leave as any).user).slice(-6)}
-                                            </div>
-                                        </td>
-                                    )}
-                                    <td className="p-4 text-sm font-semibold text-gray-700 dark:text-gray-300 transition-colors">
-                                        {leave.leaveType}
+                        </thead>
+                        <tbody className="divide-y divide-gray-100 dark:divide-gray-800 transition-colors">
+                            {isLoading ? (
+                                Array.from({ length: 5 }).map((_, idx) => <TableRowSkeleton key={idx} isHrOrAdmin={isHrOrAdmin} viewMode={viewMode} />)
+                            ) : currentData.length === 0 ? (
+                                <tr>
+                                    <td colSpan={isHrOrAdmin && viewMode === 'all' ? 8 : 6} className="p-16 text-center text-gray-500 dark:text-gray-400 transition-colors">
+                                        <div className="flex flex-col items-center justify-center">
+                                            <Filter size={32} className="text-gray-300 dark:text-gray-600 mb-3 transition-colors" />
+                                            <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 transition-colors">No leave records found.</p>
+                                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 transition-colors">Try adjusting your search or filters.</p>
+                                        </div>
                                     </td>
-                                    <td className="p-4 text-sm text-gray-600 dark:text-gray-400 transition-colors">
-                                        {new Date(leave.startDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })} 
-                                        <span className="text-gray-300 dark:text-gray-600 mx-2 transition-colors">→</span> 
-                                        {new Date(leave.endDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
-                                    </td>
-                                    <td className="p-4 text-sm font-medium text-gray-900 dark:text-gray-100 text-center sm:text-left transition-colors">
-                                        {leave.numberOfDays}
-                                    </td>
-                                    <td className="p-4 text-sm text-gray-500 dark:text-gray-400 max-w-[200px] truncate transition-colors" title={leave.reason}>
-                                        {leave.reason}
-                                    </td>
-                                    <td className="p-4">
-                                        {getStatusBadge(leave.status)}
-                                    </td>
-                                    <td className="p-4 text-sm text-gray-500 dark:text-gray-400 transition-colors">
-                                        {new Date(leave.requestedAt || leave.createdAt).toLocaleDateString()}
-                                    </td>
-                                    {isHrOrAdmin && viewMode === 'all' && (
-                                        <td className="p-4">
-                                            {leave.status === 'Pending' ? (
-                                                <div className="flex items-center justify-center gap-2">
-                                                    <button 
-                                                        onClick={() => handleUpdateStatus(leave._id, 'Approved')}
-                                                        className="px-2.5 py-1.5 text-xs font-bold text-emerald-700 dark:text-emerald-400 hover:text-white dark:hover:text-white bg-emerald-50 dark:bg-emerald-500/10 hover:bg-emerald-600 dark:hover:bg-emerald-600 rounded border border-emerald-200 dark:border-emerald-500/20 transition-all flex items-center gap-1 shadow-sm"
-                                                        title="Approve Leave"
-                                                    >
-                                                        Approve
-                                                    </button>
-                                                    <button 
-                                                        onClick={() => handleUpdateStatus(leave._id, 'Rejected')}
-                                                        className="px-2.5 py-1.5 text-xs font-bold text-red-700 dark:text-red-400 hover:text-white dark:hover:text-white bg-red-50 dark:bg-red-500/10 hover:bg-red-600 dark:hover:bg-red-600 rounded border border-red-200 dark:border-red-900/50 transition-all flex items-center gap-1 shadow-sm"
-                                                        title="Reject Leave"
-                                                    >
-                                                        Reject
-                                                    </button>
-                                                </div>
-                                            ) : (
-                                                <div className="text-center">
-                                                    <span className="text-xs font-semibold text-gray-400 dark:text-gray-500">Processed</span>
-                                                </div>
-                                            )}
-                                        </td>
-                                    )}
                                 </tr>
-                            ))
-                        )}
-                    </tbody>
-                </table>
-            </div>
+                            ) : (
+                                currentData.map((leave) => (
+                                    <tr key={leave._id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                                        {isHrOrAdmin && viewMode === 'all' && (
+                                            <td className="p-4">
+                                                <div className="text-sm font-bold text-gray-900 dark:text-gray-100 transition-colors">
+                                                    {typeof (leave as any).user === 'object' && (leave as any).user !== null ? ((leave as any).user as any).name : 'Unknown Employee'}
+                                                </div>
+                                                <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 uppercase transition-colors">
+                                                    ID: {typeof (leave as any).user === 'object' && (leave as any).user !== null ? (((leave as any).user as any).employeeId || String(((leave as any).user as any)._id).slice(-6)) : String((leave as any).user).slice(-6)}
+                                                </div>
+                                            </td>
+                                        )}
+                                        <td className="p-4 text-sm font-semibold text-gray-700 dark:text-gray-300 transition-colors">
+                                            {leave.leaveType}
+                                        </td>
+                                        <td className="p-4 text-sm text-gray-600 dark:text-gray-400 transition-colors">
+                                            {new Date(leave.startDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })} 
+                                            <span className="text-gray-300 dark:text-gray-600 mx-2 transition-colors">→</span> 
+                                            {new Date(leave.endDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                        </td>
+                                        <td className="p-4 text-sm font-medium text-gray-900 dark:text-gray-100 text-center sm:text-left transition-colors">
+                                            {leave.numberOfDays}
+                                        </td>
+                                        <td className="p-4 text-sm text-gray-500 dark:text-gray-400 max-w-[200px] truncate transition-colors hidden lg:table-cell" title={leave.reason}>
+                                            {leave.reason}
+                                        </td>
+                                        <td className="p-4">
+                                            {getStatusBadge(leave.status)}
+                                        </td>
+                                        <td className="p-4 text-sm text-gray-500 dark:text-gray-400 transition-colors hidden lg:table-cell">
+                                            {new Date(leave.requestedAt || leave.createdAt).toLocaleDateString()}
+                                        </td>
+                                        {isHrOrAdmin && viewMode === 'all' && (
+                                            <td className="p-4">
+                                                {leave.status === 'Pending' ? (
+                                                    <div className="flex items-center justify-center gap-2 min-w-[140px]">
+                                                        <button 
+                                                            onClick={() => handleUpdateStatus(leave._id, 'Approved')}
+                                                            className="flex-1 px-3 py-1.5 text-xs font-bold text-emerald-700 dark:text-emerald-400 hover:text-white dark:hover:text-white bg-emerald-50 dark:bg-emerald-500/10 hover:bg-emerald-600 dark:hover:bg-emerald-600 rounded border border-emerald-200 dark:border-emerald-500/20 transition-all text-center shadow-sm"
+                                                            title="Approve Leave"
+                                                        >
+                                                            Approve
+                                                        </button>
+                                                        <button 
+                                                            onClick={() => handleUpdateStatus(leave._id, 'Rejected')}
+                                                            className="flex-1 px-3 py-1.5 text-xs font-bold text-red-700 dark:text-red-400 hover:text-white dark:hover:text-white bg-red-50 dark:bg-red-500/10 hover:bg-red-600 dark:hover:bg-red-600 rounded border border-red-200 dark:border-red-900/50 transition-all text-center shadow-sm"
+                                                            title="Reject Leave"
+                                                        >
+                                                            Reject
+                                                        </button>
+                                                    </div>
+                                                ) : (
+                                                    <div className="text-center min-w-[140px]">
+                                                        <span className="text-xs font-semibold text-gray-400 dark:text-gray-500">Processed</span>
+                                                    </div>
+                                                )}
+                                            </td>
+                                        )}
+                                    </tr>
+                                ))
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            )}
 
             {/* Pagination Toolbar */}
             <div className="p-4 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex flex-col sm:flex-row justify-between items-center gap-4 transition-colors">

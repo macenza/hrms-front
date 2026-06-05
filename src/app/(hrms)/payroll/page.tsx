@@ -319,27 +319,27 @@ export default function PayrollDashboard() {
                         </p>
                     </div>
                     
-                    <div className="flex items-center gap-3">
+                    <div className="flex flex-wrap items-center gap-3">
                         <Button 
                             variant="outline" 
                             onClick={() => setIsHistoryModalOpen(true)} 
-                            className="gap-2 bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 shadow-sm"
+                            className="gap-2 bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 shadow-sm whitespace-nowrap"
                         >
                             <History size={16} />
-                            <span>Payroll History & Batches</span>
+                            <span className="hidden sm:inline">Payroll History & Batches</span>
                         </Button>
                         <Button 
                             variant="primary" 
                             onClick={() => setIsFinalizeModalOpen(true)} 
                             disabled={finalizeMonthMutation.isPending}
-                            className="gap-2 shadow-sm font-semibold shadow-blue-500/20"
+                            className="gap-2 shadow-sm font-semibold shadow-blue-500/20 whitespace-nowrap"
                         >
                             {finalizeMonthMutation.isPending ? (
                                 <Loader2 size={16} className="animate-spin" />
                             ) : (
                                 <PlayCircle size={16} />
                             )}
-                            <span>Finalize Current Month</span>
+                            <span className="hidden sm:inline">Finalize Current Month</span>
                         </Button>
                     </div>
                 </div>

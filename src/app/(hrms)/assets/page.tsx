@@ -280,7 +280,7 @@ export default function AssetsPage() {
 
                 {/* Data Table */}
                 <Card className="border-gray-200 dark:border-gray-800 shadow-sm bg-white dark:bg-gray-900 transition-colors duration-300 overflow-hidden">
-                    <CardHeader className="pb-4 border-b border-gray-100 dark:border-gray-800 mb-2 transition-colors">
+                    <CardHeader className="pb-3 border-b border-gray-100 dark:border-gray-800 transition-colors">
                         <CardTitle className="text-lg text-gray-900 dark:text-gray-100 transition-colors">
                             {isManagerial ? 'Company Assets List' : 'My Assigned Assets'}
                         </CardTitle>

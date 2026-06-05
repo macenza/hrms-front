@@ -150,17 +150,6 @@ export default function StatCard({
                 <span className="text-3xl font-bold tabular-nums tracking-tight text-gray-900 dark:text-gray-100 transition-colors">
                     {displayValue}
                 </span>
-                
-                <div className={cn("flex items-center gap-1.5 px-2.5 py-1 rounded-md transition-colors", colors.trendBg)}>
-                    <span className={cn("text-xs font-bold", colors.text)}>
-                        {trendValue}
-                    </span>
-                    {isUp ? (
-                        <TrendingUp className={cn("w-3.5 h-3.5", colors.text)} />
-                    ) : (
-                        <TrendingDown className="w-3.5 h-3.5 text-red-500 dark:text-red-400" />
-                    )}
-                </div>
             </div>
         </div>
     );
