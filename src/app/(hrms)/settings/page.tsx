@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Building, Lock, Bell, ChevronRight, Loader2, Calculator, FileText } from 'lucide-react';
 import { toast } from 'sonner';
@@ -47,6 +47,24 @@ export default function SettingsPage() {
     
     // UI State
     const [activeTab, setActiveTab] = useState<SettingsTabId>('general');
+
+    // Filter tabs based on role permissions (Payroll Engine is Admin/HR only)
+    const visibleTabs = useMemo(() => {
+        return settingsTabs.filter((tab) => {
+            if (tab.id === 'payroll') {
+                const role = user?.role?.toLowerCase();
+                return role === 'admin' || role === 'hr';
+            }
+            return true;
+        });
+    }, [user]);
+
+    // Auto-redirect if active tab is restricted for current user role
+    useEffect(() => {
+        if (visibleTabs.length > 0 && !visibleTabs.some(tab => tab.id === activeTab)) {
+            setActiveTab('general');
+        }
+    }, [activeTab, visibleTabs]);
 
     // Route Protection
     useEffect(() => {
@@ -147,7 +165,7 @@ export default function SettingsPage() {
                     {/* Sidebar Navigation */}
                     <aside className="w-full lg:w-72 shrink-0">
                         <nav className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm dark:shadow-none border border-gray-200 dark:border-gray-800 p-2 space-y-1 transition-colors">
-                            {settingsTabs.map((tab) => {
+                            {visibleTabs.map((tab) => {
                                 const Icon = tab.icon;
                                 const isActive = activeTab === tab.id;
                                 return (
@@ -222,7 +240,7 @@ export default function SettingsPage() {
                                 )}
                             </div>
                         </Card>
-                        {activeTab === 'general' && <ShiftSettings />}
+                        {activeTab === 'general' && isAdmin && <ShiftSettings />}
                     </main>
 
                 </div>

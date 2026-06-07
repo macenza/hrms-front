@@ -1,4 +1,5 @@
 import React from 'react';
+import ForceLightMode from '@/components/theme/ForceLightMode';
 
 export default function AuthLayout({
     children,
@@ -7,6 +8,7 @@ export default function AuthLayout({
 }) {
     return (
         <main className="min-h-screen w-full bg-[#F8F9FB] dark:bg-gray-950 flex flex-col items-center justify-center p-4 md:p-8">
+            <ForceLightMode />
             {/* Background Decorative Elements (Optional - subtle blobs for a premium feel) */}
             <div className="fixed top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
                 <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-blue-50 dark:bg-blue-950/40 blur-[120px]" />

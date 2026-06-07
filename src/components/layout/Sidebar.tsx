@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useTheme } from 'next-themes';
+import { useUserTheme } from '@/hooks/useUserTheme';
 import { cn } from '@/utils/cn';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { logOut } from '@/store/authSlice';
@@ -22,11 +22,29 @@ interface SidebarProps {
     onClose: () => void;
 }
 
+function getCompanyLogoUrl(url?: string) {
+    if (!url) return '';
+    if (url.startsWith('http') || url.startsWith('/_next') || url.startsWith('data:')) return url;
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
+    const baseHost = apiUrl.replace(/\/api\/?$/, '');
+    const cleanUrl = url.startsWith('/') ? url : `/${url}`;
+    return `${baseHost}${cleanUrl}`;
+}
+
+const getCompanyInitials = (name?: string) => {
+    if (!name) return 'M';
+    const words = name.trim().split(/\s+/);
+    if (words.length >= 2) {
+        return (words[0].charAt(0) + words[1].charAt(0)).toUpperCase();
+    }
+    return words[0].charAt(0).toUpperCase();
+};
+
 export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     const pathname = usePathname();
     const router = useRouter();
     const dispatch = useAppDispatch();
-    const { theme, setTheme } = useTheme();
+    const { theme, setTheme } = useUserTheme();
     const [mounted, setMounted] = useState(false);
     const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
 
@@ -139,20 +157,16 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
 
                 {/* Logo & Close Button */}
                 <div className="h-20 flex items-center justify-between px-6 border-b border-gray-200 dark:border-gray-800 shrink-0 gap-2 overflow-hidden">
-                    <div className="flex items-center gap-2.5 overflow-hidden">
+                    <div className="flex items-center space-x-3">
                         {company?.companyLogoUrl ? (
                             <img 
-                                src={
-                                    company.companyLogoUrl.startsWith('http')
-                                        ? company.companyLogoUrl
-                                        : `${process.env.NEXT_PUBLIC_API_URL ? process.env.NEXT_PUBLIC_API_URL.replace('/api', '') : 'http://localhost:4000'}${company.companyLogoUrl.startsWith('/') ? '' : '/'}${company.companyLogoUrl}`
-                                } 
+                                src={getCompanyLogoUrl(company.companyLogoUrl)} 
                                 alt="Branding" 
                                 className="w-8 h-8 rounded-lg object-cover border border-gray-200 dark:border-gray-800 shrink-0"
                             />
                         ) : (
                             <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center font-black text-primary shrink-0">
-                                {company?.companyName ? company.companyName.charAt(0).toUpperCase() : 'M'}
+                                {getCompanyInitials(company?.companyName)}
                             </div>
                         )}
                         <span className="text-lg font-bold tracking-tight text-primary truncate max-w-[140px]">

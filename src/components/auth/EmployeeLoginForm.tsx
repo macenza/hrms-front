@@ -11,6 +11,8 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import Link from 'next/link';
 import Cookies from 'js-cookie';
+import apiClient from '@/services/apiClient';
+import { setCompanySettings } from '@/store/settingsSlice';
 
 export default function EmployeeLoginForm() {
     const router = useRouter();
@@ -54,6 +56,20 @@ export default function EmployeeLoginForm() {
             }
             if (data.user?.role) {
                 Cookies.set('hrms_role', data.user.role.toLowerCase(), { expires: 7, secure: process.env.NODE_ENV === 'production', sameSite: 'lax' });
+            }
+
+            // Immediately load and apply company branding
+            try {
+                const settingsRes = await apiClient.get('/settings/company');
+                const settings = settingsRes.data?.data;
+                if (settings) {
+                    dispatch(setCompanySettings(settings));
+                    if (settings.brandColor) {
+                        document.documentElement.style.setProperty('--primary-color', settings.brandColor);
+                    }
+                }
+            } catch (e) {
+                console.error("Failed to load company settings on login:", e);
             }
             
             // Normalize Mongoose _id to frontend id

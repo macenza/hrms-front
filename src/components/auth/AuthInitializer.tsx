@@ -8,12 +8,20 @@ import { fetchCurrentUser } from '@/services/authService';
 import apiClient from '@/services/apiClient';
 import { Loader2 } from 'lucide-react';
 import Cookies from 'js-cookie';
+import { useTheme } from 'next-themes';
 
 export default function AuthInitializer({ children }: { children: React.ReactNode }) {
     const dispatch = useAppDispatch();
     const persistedUser = useAppSelector((state) => state.auth.user);
     const [isHydrated, setIsHydrated] = useState(false);
     const isFirstRun = useRef(true);
+    const { setTheme } = useTheme();
+
+    useEffect(() => {
+        if (persistedUser?.profile?.settings?.theme) {
+            setTheme(persistedUser.profile.settings.theme);
+        }
+    }, [persistedUser, setTheme]);
 
     useEffect(() => {
         if (!isFirstRun.current) return;

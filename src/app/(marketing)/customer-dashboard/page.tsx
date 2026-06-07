@@ -13,6 +13,7 @@ import {
     AlertTriangle, Loader2, History, UserPlus, Plus, X, Lock, Activity
 } from 'lucide-react';
 import Link from 'next/link';
+import ForceLightMode from '@/components/theme/ForceLightMode';
 
 export default function CustomerDashboardPage() {
     const dispatch = useAppDispatch();
@@ -244,6 +245,7 @@ export default function CustomerDashboardPage() {
     if (!mounted || !customer) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
+                <ForceLightMode />
                 <div className="flex flex-col items-center gap-3">
                     <div className="w-10 h-10 border-4 border-[#6D5DFD] border-t-transparent rounded-full animate-spin" />
                     <span className="text-sm font-bold text-gray-500 dark:text-gray-400">Loading B2B Console...</span>
@@ -282,6 +284,7 @@ export default function CustomerDashboardPage() {
 
     return (
         <main className="min-h-screen bg-[#F8F9FB] dark:bg-gray-950 py-10 px-4 md:px-8">
+            <ForceLightMode />
             <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-8 duration-500">
 
                 {/* Header Welcome Bar */}
@@ -619,6 +622,19 @@ export default function CustomerDashboardPage() {
                                         </span>
                                     </div>
                                 </div>
+
+                                {totalCapacity !== Infinity && (currentCount / totalCapacity) >= 0.8 && (
+                                    <div className="mt-4 p-4 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/50 rounded-2xl flex items-start gap-3 text-amber-800 dark:text-amber-300 animate-in fade-in slide-in-from-top-2 duration-300">
+                                        <AlertTriangle className="w-5 h-5 text-amber-500 dark:text-amber-400 shrink-0 mt-0.5" />
+                                        <div className="space-y-1">
+                                            <p className="text-xs font-black uppercase tracking-wider">Warning: Seat Capacity Running Low</p>
+                                            <p className="text-xs font-medium text-amber-700 dark:text-amber-405/90 leading-relaxed">
+                                                You have used {Math.round((currentCount / totalCapacity) * 100)}% of your active employee seats ({currentCount} of {totalCapacity}). 
+                                                Please buy additional employee packs or upgrade your subscription plan to ensure uninterrupted onboarding of new employees.
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
 
