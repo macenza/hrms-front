@@ -12,7 +12,7 @@ export interface Asset {
     category: string;
     assignee: string | null;
     date: string | null;
-    status: AssetStatus;
+    status: string;
     dbId: string; // MongoDB Document ID
     serialNumber?: string;
     manufacturer?: string;
@@ -32,6 +32,7 @@ interface AssetTableProps {
     onUnassign?: (record: Asset) => void;
     onView?: (record: Asset) => void;
     onDelete?: (record: Asset) => void;
+    defaultStatusName?: string;
 }
 
 const getCategoryIcon = (category: string) => {
@@ -44,12 +45,12 @@ const getCategoryIcon = (category: string) => {
     }
 };
 
-const getStatusBadgeVariant = (status: AssetStatus) => {
-    switch (status) {
-        case 'Available': return 'success';
-        case 'Assigned': return 'info';
-        case 'Maintenance':
-        case 'In Maintenance': return 'warning';
+const getStatusBadgeVariant = (status: string) => {
+    switch (status?.toLowerCase()) {
+        case 'available': return 'success';
+        case 'assigned': return 'info';
+        case 'maintenance':
+        case 'in maintenance': return 'warning';
         default: return 'default';
     }
 };
@@ -79,7 +80,8 @@ export default function AssetTable({
     onAssign,
     onUnassign,
     onView,
-    onDelete
+    onDelete,
+    defaultStatusName = 'Available'
 }: AssetTableProps) {
 
     const isInitialLoad = isLoading && assets.length === 0;
@@ -167,9 +169,9 @@ export default function AssetTable({
                                             <Button 
                                                 variant="ghost" 
                                                 size="sm" 
-                                                disabled={record.status !== 'Available'}
+                                                disabled={record.status.toLowerCase() !== 'available' && record.status.toLowerCase() !== defaultStatusName.toLowerCase()}
                                                 className="p-1.5 rounded-full text-gray-400 dark:text-gray-500 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-gray-400 dark:disabled:hover:text-gray-500 transition-colors" 
-                                                title={record.status === 'Available' ? 'Assign Asset' : 'Already Assigned'}
+                                                title={record.status.toLowerCase() === 'available' || record.status.toLowerCase() === defaultStatusName.toLowerCase() ? 'Assign Asset' : 'Already Assigned'}
                                                 onClick={() => onAssign(record)}
                                             >
                                                 <UserPlus size={16} />
@@ -179,9 +181,9 @@ export default function AssetTable({
                                             <Button 
                                                 variant="ghost" 
                                                 size="sm" 
-                                                disabled={record.status !== 'Assigned'}
+                                                disabled={record.status.toLowerCase() !== 'assigned'}
                                                 className="p-1.5 rounded-full text-gray-400 dark:text-gray-500 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-500/10 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-gray-400 dark:disabled:hover:text-gray-500 transition-colors" 
-                                                title={record.status === 'Assigned' ? 'Unassign Asset' : 'Not Assigned'}
+                                                title={record.status.toLowerCase() === 'assigned' ? 'Unassign Asset' : 'Not Assigned'}
                                                 onClick={() => onUnassign(record)}
                                             >
                                                 <UserMinus size={16} />

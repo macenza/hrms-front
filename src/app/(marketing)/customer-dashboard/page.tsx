@@ -105,6 +105,14 @@ export default function CustomerDashboardPage() {
     };
 
     const getEmployeeLimits = () => {
+        if (!customer) {
+            return {
+                baseLimit: 50,
+                additionalSlots: 0,
+                totalCapacity: 50,
+                currentCount: 0
+            };
+        }
         const baseLimit = customer.subscriptionPlan === 'Growth' ? 50 : (customer.subscriptionPlan === 'Professional' ? 250 : Infinity);
         const additionalSlots = customer.addonSlots || 0;
         const totalCapacity = baseLimit === Infinity ? Infinity : (baseLimit + additionalSlots);
@@ -122,6 +130,7 @@ export default function CustomerDashboardPage() {
 
     // Compute cumulative capacity progression for purchase history display
     const getAddonsWithCumulative = () => {
+        if (!customer) return [];
         let runningCapacity = 50;
         return (customer.addons || []).map((addon: any) => {
             runningCapacity += addon.slots;
