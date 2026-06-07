@@ -5,6 +5,7 @@ import { CheckCircle2, XCircle, CalendarRange, Clock, Calendar } from 'lucide-re
 import { Card, CardContent } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { cn } from '@/utils/cn';
+import AttendanceCalendar from '@/components/attendance/AttendanceCalendar';
 
 export interface EmployeeAttendanceStats {
     present: number;
@@ -26,6 +27,7 @@ export interface AttendanceLogRecord {
 }
 
 interface AttendanceTabProps {
+    employeeId: string;
     stats?: EmployeeAttendanceStats;
     logs?: AttendanceLogRecord[] | any;
     isLoading?: boolean; 
@@ -66,6 +68,7 @@ const TableRowSkeleton = () => (
 );
 
 export default function AttendanceTab({
+    employeeId,
     stats,
     logs = [],
     isLoading = false
@@ -200,6 +203,11 @@ export default function AttendanceTab({
                         ))
                     )}
                 </div>
+            </div>
+
+            {/* Attendance Calendar */}
+            <div className="mt-8">
+                <AttendanceCalendar employeeId={employeeId} />
             </div>
 
             {/* Logs Table */}

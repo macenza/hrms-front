@@ -460,6 +460,7 @@ export default function EmployeeProfileClient({ id }: EmployeeProfileClientProps
 
                     {activeTab === 'attendance' && (
                         <AttendanceTab
+                            employeeId={resolvedEmployeeId}
                             stats={attendanceData?.stats}
                             logs={attendanceData?.logs?.map((log: any) => {
                                 const checkInDate = log.checkInTime ? new Date(log.checkInTime) : null;
