@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { CheckCircle2, XCircle, CalendarRange, Clock, Calendar } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { cn } from '@/utils/cn';
-import AttendanceCalendar from '@/components/attendance/AttendanceCalendar';
+import AttendanceCalendar, { getAttendanceLabel } from '@/components/attendance/AttendanceCalendar';
 
 export interface EmployeeAttendanceStats {
     present: number;
@@ -14,7 +14,7 @@ export interface EmployeeAttendanceStats {
     lateCheckIns: number;
 }
 
-export type AttendanceLogStatus = 'Present' | 'Absent' | 'Late' | 'Half-Day' | 'On Leave';
+export type AttendanceLogStatus = 'Present' | 'Absent' | 'Late' | 'Half Day' | 'Leave' | 'Holiday' | 'Weekend' | 'Work From Home' | 'Missing Punch';
 
 export interface AttendanceLogRecord {
     id: string;
@@ -23,7 +23,7 @@ export interface AttendanceLogRecord {
     checkIn: string;
     checkOut: string;
     totalHours: string;
-    status: AttendanceLogStatus;
+    status: string;
 }
 
 interface AttendanceTabProps {
@@ -33,14 +33,22 @@ interface AttendanceTabProps {
     isLoading?: boolean; 
 }
 
-const getStatusBadgeVariant = (status: AttendanceLogStatus) => {
+const getStatusBadgeVariant = (status: string) => {
     switch (status) {
-        case 'Present': return 'success';
-        case 'Late': return 'warning';
-        case 'Half-Day': return 'info';
-        case 'On Leave': return 'warning';
-        case 'Absent': return 'error';
-        default: return 'default';
+        case 'Present':
+        case 'Work From Home':
+            return 'success';
+        case 'Late':
+        case 'Leave':
+            return 'warning';
+        case 'Half Day':
+        case 'Holiday':
+            return 'info';
+        case 'Absent':
+        case 'Missing Punch':
+            return 'error';
+        default:
+            return 'default';
     }
 };
 
@@ -74,82 +82,53 @@ export default function AttendanceTab({
     isLoading = false
 }: AttendanceTabProps) {
 
-    // Bulletproof Unwrapper: resolve the actual logs array from different potential API shapes
+    const [calendarData, setCalendarData] = useState<any>(null);
+    const [isCalendarLoading, setIsCalendarLoading] = useState<boolean>(true);
+
+    const isDataLoading = isLoading || isCalendarLoading;
+
+    // Filter non-future days that are weekdays or have clock-in details
     const attendanceList = useMemo(() => {
-        if (Array.isArray(logs)) return logs;
-        if (logs && typeof logs === 'object') {
-            const rawData = (logs as any).data ?? (logs as any).logs;
-            if (Array.isArray(rawData)) return rawData;
-        }
-        return [];
-    }, [logs]);
+        if (!calendarData?.records) return [];
+        return [...calendarData.records]
+            .filter((r: any) => {
+                const hasPunch = r.checkIn !== '--' || r.checkOut !== '--';
+                const isPastWeekday = r.status && !['WEEKEND', 'HOLIDAY'].includes(r.status);
+                return hasPunch || isPastWeekday;
+            })
+            .reverse();
+    }, [calendarData]);
 
     // Format logs into AttendanceLogRecord-compliant shape
     const formattedLogs = useMemo(() => {
         return attendanceList.map((record: any, index: number) => {
-            const dateStr = record.dateString || (record.date ? new Date(record.date).toLocaleDateString('en-CA') : '');
-            
-            // Format check-in/out times nicely
-            const formatTime = (time: any) => {
-                if (!time) return '---';
-                try {
-                    const d = new Date(time);
-                    if (isNaN(d.getTime())) return '---';
-                    return d.toLocaleTimeString('en-US', {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        hour12: true
-                    });
-                } catch {
-                    return '---';
-                }
-            };
-
-            const formatHours = (minutes: number) => {
-                if (minutes === undefined || minutes === null) return '---';
-                const hrs = Math.floor(minutes / 60);
-                const mins = minutes % 60;
-                return `${hrs}h ${mins}m`;
-            };
-
-            // Safe values
-            const id = record._id || record.id || String(index);
-            const date = dateStr ? new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '---';
-            const checkIn = formatTime(record.checkInTime || record.checkIn || record.clockIn);
-            const checkOut = formatTime(record.checkOutTime || record.checkOut || record.clockOut);
-            const totalHours = formatHours(record.totalWorkedMinutes ?? record.workedMinutes);
-            const status = record.status || 'Present';
+            const date = record.date 
+                ? new Date(record.date + 'T12:00:00.000Z').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) 
+                : '---';
 
             return {
-                id,
+                id: record.date || String(index),
                 date,
-                checkIn,
-                checkOut,
-                totalHours,
-                status
+                checkIn: record.checkIn,
+                checkOut: record.checkOut,
+                totalHours: record.duration,
+                status: getAttendanceLabel(record.status)
             } as AttendanceLogRecord;
         });
     }, [attendanceList]);
 
     const safeStats = useMemo(() => {
+        if (calendarData) {
+            return {
+                present: (calendarData.summary.present || 0) + (calendarData.summary.halfDay || 0),
+                absent: calendarData.summary.absent || 0,
+                onLeave: calendarData.summary.leave || 0,
+                lateCheckIns: calendarData.insights.lateArrivals || 0
+            };
+        }
         if (stats) return stats;
-        
-        let present = 0;
-        let absent = 0;
-        let onLeave = 0;
-        let lateCheckIns = 0;
-
-        attendanceList.forEach((record: any) => {
-            const status = String(record.status || '').toLowerCase();
-            if (status === 'present') present++;
-            else if (status === 'absent') absent++;
-            else if (status === 'on leave' || status === 'onleave') onLeave++;
-            else if (status === 'late') { lateCheckIns++; present++; }
-            else if (status === 'half-day' || status === 'halfday') present++;
-        });
-
-        return { present, absent, onLeave, lateCheckIns };
-    }, [stats, attendanceList]);
+        return { present: 0, absent: 0, onLeave: 0, lateCheckIns: 0 };
+    }, [stats, calendarData]);
 
     const statCards = [
         {
@@ -185,7 +164,7 @@ export default function AttendanceTab({
             <div>
                 <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4 transition-colors">Attendance Overview (This Month)</h2>
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                    {isLoading ? (
+                    {isDataLoading ? (
                         Array.from({ length: 4 }).map((_, i) => <StatCardSkeleton key={i} />)
                     ) : (
                         statCards.map((stat, index) => (
@@ -207,7 +186,11 @@ export default function AttendanceTab({
 
             {/* Attendance Calendar */}
             <div className="mt-8">
-                <AttendanceCalendar employeeId={employeeId} />
+                <AttendanceCalendar 
+                    employeeId={employeeId} 
+                    onDataFetched={setCalendarData}
+                    onLoadingChange={setIsCalendarLoading}
+                />
             </div>
 
             {/* Logs Table */}
@@ -226,7 +209,7 @@ export default function AttendanceTab({
                                 </tr>
                             </thead>
                              <tbody className="divide-y divide-gray-100 dark:divide-gray-800 bg-white dark:bg-gray-900 transition-colors">
-                                {isLoading ? (
+                                {isDataLoading ? (
                                     Array.from({ length: 5 }).map((_, idx) => <TableRowSkeleton key={idx} />)
                                 ) : formattedLogs.length === 0 ? (
                                     <tr>
