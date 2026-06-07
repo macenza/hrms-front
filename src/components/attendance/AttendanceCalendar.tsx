@@ -462,7 +462,7 @@ export default function AttendanceCalendar({ employeeId, onDataFetched, onLoadin
 
                                     {/* Duration (Desktop Only) */}
                                     {cell.isCurrentMonth && cell.record && cell.record.duration !== '--' && (
-                                        <div className="hidden md:block text-[9px] text-slate-600 dark:text-slate-500 truncate font-semibold mt-0.5">
+                                        <div className="hidden lg:block text-[9px] text-slate-600 dark:text-slate-500 truncate font-semibold mt-0.5">
                                             {cell.record.duration}
                                         </div>
                                     )}
