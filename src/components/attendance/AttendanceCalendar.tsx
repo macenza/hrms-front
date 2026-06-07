@@ -33,83 +33,83 @@ export const getAttendanceColor = (status: string | null) => {
     switch (status) {
         case 'PRESENT':
             return {
-                bg: 'bg-emerald-500/10',
-                text: 'text-emerald-400',
-                border: 'border-emerald-500/20',
-                hoverBorder: 'hover:border-emerald-400',
-                dot: 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]'
+                bg: 'bg-green-50 dark:bg-emerald-500/10',
+                text: 'text-green-750 dark:text-emerald-400',
+                border: 'border-green-100 dark:border-emerald-500/20',
+                hoverBorder: 'hover:border-green-400 dark:hover:border-emerald-400',
+                dot: 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]'
             };
         case 'ABSENT':
             return {
-                bg: 'bg-rose-500/10',
-                text: 'text-rose-400',
-                border: 'border-rose-500/20',
-                hoverBorder: 'hover:border-rose-400',
-                dot: 'bg-rose-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]'
+                bg: 'bg-red-50 dark:bg-rose-500/10',
+                text: 'text-red-750 dark:text-rose-400',
+                border: 'border-red-100 dark:border-rose-500/20',
+                hoverBorder: 'hover:border-red-400 dark:hover:border-rose-400',
+                dot: 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]'
             };
         case 'HALF_DAY':
             return {
-                bg: 'bg-amber-500/10',
-                text: 'text-amber-400',
-                border: 'border-amber-500/20',
-                hoverBorder: 'hover:border-amber-400',
+                bg: 'bg-amber-50 dark:bg-amber-500/10',
+                text: 'text-amber-750 dark:text-amber-400',
+                border: 'border-amber-100 dark:border-amber-500/20',
+                hoverBorder: 'hover:border-amber-400 dark:hover:border-amber-400',
                 dot: 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]'
             };
         case 'LEAVE':
             return {
-                bg: 'bg-blue-500/10',
-                text: 'text-blue-400',
-                border: 'border-blue-500/20',
-                hoverBorder: 'hover:border-blue-400',
+                bg: 'bg-blue-50 dark:bg-blue-500/10',
+                text: 'text-blue-750 dark:text-blue-400',
+                border: 'border-blue-100 dark:border-blue-500/20',
+                hoverBorder: 'hover:border-blue-400 dark:hover:border-blue-400',
                 dot: 'bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]'
             };
         case 'HOLIDAY':
             return {
-                bg: 'bg-violet-500/10',
-                text: 'text-violet-400',
-                border: 'border-violet-500/20',
-                hoverBorder: 'hover:border-violet-400',
+                bg: 'bg-violet-50 dark:bg-violet-500/10',
+                text: 'text-violet-750 dark:text-violet-400',
+                border: 'border-violet-100 dark:border-violet-500/20',
+                hoverBorder: 'hover:border-violet-400 dark:hover:border-violet-400',
                 dot: 'bg-violet-500 shadow-[0_0_8px_rgba(139,92,246,0.5)]'
             };
         case 'WEEKEND':
             return {
-                bg: 'bg-slate-800/30',
-                text: 'text-slate-400',
-                border: 'border-slate-800/50',
-                hoverBorder: 'hover:border-slate-700',
-                dot: 'bg-slate-500'
+                bg: 'bg-slate-50 dark:bg-slate-800/30',
+                text: 'text-slate-500 dark:text-slate-400',
+                border: 'border-slate-100 dark:border-slate-800/50',
+                hoverBorder: 'hover:border-slate-300 dark:hover:border-slate-700',
+                dot: 'bg-slate-400'
             };
         case 'WORK_FROM_HOME':
             return {
-                bg: 'bg-teal-500/10',
-                text: 'text-teal-400',
-                border: 'border-teal-500/20',
-                hoverBorder: 'hover:border-teal-400',
+                bg: 'bg-teal-50 dark:bg-teal-500/10',
+                text: 'text-teal-750 dark:text-teal-400',
+                border: 'border-teal-100 dark:border-teal-500/20',
+                hoverBorder: 'hover:border-teal-400 dark:hover:border-teal-400',
                 dot: 'bg-teal-500 shadow-[0_0_8px_rgba(20,184,166,0.5)]'
             };
         case 'LATE':
             return {
-                bg: 'bg-orange-500/10',
-                text: 'text-orange-400',
-                border: 'border-orange-500/20',
-                hoverBorder: 'hover:border-orange-400',
+                bg: 'bg-orange-50 dark:bg-orange-500/10',
+                text: 'text-orange-750 dark:text-orange-400',
+                border: 'border-orange-100 dark:border-orange-500/20',
+                hoverBorder: 'hover:border-orange-400 dark:hover:border-orange-400',
                 dot: 'bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.5)]'
             };
         case 'MISSING_PUNCH':
             return {
-                bg: 'bg-fuchsia-500/10',
-                text: 'text-fuchsia-400',
-                border: 'border-fuchsia-500/20',
-                hoverBorder: 'hover:border-fuchsia-400',
+                bg: 'bg-fuchsia-50 dark:bg-fuchsia-500/10',
+                text: 'text-fuchsia-755 dark:text-fuchsia-400',
+                border: 'border-fuchsia-100 dark:border-fuchsia-500/20',
+                hoverBorder: 'hover:border-fuchsia-400 dark:hover:border-fuchsia-400',
                 dot: 'bg-fuchsia-500 shadow-[0_0_8px_rgba(217,70,239,0.5)]'
             };
         default:
             return {
-                bg: 'bg-slate-900/40',
-                text: 'text-slate-400',
-                border: 'border-slate-800',
-                hoverBorder: 'hover:border-slate-700',
-                dot: 'bg-slate-700'
+                bg: 'bg-slate-50/50 dark:bg-slate-900/40',
+                text: 'text-slate-500 dark:text-slate-400',
+                border: 'border-slate-150 dark:border-slate-800',
+                hoverBorder: 'hover:border-slate-300 dark:hover:border-slate-700',
+                dot: 'bg-slate-400'
             };
     }
 };
@@ -301,12 +301,12 @@ export default function AttendanceCalendar({ employeeId, onDataFetched, onLoadin
     };
 
     return (
-        <div className="rounded-2xl p-6 bg-slate-900/95 border border-slate-800 shadow-2xl transition-colors duration-300">
+        <div className="rounded-2xl p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm transition-colors duration-300">
             {/* Header Navigation */}
             <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
                 <div className="flex items-center gap-2">
-                    <Calendar className="w-5 h-5 text-blue-500" />
-                    <h3 className="text-lg font-bold text-slate-100">
+                    <Calendar className="w-5 h-5 text-primary" />
+                    <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">
                         Attendance Calendar
                     </h3>
                 </div>
@@ -316,11 +316,11 @@ export default function AttendanceCalendar({ employeeId, onDataFetched, onLoadin
                         type="button"
                         onClick={handlePrevMonth}
                         aria-label="Previous Month"
-                        className="p-2 rounded-lg border border-slate-800 bg-slate-850 hover:bg-slate-800 text-slate-300 hover:text-slate-100 transition-all shadow-sm active:scale-95 cursor-pointer"
+                        className="p-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-850 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-slate-950 dark:hover:text-slate-100 transition-all shadow-sm active:scale-95 cursor-pointer"
                     >
                         <ChevronLeft className="w-4 h-4" />
                     </button>
-                    <span className="text-sm font-semibold text-slate-200 min-w-[120px] text-center select-none">
+                    <span className="text-sm font-bold text-slate-800 dark:text-slate-200 min-w-[120px] text-center select-none">
                         {monthName}
                     </span>
                     <button
@@ -328,7 +328,7 @@ export default function AttendanceCalendar({ employeeId, onDataFetched, onLoadin
                         onClick={handleNextMonth}
                         disabled={isNextMonthDisabled}
                         aria-label="Next Month"
-                        className="p-2 rounded-lg border border-slate-800 bg-slate-850 hover:bg-slate-800 text-slate-300 hover:text-slate-100 transition-all shadow-sm active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100 cursor-pointer"
+                        className="p-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-850 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-slate-950 dark:hover:text-slate-100 transition-all shadow-sm active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100 cursor-pointer"
                     >
                         <ChevronRight className="w-4 h-4" />
                     </button>
@@ -338,59 +338,59 @@ export default function AttendanceCalendar({ employeeId, onDataFetched, onLoadin
             {/* Skeleton / Loading view */}
             {isLoading ? (
                 <div className="h-[360px] w-full flex flex-col items-center justify-center gap-3">
-                    <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
-                    <span className="text-sm text-slate-400">Loading attendance data...</span>
+                    <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                    <span className="text-sm text-slate-500 dark:text-slate-400">Loading attendance data...</span>
                 </div>
             ) : (
                 <>
                     {/* Top Widgets Grid: Summary & Insights */}
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
                         {/* Month Summary Widget */}
-                        <div className="lg:col-span-2 p-5 rounded-2xl bg-slate-800/30 border border-slate-800/80 backdrop-blur-md flex flex-col justify-between">
-                            <h4 className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-3">Month Summary</h4>
+                        <div className="lg:col-span-2 p-5 rounded-2xl bg-slate-50/50 dark:bg-slate-800/20 border border-slate-200/80 dark:border-slate-800/80 flex flex-col justify-between">
+                            <h4 className="text-[10px] font-extrabold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-3">Month Summary</h4>
                             <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
                                 <div className="flex flex-col">
-                                    <span className="text-[11px] text-slate-500 font-bold">Present</span>
-                                    <span className="text-xl font-black text-emerald-400">{summary.present}</span>
+                                    <span className="text-[11px] text-slate-500 dark:text-slate-400 font-bold">Present</span>
+                                    <span className="text-xl font-black text-green-650 dark:text-emerald-400">{summary.present}</span>
                                 </div>
                                 <div className="flex flex-col">
-                                    <span className="text-[11px] text-slate-500 font-bold">Absent</span>
-                                    <span className="text-xl font-black text-rose-400">{summary.absent}</span>
+                                    <span className="text-[11px] text-slate-500 dark:text-slate-400 font-bold">Absent</span>
+                                    <span className="text-xl font-black text-red-650 dark:text-rose-400">{summary.absent}</span>
                                 </div>
                                 <div className="flex flex-col">
-                                    <span className="text-[11px] text-slate-500 font-bold">Leave</span>
-                                    <span className="text-xl font-black text-blue-400">{summary.leave}</span>
+                                    <span className="text-[11px] text-slate-500 dark:text-slate-400 font-bold">Leave</span>
+                                    <span className="text-xl font-black text-blue-650 dark:text-blue-400">{summary.leave}</span>
                                 </div>
                                 <div className="flex flex-col">
-                                    <span className="text-[11px] text-slate-500 font-bold">Half Day</span>
-                                    <span className="text-xl font-black text-amber-400">{summary.halfDay}</span>
+                                    <span className="text-[11px] text-slate-500 dark:text-slate-400 font-bold">Half Day</span>
+                                    <span className="text-xl font-black text-amber-650 dark:text-amber-400">{summary.halfDay}</span>
                                 </div>
-                                <div className="flex flex-col justify-center sm:border-l sm:border-slate-800/80 sm:pl-4 col-span-2 sm:col-span-1">
-                                    <span className="text-[9px] uppercase font-bold tracking-wider text-slate-400">Attendance</span>
-                                    <span className="text-2xl font-black text-blue-400">{summary.attendancePercentage}%</span>
+                                <div className="flex flex-col justify-center sm:border-l sm:border-slate-200 dark:sm:border-slate-800/80 sm:pl-4 col-span-2 sm:col-span-1">
+                                    <span className="text-[9px] uppercase font-bold tracking-wider text-slate-600 dark:text-slate-400">Attendance</span>
+                                    <span className="text-2xl font-black text-blue-650 dark:text-blue-400">{summary.attendancePercentage}%</span>
                                 </div>
                             </div>
                         </div>
 
                         {/* Smart Insights Widget */}
-                        <div className="p-5 rounded-2xl bg-slate-800/30 border border-slate-800/80 backdrop-blur-md flex flex-col justify-between">
-                            <h4 className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-3">Attendance Insights</h4>
+                        <div className="p-5 rounded-2xl bg-slate-50/50 dark:bg-slate-800/20 border border-slate-200/80 dark:border-slate-800/80 flex flex-col justify-between">
+                            <h4 className="text-[10px] font-extrabold uppercase tracking-wider text-slate-650 dark:text-slate-400 mb-3">Attendance Insights</h4>
                             <div className="flex flex-col gap-1.5 text-[11px]">
-                                <div className="flex justify-between items-center py-0.5 border-b border-slate-800/50">
-                                    <span className="text-slate-400 font-medium">Perfect Streak</span>
-                                    <span className="font-extrabold text-emerald-400">{insights.perfectAttendanceStreak} Days</span>
+                                <div className="flex justify-between items-center py-0.5 border-b border-slate-100 dark:border-slate-800/50">
+                                    <span className="text-slate-500 dark:text-slate-400 font-medium">Perfect Streak</span>
+                                    <span className="font-extrabold text-green-650 dark:text-emerald-400">{insights.perfectAttendanceStreak} Days</span>
                                 </div>
-                                <div className="flex justify-between items-center py-0.5 border-b border-slate-800/50">
-                                    <span className="text-slate-400 font-medium">Avg Check-In</span>
-                                    <span className="font-extrabold text-slate-200">{insights.averageCheckIn}</span>
+                                <div className="flex justify-between items-center py-0.5 border-b border-slate-100 dark:border-slate-800/50">
+                                    <span className="text-slate-500 dark:text-slate-400 font-medium">Avg Check-In</span>
+                                    <span className="font-extrabold text-slate-800 dark:text-slate-200">{insights.averageCheckIn}</span>
                                 </div>
-                                <div className="flex justify-between items-center py-0.5 border-b border-slate-800/50">
-                                    <span className="text-slate-400 font-medium">Late Arrivals</span>
-                                    <span className="font-extrabold text-orange-400">{insights.lateArrivals}</span>
+                                <div className="flex justify-between items-center py-0.5 border-b border-slate-100 dark:border-slate-800/50">
+                                    <span className="text-slate-500 dark:text-slate-400 font-medium">Late Arrivals</span>
+                                    <span className="font-extrabold text-orange-655 dark:text-orange-400">{insights.lateArrivals}</span>
                                 </div>
                                 <div className="flex justify-between items-center py-0.5">
-                                    <span className="text-slate-400 font-medium">Overtime Days</span>
-                                    <span className="font-extrabold text-violet-400">{insights.overtimeDays}</span>
+                                    <span className="text-slate-500 dark:text-slate-400 font-medium">Overtime Days</span>
+                                    <span className="font-extrabold text-violet-650 dark:text-violet-400">{insights.overtimeDays}</span>
                                 </div>
                             </div>
                         </div>
@@ -401,7 +401,7 @@ export default function AttendanceCalendar({ employeeId, onDataFetched, onLoadin
                         {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
                             <div
                                 key={day}
-                                className="text-xs font-bold text-slate-500 uppercase tracking-wider py-1"
+                                className="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider py-1"
                             >
                                 {day}
                             </div>
@@ -424,10 +424,10 @@ export default function AttendanceCalendar({ employeeId, onDataFetched, onLoadin
                                     className={cn(
                                         "relative flex flex-col items-stretch justify-between p-2 rounded-xl border aspect-square transition-all duration-300 group select-none text-left w-full overflow-hidden",
                                         cell.isCurrentMonth 
-                                            ? cn(colors.bg, colors.border, colors.hoverBorder, "hover:bg-slate-800/40 cursor-pointer")
-                                            : "bg-slate-900/10 border-transparent text-slate-800 pointer-events-none",
-                                        isToday && "ring-2 ring-blue-500 ring-offset-2 ring-offset-slate-900 border-blue-400 z-10",
-                                        cell.isFuture && "opacity-25 cursor-not-allowed border-slate-800 bg-slate-900 text-slate-700 pointer-events-none"
+                                            ? cn(colors.bg, colors.border, colors.hoverBorder, "hover:bg-slate-100/50 dark:hover:bg-slate-800/40 cursor-pointer")
+                                            : "bg-slate-50/30 dark:bg-slate-900/10 border-transparent text-slate-400 dark:text-slate-700 pointer-events-none",
+                                        isToday && "ring-2 ring-primary ring-offset-2 ring-offset-white dark:ring-offset-slate-900 border-primary z-10",
+                                        cell.isFuture && "opacity-25 cursor-not-allowed border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-400 dark:text-slate-700 pointer-events-none"
                                     )}
                                     role="gridcell"
                                     tabIndex={cell.isCurrentMonth && !cell.isFuture ? 0 : -1}
@@ -439,8 +439,8 @@ export default function AttendanceCalendar({ employeeId, onDataFetched, onLoadin
                                             className={cn(
                                                 "text-xs sm:text-sm font-bold",
                                                 cell.isCurrentMonth
-                                                    ? "text-slate-100"
-                                                    : "text-slate-700"
+                                                    ? "text-slate-900 dark:text-slate-100"
+                                                    : "text-slate-450 dark:text-slate-700"
                                             )}
                                         >
                                             {cell.day}
@@ -455,14 +455,14 @@ export default function AttendanceCalendar({ employeeId, onDataFetched, onLoadin
 
                                     {/* Check-In time (Desktop & Tablet) */}
                                     {cell.isCurrentMonth && cell.record && cell.record.checkIn !== '--' && (
-                                        <div className="hidden sm:block text-[10px] text-slate-400 font-medium truncate mt-1">
+                                        <div className="hidden sm:block text-[10px] text-slate-550 dark:text-slate-400 font-medium truncate mt-1">
                                             {cell.record.checkIn}
                                         </div>
                                     )}
 
                                     {/* Duration (Desktop Only) */}
                                     {cell.isCurrentMonth && cell.record && cell.record.duration !== '--' && (
-                                        <div className="hidden md:block text-[9px] text-slate-500 truncate font-semibold mt-0.5">
+                                        <div className="hidden md:block text-[9px] text-slate-600 dark:text-slate-500 truncate font-semibold mt-0.5">
                                             {cell.record.duration}
                                         </div>
                                     )}
@@ -479,11 +479,11 @@ export default function AttendanceCalendar({ employeeId, onDataFetched, onLoadin
                     </div>
 
                     {/* Color Legend */}
-                    <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 mt-6 border-t border-slate-800 pt-5">
+                    <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 mt-6 border-t border-slate-100 dark:border-slate-800 pt-5">
                         {LEGEND_ITEMS.map((item) => {
                             const colors = getAttendanceColor(item.status);
                             return (
-                                <div key={item.status} className="flex items-center gap-1.5 text-xs font-semibold text-slate-500">
+                                <div key={item.status} className="flex items-center gap-1.5 text-xs font-semibold text-slate-550 dark:text-slate-400">
                                     <span className={cn("w-2 h-2 rounded-full", colors.dot)} />
                                     <span>{item.label}</span>
                                 </div>
@@ -496,20 +496,20 @@ export default function AttendanceCalendar({ employeeId, onDataFetched, onLoadin
             {/* Detailed Day Popover Modal */}
             {selectedCell && (
                 <div 
-                    className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200"
+                    className="fixed inset-0 bg-slate-950/50 dark:bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200"
                     role="dialog"
                     aria-modal="true"
                     onClick={handleClosePopover}
                 >
                     <div 
-                        className="bg-slate-900 border border-slate-850 rounded-3xl p-6 w-full max-w-sm shadow-2xl relative flex flex-col gap-4 animate-in zoom-in-95 duration-200"
+                        className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 w-full max-w-sm shadow-2xl relative flex flex-col gap-4 animate-in zoom-in-95 duration-200"
                         onClick={(e) => e.stopPropagation()}
                     >
                         {/* Header */}
-                        <div className="flex justify-between items-start border-b border-slate-800 pb-3">
+                        <div className="flex justify-between items-start border-b border-slate-100 dark:border-slate-800 pb-3">
                             <div>
                                 <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">Attendance Details</h4>
-                                <p className="text-base font-bold text-slate-100 mt-1">
+                                <p className="text-base font-bold text-slate-900 dark:text-slate-100 mt-1">
                                     {new Date(selectedCell.dateString).toLocaleDateString("en-US", {
                                         weekday: "long",
                                         month: "long",
@@ -520,7 +520,7 @@ export default function AttendanceCalendar({ employeeId, onDataFetched, onLoadin
                             </div>
                             <button
                                 onClick={handleClosePopover}
-                                className="text-slate-400 hover:text-slate-100 transition-colors p-1 bg-slate-800 rounded-lg cursor-pointer"
+                                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-100 transition-colors p-1 bg-slate-100 dark:bg-slate-800 rounded-lg cursor-pointer"
                                 aria-label="Close details"
                             >
                                 <ChevronRight className="w-5 h-5 rotate-90" />
@@ -531,7 +531,7 @@ export default function AttendanceCalendar({ employeeId, onDataFetched, onLoadin
                         <div className="flex flex-col gap-3 text-xs">
                             {/* Status */}
                             <div className="flex justify-between items-center py-1">
-                                <span className="text-slate-400">Status</span>
+                                <span className="text-slate-550 dark:text-slate-400">Status</span>
                                 <span className={cn(
                                     "px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wide",
                                     getAttendanceColor(selectedCell.record?.status || (selectedCell.isFuture ? null : 'ABSENT')).bg,
@@ -543,24 +543,24 @@ export default function AttendanceCalendar({ employeeId, onDataFetched, onLoadin
 
                             {/* Shift */}
                             <div className="flex justify-between items-start py-1">
-                                <span className="text-slate-400">Shift</span>
-                                <span className="font-semibold text-slate-200 text-right max-w-[200px]">
+                                <span className="text-slate-550 dark:text-slate-400">Shift</span>
+                                <span className="font-semibold text-slate-800 dark:text-slate-200 text-right max-w-[200px]">
                                     {selectedCell.record?.shift || "Day Shift (09:00 AM - 05:00 PM)"}
                                 </span>
                             </div>
 
                             {/* Check-In & Check-Out */}
                             <div className="flex justify-between items-center py-1">
-                                <span className="text-slate-400">Punch Times</span>
-                                <span className="font-semibold text-slate-200">
+                                <span className="text-slate-550 dark:text-slate-400">Punch Times</span>
+                                <span className="font-semibold text-slate-800 dark:text-slate-200">
                                     {selectedCell.record?.checkIn || "--"} - {selectedCell.record?.checkOut || "--"}
                                 </span>
                             </div>
 
                             {/* Duration */}
                             <div className="flex justify-between items-center py-1">
-                                <span className="text-slate-400">Working Duration</span>
-                                <span className="font-semibold text-slate-200">
+                                <span className="text-slate-550 dark:text-slate-400">Working Duration</span>
+                                <span className="font-semibold text-slate-800 dark:text-slate-200">
                                     {selectedCell.record?.duration || "--"}
                                 </span>
                             </div>
@@ -568,8 +568,8 @@ export default function AttendanceCalendar({ employeeId, onDataFetched, onLoadin
                             {/* Late Minutes */}
                             {selectedCell.record?.isLate && (
                                 <div className="flex justify-between items-center py-1">
-                                    <span className="text-slate-400">Late Minutes</span>
-                                    <span className="font-semibold text-orange-400">
+                                    <span className="text-slate-550 dark:text-slate-400">Late Minutes</span>
+                                    <span className="font-semibold text-orange-655 dark:text-orange-400">
                                         {selectedCell.record.lateByMinutes} mins
                                     </span>
                                 </div>
@@ -578,8 +578,8 @@ export default function AttendanceCalendar({ employeeId, onDataFetched, onLoadin
                             {/* Overtime */}
                             {selectedCell.record && selectedCell.record.overtimeMinutes > 0 && (
                                 <div className="flex justify-between items-center py-1">
-                                    <span className="text-slate-400">Overtime</span>
-                                    <span className="font-semibold text-violet-400">
+                                    <span className="text-slate-550 dark:text-slate-400">Overtime</span>
+                                    <span className="font-semibold text-violet-650 dark:text-violet-400">
                                         {selectedCell.record.overtime}
                                     </span>
                                 </div>
@@ -587,9 +587,9 @@ export default function AttendanceCalendar({ employeeId, onDataFetched, onLoadin
 
                             {/* Remarks */}
                             {selectedCell.record?.notes && (
-                                <div className="flex flex-col gap-1.5 border-t border-slate-800 pt-3.5 mt-1">
-                                    <span className="text-slate-400 text-[10px] font-bold uppercase tracking-wider">Remarks / Notes</span>
-                                    <p className="text-[11px] text-slate-300 italic bg-slate-850/40 p-2.5 rounded-xl border border-slate-800">
+                                <div className="flex flex-col gap-1.5 border-t border-slate-100 dark:border-slate-800 pt-3.5 mt-1">
+                                    <span className="text-slate-650 dark:text-slate-455 text-[10px] font-bold uppercase tracking-wider">Remarks / Notes</span>
+                                    <p className="text-[11px] text-slate-700 dark:text-slate-300 italic bg-slate-50 dark:bg-slate-850/40 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800">
                                         {selectedCell.record.notes}
                                     </p>
                                 </div>
