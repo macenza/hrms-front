@@ -3,8 +3,8 @@ import type { NextRequest } from 'next/server';
 
 // 1. RBAC Blacklist for HRMS Employees
 const RESTRICTED_ROUTES: Record<string, string[]> = {
-    employee: ['/employees', '/payroll', '/assets', '/admin', '/hr'],
-    manager: ['/payroll', '/admin', '/hr'],
+    employee: ['/employees', '/payroll', '/assets/categories', '/assets/statuses', '/assets/import', '/admin', '/hr'],
+    manager: ['/payroll', '/assets/categories', '/assets/statuses', '/assets/import', '/admin', '/hr'],
     hr: ['/admin'],
     admin: [], // Unrestricted
 };
@@ -33,14 +33,16 @@ export function proxy(request: NextRequest) {
     const isCustomerProtectedRoute = CUSTOMER_PROTECTED_PREFIXES.some(prefix => pathname.startsWith(prefix));
 
     // Rule 3: Auto-redirects
+    const hasAuthError = request.nextUrl.searchParams.has('error') || request.nextUrl.searchParams.has('registered');
+
     if (isEmployeeAuthRoute) {
-        if (hrmsToken) return NextResponse.redirect(new URL('/dashboard', request.url));
+        if (hrmsToken && !hasAuthError) return NextResponse.redirect(new URL('/dashboard', request.url));
         return NextResponse.next();
     }
 
     if (isCustomerAuthRoute) {
         // Customers are auto-redirected to customer-dashboard if customer_token is set, ignoring hrms_token
-        if (customerToken) return NextResponse.redirect(new URL('/customer-dashboard', request.url));
+        if (customerToken && !hasAuthError) return NextResponse.redirect(new URL('/customer-dashboard', request.url));
         return NextResponse.next();
     }
 

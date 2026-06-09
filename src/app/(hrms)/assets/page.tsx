@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Download, Plus, Loader2, ChevronLeft, ChevronRight, Monitor, Smartphone, Laptop as LaptopIcon, Headphones, Search, X, RotateCcw, ChevronDown } from 'lucide-react';
+import { Download, Plus, Loader2, ChevronLeft, ChevronRight, Monitor, Smartphone, Laptop as LaptopIcon, Headphones, Search, X, RotateCcw, ChevronDown, Upload, History } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Modal } from '@/components/ui/Modal';
@@ -13,9 +13,11 @@ import AssignAssetModal, { AssignAssetPayload } from '@/components/assets/Assign
 import AddAssetModal, { AddAssetPayload } from '@/components/assets/AddAssetModal';
 import { useAppSelector } from '@/store/hooks';
 import { useAssetData, useAssetFormOptions, useAvailableAssets, useCreateAsset, useAssignAsset, useDeleteAsset, useUpdateAssetStatus } from '@/hooks/api/useAssets';
+import { useAssetStatusData } from '@/hooks/api/useAssetStatuses';
 import { assetService } from '@/services/assetService';
 import { useDebounce } from '@/hooks/useDebounce';
 import { toast } from 'sonner';
+import { useRouter } from 'next/navigation';
 
 const getCategoryIcon = (category: string) => {
     switch (category?.toLowerCase()) {
@@ -38,6 +40,7 @@ const getStatusBadgeVariant = (status: string) => {
 };
 
 export default function AssetsPage() {
+    const router = useRouter();
     // 1. Strict RBAC Enforcement
     const { user, isAuthenticated } = useAppSelector((state) => state.auth);
     const role = user?.role?.toLowerCase() || 'employee';
@@ -56,11 +59,15 @@ export default function AssetsPage() {
     const { data: assetData, isLoading: isAssetsLoading } = useAssetData(currentPage, entriesPerPage, statusFilter, debouncedSearchTerm);
     const { data: employeesData = [], isLoading: isEmpLoading } = useAssetFormOptions(isAuthenticated && isManagerial);
     const { data: availableAssets = [] } = useAvailableAssets(isAuthenticated && isManagerial);
+    const { data: statusData } = useAssetStatusData(1, 100, '', true);
     
     const createAssetMutation = useCreateAsset();
     const assignAssetMutation = useAssignAsset();
     const deleteAssetMutation = useDeleteAsset();
     const updateAssetStatusMutation = useUpdateAssetStatus();
+
+    const activeStatuses = statusData?.records || [];
+    const defaultStatusName = activeStatuses.find(s => s.isDefault)?.name || 'Available';
 
     const stats = assetData?.stats || null;
     const records: Asset[] = assetData?.records || [];
@@ -120,7 +127,7 @@ export default function AssetsPage() {
     const handleUnassignAsset = async (record: Asset) => {
         if (confirm(`Are you sure you want to unassign "${record.name}" from ${record.assignee}?`)) {
             try {
-                await updateAssetStatusMutation.mutateAsync({ id: record.dbId, status: 'Available' });
+                await updateAssetStatusMutation.mutateAsync({ id: record.dbId, status: defaultStatusName });
                 toast.success('Asset unassigned successfully!');
             } catch (error) {
                 toast.error('Failed to unassign asset.');
@@ -183,6 +190,22 @@ export default function AssetsPage() {
                     </div>
                     
                     <div className="flex flex-wrap items-center gap-3">
+                        <Button 
+                            variant="outline" 
+                            onClick={() => router.push('/assets/categories')} 
+                            disabled={isLoading} 
+                            className="gap-2 shadow-sm bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors font-semibold"
+                        >
+                            Asset Categories
+                        </Button>
+                        <Button 
+                            variant="outline" 
+                            onClick={() => router.push('/assets/statuses')} 
+                            disabled={isLoading} 
+                            className="gap-2 shadow-sm bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors font-semibold"
+                        >
+                            Asset Statuses
+                        </Button>
                         {isManagerial && (
                             <Button 
                                 variant="outline" 
@@ -193,6 +216,28 @@ export default function AssetsPage() {
                                 <Download size={16} />
                                 <span className="hidden sm:inline">Export Inventory</span>
                             </Button>
+                        )}
+                        {isManagerial && (
+                            <div className="flex gap-2">
+                                <Button 
+                                    variant="outline" 
+                                    onClick={() => router.push('/assets/import/history')} 
+                                    disabled={isLoading}
+                                    className="gap-2 shadow-sm bg-white dark:bg-gray-900 font-bold text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-900/50 hover:bg-amber-50 dark:hover:bg-amber-500/10 transition-colors"
+                                >
+                                    <History size={16} />
+                                    <span className="hidden sm:inline">Import History</span>
+                                </Button>
+                                <Button 
+                                    variant="outline" 
+                                    onClick={() => router.push('/assets/import')} 
+                                    disabled={isLoading}
+                                    className="gap-2 shadow-sm bg-white dark:bg-gray-900 font-bold text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-900/50 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition-colors"
+                                >
+                                    <Upload size={16} />
+                                    <span className="hidden sm:inline">Import Assets</span>
+                                </Button>
+                            </div>
                         )}
                         {isManagerial && (
                             <Button 
@@ -253,9 +298,17 @@ export default function AssetsPage() {
                                 className="w-full pl-3 pr-10 py-2 text-sm border border-gray-200 dark:border-gray-800 rounded-lg bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 outline-none focus:border-blue-500 dark:focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 transition-all cursor-pointer font-medium appearance-none"
                             >
                                 <option value="">All Statuses</option>
-                                <option value="Available">Available</option>
-                                <option value="Assigned">Assigned</option>
-                                <option value="In Maintenance">In Maintenance</option>
+                                {activeStatuses.length > 0 ? (
+                                    activeStatuses.map(s => (
+                                        <option key={s.name} value={s.name}>{s.name}</option>
+                                    ))
+                                ) : (
+                                    <>
+                                        <option value="Available">Available</option>
+                                        <option value="Assigned">Assigned</option>
+                                        <option value="In Maintenance">In Maintenance</option>
+                                    </>
+                                )}
                             </select>
                             <span className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-400 dark:text-gray-500">
                                 <ChevronDown size={16} />
@@ -289,6 +342,7 @@ export default function AssetsPage() {
                         <AssetTable
                             assets={records}
                             isLoading={isAssetsLoading}
+                            defaultStatusName={defaultStatusName}
                             onView={(record) => {
                                 setSelectedAssetForView(record);
                                 setIsViewModalOpen(true);
@@ -390,13 +444,20 @@ export default function AssetsPage() {
                                         <Badge variant={getStatusBadgeVariant(selectedAssetForView.status)}>
                                             {selectedAssetForView.status}
                                         </Badge>
-                                        {isManagerial && (selectedAssetForView.status === 'Available' || selectedAssetForView.status === 'In Maintenance') && (
+                                        {isManagerial && (
+                                            selectedAssetForView.status.toLowerCase() === defaultStatusName.toLowerCase() || 
+                                            selectedAssetForView.status.toLowerCase() === 'available' || 
+                                            selectedAssetForView.status.toLowerCase() === 'in maintenance'
+                                        ) && (
                                             <Button
                                                 variant="ghost"
                                                 size="sm"
                                                 disabled={updateAssetStatusMutation.isPending}
                                                 onClick={async () => {
-                                                    const nextStatus = selectedAssetForView.status === 'Available' ? 'In Maintenance' : 'Available';
+                                                    const isCurrentlyAvailable = 
+                                                        selectedAssetForView.status.toLowerCase() === 'available' ||
+                                                        selectedAssetForView.status.toLowerCase() === defaultStatusName.toLowerCase();
+                                                     const nextStatus = isCurrentlyAvailable ? 'In Maintenance' : defaultStatusName;
                                                     try {
                                                         await updateAssetStatusMutation.mutateAsync({
                                                             id: selectedAssetForView.dbId,
@@ -411,7 +472,7 @@ export default function AssetsPage() {
                                                 className="px-2 py-0.5 text-xs font-bold text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/10 border border-blue-200 dark:border-blue-900/50 rounded transition-all gap-1 h-7 shrink-0"
                                             >
                                                 {updateAssetStatusMutation.isPending ? <Loader2 size={12} className="animate-spin" /> : null}
-                                                Send to {selectedAssetForView.status === 'Available' ? 'Maintenance' : 'Available'}
+                                                Send to {selectedAssetForView.status.toLowerCase() === 'available' || selectedAssetForView.status.toLowerCase() === defaultStatusName.toLowerCase() ? 'In Maintenance' : defaultStatusName}
                                             </Button>
                                         )}
                                     </div>

@@ -9,6 +9,7 @@ import { STAT_CARDS } from "@/lib/data";
 import { useAppSelector } from "@/store/hooks";
 import { useDashboardStats, useDashboardAttendance } from "@/hooks/api/useDashboard";
 import { normalizeRoleDistribution } from "@/lib/dashboard";
+import AttendanceCalendar from "@/components/attendance/AttendanceCalendar";
 
 const AttendanceChart = dynamic(
     () => import('@/components/dashboard/AttendanceChart'),
@@ -147,12 +148,16 @@ export default function DashboardPage() {
 
                 <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
                     <div className={isAdminOrHR ? "lg:col-span-3" : "lg:col-span-5"}>
-                        <AttendanceChart
-                            timeframe={activeTimeframe}
-                            isEmployee={isEmployee}
-                            chartData={attendanceData}
-                            isLoading={isAttendanceLoading}
-                        />
+                        {isEmployee ? (
+                            <AttendanceCalendar employeeId={user?.id || user?._id || ""} />
+                        ) : (
+                            <AttendanceChart
+                                timeframe={activeTimeframe}
+                                isEmployee={isEmployee}
+                                chartData={attendanceData}
+                                isLoading={isAttendanceLoading}
+                            />
+                        )}
                     </div>
                     {isAdminOrHR && (
                         <div className="lg:col-span-2">

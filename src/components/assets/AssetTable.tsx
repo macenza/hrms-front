@@ -16,7 +16,7 @@ export interface Asset {
     category: string;
     assignee: string | null;
     date: string | null;
-    status: AssetStatus;
+    status: string;
     dbId: string; // MongoDB Document ID
     serialNumber?: string;
     manufacturer?: string;
@@ -36,14 +36,15 @@ interface AssetTableProps {
     onUnassign?: (record: Asset) => void;
     onView?: (record: Asset) => void;
     onDelete?: (record: Asset) => void;
+    defaultStatusName?: string;
 }
 
-const getStatusBadgeVariant = (status: AssetStatus) => {
-    switch (status) {
-        case 'Available': return 'success';
-        case 'Assigned': return 'info';
-        case 'Maintenance':
-        case 'In Maintenance': return 'warning';
+const getStatusBadgeVariant = (status: string) => {
+    switch (status?.toLowerCase()) {
+        case 'available': return 'success';
+        case 'assigned': return 'info';
+        case 'maintenance':
+        case 'in maintenance': return 'warning';
         default: return 'default';
     }
 };
@@ -88,7 +89,8 @@ export default function AssetTable({
     onAssign,
     onUnassign,
     onView,
-    onDelete
+    onDelete,
+    defaultStatusName = 'Available'
 }: AssetTableProps) {
     const breakpoint = useBreakpoint();
     const isMobile = breakpoint === 'mobile';

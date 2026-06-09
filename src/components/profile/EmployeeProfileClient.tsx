@@ -25,7 +25,6 @@ import { setCredentials } from '@/store/authSlice';
 import { useEffect } from 'react';
 import { 
     useEmployeeProfile, 
-    useEmployeeAttendance, 
     useUploadDocument,
     useUploadCertificate,
     useAddNote 
@@ -105,10 +104,7 @@ export default function EmployeeProfileClient({ id }: EmployeeProfileClientProps
             }
         }
     }, [employee, isCurrentUser, dispatch, user]);
-    const { data: attendanceData, isLoading: isAttendanceLoading } = useEmployeeAttendance(
-        resolvedEmployeeId, 
-        activeTab === 'attendance'
-    );
+
 
     const uploadDocumentMutation = useUploadDocument(resolvedEmployeeId);
     const uploadCertificateMutation = useUploadCertificate(resolvedEmployeeId);
@@ -463,20 +459,7 @@ export default function EmployeeProfileClient({ id }: EmployeeProfileClientProps
 
                     {activeTab === 'attendance' && (
                         <AttendanceTab
-                            stats={attendanceData?.stats}
-                            logs={attendanceData?.logs?.map((log: any) => {
-                                const checkInDate = log.checkInTime ? new Date(log.checkInTime) : null;
-                                const checkOutDate = log.checkOutTime ? new Date(log.checkOutTime) : null;
-                                return {
-                                    id: log._id || log.id,
-                                    date: log.dateString || (checkInDate ? checkInDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A'),
-                                    checkIn: checkInDate ? checkInDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }) : '-',
-                                    checkOut: checkOutDate ? checkOutDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }) : '-',
-                                    totalHours: log.totalWorkedMinutes ? `${(log.totalWorkedMinutes / 60).toFixed(2)} hrs` : '0.00 hrs',
-                                    status: log.status
-                                };
-                            }) || []}
-                            isLoading={isAttendanceLoading}
+                            employeeId={resolvedEmployeeId}
                         />
                     )}
 
