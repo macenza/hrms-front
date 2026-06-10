@@ -18,7 +18,12 @@ export function useUpdateCompanySettings() {
     return useMutation({
         mutationFn: async (data: any) => {
             // Can accept standard JSON object or FormData for files
-            const res = await apiClient.put('/settings/company', data);
+            const config = data instanceof FormData ? {
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                }
+            } : undefined;
+            const res = await apiClient.put('/settings/company', data, config);
             return res.data;
         },
         onSuccess: (res) => {

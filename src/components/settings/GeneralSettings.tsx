@@ -87,11 +87,16 @@ export default function GeneralSettings({
             setLastCompanyUpdate(initialData.lastCompanyUpdate || null);
             setRoles(initialData.roles || ['employee', 'manager', 'hr', 'admin']);
             setDepartments(initialData.departments || ['HR', 'Engineering', 'Marketing', 'Sales', 'Finance']);
+            setLogoFile(null);
 
             if (initialData.companyLogoUrl) {
-                const fullUrl = initialData.companyLogoUrl.startsWith('http') || initialData.companyLogoUrl.startsWith('/')
-                    ? initialData.companyLogoUrl
-                    : `http://localhost:4000/${initialData.companyLogoUrl}`;
+                let fullUrl = initialData.companyLogoUrl;
+                if (!initialData.companyLogoUrl.startsWith('http') && !initialData.companyLogoUrl.startsWith('/') && !initialData.companyLogoUrl.startsWith('data:')) {
+                    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
+                    const baseHost = apiUrl.replace(/\/api\/?$/, '');
+                    const cleanUrl = initialData.companyLogoUrl.startsWith('/') ? initialData.companyLogoUrl : `/${initialData.companyLogoUrl}`;
+                    fullUrl = `${baseHost}${cleanUrl}`;
+                }
                 setLogoPreview(fullUrl);
             } else {
                 setLogoPreview(null);

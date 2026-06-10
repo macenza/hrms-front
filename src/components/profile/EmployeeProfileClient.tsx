@@ -92,13 +92,31 @@ export default function EmployeeProfileClient({ id }: EmployeeProfileClientProps
 
     useEffect(() => {
         if (employee && isCurrentUser) {
+            // Keep theme settings in sync by merging current redux user settings with fetched profile settings
+            const mergedSettings = {
+                ...(employee.profile?.settings || {}),
+                ...(user?.profile?.settings || {})
+            };
+
             const updatedUser = {
                 ...user,
                 name: employee.name,
                 role: employee.role,
-                profile: employee.profile
+                profile: {
+                    ...(employee.profile || {}),
+                    settings: mergedSettings
+                }
             };
-            if (JSON.stringify(user?.profile) !== JSON.stringify(employee.profile) || user?.name !== employee.name) {
+
+            // Compare profiles ignoring settings to avoid circular loops on theme toggle
+            const userProfileToCompare = user?.profile ? { ...user.profile, settings: undefined } : undefined;
+            const employeeProfileToCompare = employee.profile ? { ...employee.profile, settings: undefined } : undefined;
+
+            if (
+                JSON.stringify(userProfileToCompare) !== JSON.stringify(employeeProfileToCompare) || 
+                user?.name !== employee.name ||
+                JSON.stringify(user?.profile?.settings) !== JSON.stringify(mergedSettings)
+            ) {
                 localStorage.setItem('hrms_user', JSON.stringify(updatedUser));
                 dispatch(setCredentials({ user: updatedUser as any }));
             }
@@ -379,7 +397,8 @@ export default function EmployeeProfileClient({ id }: EmployeeProfileClientProps
                                     : '',
                                 shiftName: employment.shiftName || '',
                                 shiftTiming: employment.shiftTiming || '',
-                                batchNo: employment.batchNo || ''
+                                batchNo: employment.batchNo || '',
+                                companyName: employment.companyName || ''
                             }}
                             onUpdateSkills={async (newSkills) => {
                                 try {

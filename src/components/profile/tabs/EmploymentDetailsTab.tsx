@@ -20,6 +20,7 @@ export interface EmploymentDetailsData {
     shiftName?: string;
     shiftTiming?: string;
     batchNo?: string;
+    companyName?: string;
 }
 
 interface EmploymentDetailsTabProps {
@@ -119,6 +120,7 @@ export default function EmploymentDetailsTab({
                     <CardContent className="pt-6">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-6 gap-x-8">
                             <DetailItem label="Employee ID" value={data.employeeId} icon={Hash} />
+                            <DetailItem label="Company Name" value={data.companyName} icon={Building} />
                             <DetailItem label="Designation" value={data.designation} icon={Tag} />
                             <DetailItem label="Reporting Manager" value={data.reportingManager} icon={User} />
                             <DetailItem label="Date of Joining" value={data.dateOfJoining} icon={Calendar} />

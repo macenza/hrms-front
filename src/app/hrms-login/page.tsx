@@ -10,10 +10,12 @@ export const metadata: Metadata = {
 };
 
 import { Toaster } from 'sonner';
+import ForceLightMode from '@/components/theme/ForceLightMode';
 
 export default function HRMSLoginPage() {
     return (
         <main className="min-h-screen w-full bg-[#F8F9FB] dark:bg-gray-950 flex flex-col items-center justify-center p-4 md:p-8">
+            <ForceLightMode />
             <Toaster position="top-center" richColors />
             {/* Background blobs for premium aesthetic */}
             <div className="fixed top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">

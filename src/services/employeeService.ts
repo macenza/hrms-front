@@ -4,6 +4,9 @@ import { Employee, PaginationState } from '@/components/employees/EmployeeTable'
 export interface FetchEmployeesResponse {
     employees: Employee[];
     pagination: PaginationState;
+    limitReached?: boolean;
+    currentCount?: number;
+    totalCapacity?: number;
 }
 
 export const employeeService = {
@@ -39,7 +42,13 @@ export const employeeService = {
             const response = await apiClient.get('/employees', { params });
 
             // The upgraded backend now returns { employees: [...], pagination: {...} }
-            const { employees: rawEmployees, pagination } = response.data;
+            const { 
+                employees: rawEmployees, 
+                pagination,
+                limitReached,
+                currentCount,
+                totalCapacity 
+            } = response.data;
 
             // 3. Map the raw backend data to our strict frontend interface
             // Notice the corrected paths aligning exactly with your User.js schema
@@ -62,7 +71,10 @@ export const employeeService = {
 
             return {
                 employees,
-                pagination
+                pagination,
+                limitReached,
+                currentCount,
+                totalCapacity
             };
         } catch (error) {
             console.error("Error fetching employees:", error);

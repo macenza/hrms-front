@@ -173,6 +173,10 @@ export default function EmployeesPage() {
                     }}
                     onAddClick={() => {
                         console.log("🟢 Add Employee Button Clicked!");
+                        if (data?.limitReached) {
+                            toast.error(`Employee limit reached! You have used all ${data.totalCapacity} available seats. Please upgrade your subscription or add more slots to add new employees.`);
+                            return;
+                        }
                         setIsModalOpen(true);
                     }} 
                     onExportClick={handleExport} 
