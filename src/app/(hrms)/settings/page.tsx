@@ -49,7 +49,6 @@ export default function SettingsPage() {
     // UI State
     const [activeTab, setActiveTab] = useState<SettingsTabId>('general');
     const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
-
     // Filter tabs based on role permissions (Payroll Engine is Admin/HR only)
     const visibleTabs = useMemo(() => {
         return settingsTabs.filter((tab) => {
