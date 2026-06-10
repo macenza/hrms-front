@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Pin, Calendar, User, MoreHorizontal, FileText, Eye, Download } from 'lucide-react';
+import React from 'react';
+import { Pin, Calendar, User, Pencil, Trash2, FileText, Eye, Download } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import { Button } from '@/components/ui/Button'; 
 import { useAppSelector } from '@/store/hooks';
@@ -79,7 +79,6 @@ export default function NoticeFeed({
 }: NoticeFeedProps) {
     const { user } = useAppSelector((state) => state.auth);
     const userRole = user?.role?.toLowerCase() || '';
-    const [activeDropdownId, setActiveDropdownId] = useState<string | null>(null);
 
     if (isLoading) {
         return <FeedSkeleton />;
@@ -102,7 +101,7 @@ export default function NoticeFeed({
             {notices.map((notice) => {
                 const isAuthor = user?.id === notice.author?._id;
                 const isHrOrAdmin = userRole === 'hr' || userRole === 'admin';
-                const showMenu = isAuthor || isHrOrAdmin;
+                const showActions = isAuthor || isHrOrAdmin;
 
                 const createdTime = new Date(notice.createdAt).getTime();
                 const updatedTime = notice.updatedAt ? new Date(notice.updatedAt).getTime() : 0;
@@ -132,63 +131,56 @@ export default function NoticeFeed({
                                 </span>
                             </div>
                             
-                            <div className="flex items-center gap-1">
-                                
-                                {showMenu && (
-                                    <div className="relative">
+                            {showActions && (
+                                <div className="flex items-center gap-1">
+                                    {/* Pin/Unpin Button (HR/Admin only) */}
+                                    {isHrOrAdmin && onPinToggle && (
                                         <Button
                                             variant="ghost"
                                             size="sm"
-                                            className="p-1.5 h-8 w-8 rounded-full text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                                            onClick={() => setActiveDropdownId(activeDropdownId === notice._id ? null : notice._id)}
-                                            aria-label="Notice options"
+                                            className={cn(
+                                                "p-1.5 h-8 w-8 rounded-full transition-colors",
+                                                notice.isPinned
+                                                    ? "text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30"
+                                                    : "text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+                                            )}
+                                            onClick={() => onPinToggle(notice._id)}
+                                            aria-label={notice.isPinned ? 'Unpin notice' : 'Pin notice'}
+                                            title={notice.isPinned ? 'Unpin Notice' : 'Pin Notice'}
                                         >
-                                            <MoreHorizontal size={20} />
+                                            <Pin size={16} className={notice.isPinned ? 'fill-current' : ''} />
                                         </Button>
-                                        
-                                        {activeDropdownId === notice._id && (
-                                            <>
-                                                <div className="fixed inset-0 z-10" onClick={() => setActiveDropdownId(null)}></div>
-                                                <div className="absolute right-0 mt-1 w-36 rounded-md shadow-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 py-1 z-20 transition-all">
-                                                    {isHrOrAdmin && onPinToggle && (
-                                                        <button
-                                                            onClick={() => {
-                                                                setActiveDropdownId(null);
-                                                                onPinToggle(notice._id);
-                                                            }}
-                                                            className="w-full text-left px-4 py-2 text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                                                        >
-                                                            {notice.isPinned ? 'Unpin Notice' : 'Pin Notice'}
-                                                        </button>
-                                                    )}
-                                                    {isAuthor && onEditClick && (
-                                                        <button
-                                                            onClick={() => {
-                                                                setActiveDropdownId(null);
-                                                                onEditClick(notice);
-                                                            }}
-                                                            className="w-full text-left px-4 py-2 text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                                                        >
-                                                            Edit Notice
-                                                        </button>
-                                                    )}
-                                                    {isHrOrAdmin && onDeleteClick && (
-                                                        <button
-                                                            onClick={() => {
-                                                                setActiveDropdownId(null);
-                                                                onDeleteClick(notice._id);
-                                                            }}
-                                                            className="w-full text-left px-4 py-2 text-xs font-semibold text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                                                        >
-                                                            Delete Notice
-                                                        </button>
-                                                    )}
-                                                </div>
-                                            </>
-                                        )}
-                                    </div>
-                                )}
-                            </div>
+                                    )}
+
+                                    {/* Edit Button (Author only) */}
+                                    {isAuthor && onEditClick && (
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="p-1.5 h-8 w-8 rounded-full text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+                                            onClick={() => onEditClick(notice)}
+                                            aria-label="Edit notice"
+                                            title="Edit Notice"
+                                        >
+                                            <Pencil size={16} />
+                                        </Button>
+                                    )}
+
+                                    {/* Delete Button (HR/Admin only) */}
+                                    {isHrOrAdmin && onDeleteClick && (
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="p-1.5 h-8 w-8 rounded-full text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                                            onClick={() => onDeleteClick(notice._id)}
+                                            aria-label="Delete notice"
+                                            title="Delete Notice"
+                                        >
+                                            <Trash2 size={16} />
+                                        </Button>
+                                    )}
+                                </div>
+                            )}
                         </div>
                         
                         <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-2 transition-colors">

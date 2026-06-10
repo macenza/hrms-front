@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Building, Lock, Bell, ChevronRight, Loader2, Calculator, FileText, Menu } from 'lucide-react';
+import { Building, Lock, Bell, ChevronRight, Loader2, Calculator, Menu } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/utils/cn';
 import { useAppSelector, useAppDispatch } from '@/store/hooks';
@@ -17,7 +17,6 @@ import GeneralSettings from '@/components/settings/GeneralSettings';
 import SecuritySettings from '@/components/settings/SecuritySettings';
 import NotificationSettings from '@/components/settings/NotificationSettings';
 import PayrollSettings from '@/components/settings/PayrollSettings';
-import PoliciesSettings from '@/components/settings/PoliciesSettings';
 
 import { 
     useCompanySettings, 
@@ -32,7 +31,6 @@ const settingsTabs = [
     { id: 'security', label: 'Security & Access', icon: Lock, description: 'Passwords and active sessions' },
     { id: 'notifications', label: 'Notifications', icon: Bell, description: 'Email and system webhook alerts' },
     { id: 'payroll', label: 'Payroll Engine', icon: Calculator, description: 'Manage dynamic allowances and deductions' },
-    { id: 'policies', label: 'Policies', icon: FileText, description: 'View and manage organizational policies' },
 ] as const;
 
 type SettingsTabId = typeof settingsTabs[number]['id'];
@@ -287,9 +285,6 @@ export default function SettingsPage() {
                                         initialData={companyData} 
                                         onSave={handleSaveCompanySettings}
                                     />
-                                )}
-                                {activeTab === 'policies' && (
-                                    <PoliciesSettings />
                                 )}
                             </div>
                         </Card>

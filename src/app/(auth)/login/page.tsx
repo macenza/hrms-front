@@ -1,12 +1,12 @@
 import React from 'react';
-import CustomerLoginForm from '@/components/auth/CustomerLoginForm';
+import UnifiedLoginForm from '@/components/auth/UnifiedLoginForm';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-    title: 'Customer Hub Login | MACENZA Workspace',
-    description: 'Manage your B2B subscription and organization space.',
+    title: 'Sign In | MACENZA HRMS',
+    description: 'Sign in to your Macenza HRMS workspace. Access your dashboard, manage employees, and run your HR operations.',
 };
 
-export default function SaaSBuyerLoginPage() {
-    return <CustomerLoginForm />;
+export default function LoginPage() {
+    return <UnifiedLoginForm />;
 }
