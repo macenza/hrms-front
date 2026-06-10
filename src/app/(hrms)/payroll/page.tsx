@@ -129,7 +129,7 @@ export default function PayrollDashboard() {
 
     // Accruals Pagination variables
     const accruals = accrualData?.data || [];
-    const accrualsTotal = accrualData?.totalCount || 0;
+    const accrualsTotal = accrualData?.totalCount || accrualData?.meta?.totalCount || 0;
     const accrualsPages = Math.ceil(accrualsTotal / limit) || 1;
 
     // Summary card data computed from current page accruals
