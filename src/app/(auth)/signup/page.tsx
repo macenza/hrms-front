@@ -71,7 +71,7 @@ export default function SaaSBuyerSignupPage() {
                 });
 
                 if (data.accessToken) {
-                    Cookies.set('customer_token', data.accessToken, { expires: 7, secure: process.env.NODE_ENV === 'production', sameSite: 'lax' });
+                    Cookies.set('customer_token', data.accessToken, { expires: 7, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/' });
                     localStorage.setItem('customer_token', data.accessToken);
                 }
                 if (data.customer) {

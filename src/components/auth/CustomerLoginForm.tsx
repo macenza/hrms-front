@@ -49,7 +49,7 @@ export default function CustomerLoginForm() {
             
             if (data.accessToken) {
                 // Set B2B Customer Edge Cookie
-                Cookies.set('customer_token', data.accessToken, { expires: 7, secure: process.env.NODE_ENV === 'production', sameSite: 'lax' });
+                Cookies.set('customer_token', data.accessToken, { expires: 7, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/' });
                 localStorage.setItem('customer_token', data.accessToken);
             }
             if (data.customer) {

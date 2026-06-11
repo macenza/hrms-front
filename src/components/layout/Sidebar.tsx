@@ -13,7 +13,7 @@ import Cookies from 'js-cookie';
 import {
     LayoutDashboard, Users, CalendarCheck, CalendarDays, Briefcase,
     DollarSign, CreditCard, Package, Bell, Settings, LogOut, Sun, Moon, X, User,
-    AlertTriangle
+    AlertTriangle, UserPlus, FileText
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -78,6 +78,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             { id: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', show: true },
             // Administrative Links
             { id: 'Employees', href: '/employees', icon: Users, label: 'Employees', show: isAdminOrHR },
+            { id: 'Recruitment', href: '/recruitment', icon: UserPlus, label: 'Recruitment', show: isAdminOrHR },
             { id: 'Payroll', href: '/payroll', icon: DollarSign, label: 'Payroll', show: role === 'hr' },
             { id: 'Assets', href: '/assets', icon: Package, label: 'Assets', show: isAdminOrHR },
 
@@ -97,6 +98,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             { id: 'Leave', href: '/leave', icon: CalendarDays, label: 'Leave', show: true },
             // { id: 'Loan', href: '/loan', icon: CreditCard, label: 'Loan', show: true },
             { id: 'Notice', href: '/notice', icon: Bell, label: 'Notice', show: true },
+            { id: 'Policies', href: '/policies', icon: FileText, label: 'Policies', show: true },
             { id: 'Settings', href: '/settings', icon: Settings, label: 'Settings', show: true },
         ];
         return items.filter(item => item.show);
@@ -116,8 +118,9 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             localStorage.removeItem('hrms_user');
             localStorage.removeItem('hrms_token');
             localStorage.removeItem('hrms_refreshToken');
-            Cookies.remove('hrms_token');
-            Cookies.remove('role');
+            Cookies.remove('hrms_token', { path: '/' });
+            Cookies.remove('hrms_role', { path: '/' });
+            Cookies.remove('role', { path: '/' });
             
             // Show premium success toast
             toast.success("You have been logged out successfully.");

@@ -60,7 +60,7 @@ export default function AuthInitializer({ children }: { children: React.ReactNod
                 if (cachedUserStr) cachedUser = JSON.parse(cachedUserStr);
             } catch (e) {}
 
-            if (persistedUser || token || cachedUser) {
+            if (token && (persistedUser || cachedUser)) {
                 try {
                     // apiClient will automatically attempt a refresh if the access token is expired.
                     const verifiedUser = await fetchCurrentUser();
@@ -70,10 +70,10 @@ export default function AuthInitializer({ children }: { children: React.ReactNod
                     // Keep cookies in sync for edge middleware
                     const currentToken = localStorage.getItem('hrms_token');
                     if (currentToken) {
-                        Cookies.set('hrms_token', currentToken, { expires: 7, secure: process.env.NODE_ENV === 'production', sameSite: 'lax' });
+                        Cookies.set('hrms_token', currentToken, { expires: 7, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/' });
                     }
                     if (verifiedUser?.role) {
-                        Cookies.set('hrms_role', verifiedUser.role.toLowerCase(), { expires: 7, secure: process.env.NODE_ENV === 'production', sameSite: 'lax' });
+                        Cookies.set('hrms_role', verifiedUser.role.toLowerCase(), { expires: 7, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/' });
                     }
 
                     // Client-side automatic redirect if user is on /hrms-login with valid session
@@ -90,8 +90,10 @@ export default function AuthInitializer({ children }: { children: React.ReactNod
                     localStorage.removeItem('hrms_user');
                     localStorage.removeItem('hrms_token');
                     localStorage.removeItem('hrms_refreshToken');
-                    Cookies.remove('hrms_token');
-                    Cookies.remove('hrms_role');
+                    localStorage.removeItem('persist:employeeAuth');
+                    localStorage.removeItem('persist:customerAuth');
+                    Cookies.remove('hrms_token', { path: '/' });
+                    Cookies.remove('hrms_role', { path: '/' });
                     
                     const PUBLIC_ROUTES = ['/', '/login', '/signup', '/hrms-login', '/kiosk', '/privacy-policy', '/terms-and-conditions'];
                     // CRITICAL: Prevent zombie state if we are on a protected route
@@ -107,8 +109,10 @@ export default function AuthInitializer({ children }: { children: React.ReactNod
                 localStorage.removeItem('hrms_user');
                 localStorage.removeItem('hrms_token');
                 localStorage.removeItem('hrms_refreshToken');
-                Cookies.remove('hrms_token');
-                Cookies.remove('hrms_role');
+                localStorage.removeItem('persist:employeeAuth');
+                localStorage.removeItem('persist:customerAuth');
+                Cookies.remove('hrms_token', { path: '/' });
+                Cookies.remove('hrms_role', { path: '/' });
 
                 const PUBLIC_ROUTES = ['/', '/login', '/signup', '/hrms-login', '/kiosk', '/privacy-policy', '/terms-and-conditions'];
                 if (typeof window !== 'undefined' && !PUBLIC_ROUTES.includes(window.location.pathname)) {

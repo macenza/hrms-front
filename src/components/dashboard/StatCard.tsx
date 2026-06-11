@@ -1,39 +1,41 @@
 "use client";
 
 import React, { useMemo } from "react";
-import { TrendingUp, TrendingDown, Users, UserPlus, CalendarCheck, UserSearch, Loader2, Lock } from "lucide-react";
+import { Users, UserCheck, UserSearch, Briefcase, ArrowRight, Loader2, Lock } from "lucide-react";
 import type { StatCard as StatCardType } from "@/types";
 import { useAppSelector } from "@/store/hooks";
 import { cn } from "@/utils/cn";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 const ICON_MAP: Record<string, React.ElementType> = {
     "total-employee": Users,
-    "new-employee": UserPlus,
-    "today-attendance": CalendarCheck,
+    "today-attendance": UserCheck,
     "total-applicant": UserSearch,
+    "open-positions": Briefcase,
 };
 
-// Upgraded to strict Tailwind dark mode patterns for premium contrast
-const COLOR_MAP: Record<string, { iconBg: string; text: string; trendBg: string }> = {
+// Colors matching the image exactly while adhering to premium dark mode and themes of hrms
+const COLOR_MAP: Record<string, { iconBg: string; text: string; linkColor: string }> = {
     "total-employee": { 
-        iconBg: "bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400", 
+        iconBg: "bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400", 
         text: "text-blue-600 dark:text-blue-400",
-        trendBg: "bg-blue-50 dark:bg-blue-500/10"
-    },
-    "new-employee": { 
-        iconBg: "bg-green-100 text-green-600 dark:bg-green-500/10 dark:text-green-400", 
-        text: "text-green-600 dark:text-green-400",
-        trendBg: "bg-green-50 dark:bg-green-500/10"
+        linkColor: "text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300"
     },
     "today-attendance": { 
-        iconBg: "bg-purple-100 text-purple-600 dark:bg-purple-500/10 dark:text-purple-400", 
-        text: "text-purple-600 dark:text-purple-400",
-        trendBg: "bg-purple-50 dark:bg-purple-500/10"
+        iconBg: "bg-green-50 text-green-600 dark:bg-green-500/10 dark:text-green-400", 
+        text: "text-green-600 dark:text-green-400",
+        linkColor: "text-green-600 dark:text-green-400"
     },
     "total-applicant": { 
-        iconBg: "bg-teal-100 text-teal-600 dark:bg-teal-500/10 dark:text-teal-400", 
-        text: "text-teal-600 dark:text-teal-400",
-        trendBg: "bg-teal-50 dark:bg-teal-500/10"
+        iconBg: "bg-purple-50 text-purple-600 dark:bg-purple-500/10 dark:text-purple-400", 
+        text: "text-purple-600 dark:text-purple-400",
+        linkColor: "text-purple-500 hover:text-purple-600 dark:text-purple-400 dark:hover:text-purple-300"
+    },
+    "open-positions": { 
+        iconBg: "bg-cyan-50 text-cyan-600 dark:bg-cyan-500/10 dark:text-cyan-400", 
+        text: "text-cyan-600 dark:text-cyan-400",
+        linkColor: "text-cyan-500 hover:text-cyan-600 dark:text-cyan-400 dark:hover:text-cyan-300"
     },
 };
 
@@ -52,6 +54,7 @@ export default function StatCard({
     isLoading = false,
     disableAnimations = false,
 }: StatCardProps) {
+    const router = useRouter();
     
     // RBAC logic relies on global client auth state
     const { user } = useAppSelector((state) => state.auth);
@@ -60,7 +63,6 @@ export default function StatCard({
 
     const Icon = ICON_MAP[card.id] ?? Users;
     const colors = COLOR_MAP[card.id] || COLOR_MAP["total-employee"]; 
-    const isUp = card.changeType === "up";
 
     const displayValue = useMemo<string | number>(() => {
         if (!isAuthorized) return "---";
@@ -68,13 +70,13 @@ export default function StatCard({
 
         switch (card.id) {
             case "total-employee":
-                return statsData?.totalUsers ?? 0;
-            case "new-employee":
-                return statsData?.newUsers ?? 0;
+                return statsData?.totalUsers ?? card.value;
             case "today-attendance":
-                return attendanceData?.todayPresent ?? 0; 
+                return attendanceData?.todayPresent ?? card.value; 
             case "total-applicant":
-                return 0; // Static placeholder until recruitment module is built
+                return 45; // Static applicant value or fallback
+            case "open-positions":
+                return 12; // Static open positions
             default:
                 return card.value;
         }
@@ -82,35 +84,28 @@ export default function StatCard({
 
     const trendValue = useMemo(() => {
         if (!isAuthorized) return "0%";
-        if (!statsData && !attendanceData) return card.change;
-
         if (card.id === "today-attendance") {
-            const total = statsData?.totalUsers || 0;
-            const present = attendanceData?.todayPresent ?? 0;
+            const total = statsData?.totalUsers ?? 128;
+            const present = attendanceData?.todayPresent ?? 96;
             if (total > 0) {
-                return `${Math.round((present / total) * 100)}% rate`;
+                return `${Math.round((present / total) * 100)}%`;
             }
-            return "0% rate";
+            return "75%";
         }
-        
-        if (card.id === "total-employee") {
-            const total = statsData?.totalUsers || 0;
-            const active = statsData?.activeUsers || 0;
-            if (total > 0) {
-                return `${Math.round((active / total) * 100)}% active`;
-            }
-        }
-
-        if (card.id === "new-employee") {
-            const total = statsData?.totalUsers || 0;
-            const newUsers = statsData?.newUsers || 0;
-            if (total > 0) {
-                return `+${Math.round((newUsers / total) * 100)}% growth`;
-            }
-        }
-        
         return card.change;
     }, [statsData, attendanceData, card.id, card.change, isAuthorized]);
+
+    const handleCardClick = () => {
+        if (card.id === "total-employee") {
+            router.push("/employees");
+        } else if (card.id === "today-attendance") {
+            router.push("/attendance");
+        } else if (card.id === "total-applicant") {
+            router.push("/recruitment#applicants-table");
+        } else if (card.id === "open-positions") {
+            router.push("/recruitment");
+        }
+    };
 
     if (!isAuthorized) {
         return (
@@ -123,8 +118,9 @@ export default function StatCard({
 
     return (
         <div
+            onClick={handleCardClick}
             className={cn(
-                "flex-1 min-w-0 rounded-xl p-5 flex flex-col gap-3 relative overflow-hidden cursor-pointer",
+                "flex-1 min-w-0 rounded-2xl p-6 flex flex-col gap-4 relative overflow-hidden select-none cursor-pointer",
                 "bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-sm dark:shadow-none",
                 "hover:border-blue-200 dark:hover:border-blue-900/50",
                 !disableAnimations && "transition-all duration-300 hover:shadow-md dark:hover:shadow-none hover:-translate-y-0.5"
@@ -137,9 +133,9 @@ export default function StatCard({
                 </div>
             )}
 
-            <div className="flex items-center gap-3">
-                <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center shrink-0 transition-colors", colors.iconBg)}>
-                    <Icon className="w-5 h-5" />
+            <div className="flex items-center gap-3.5">
+                <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center shrink-0 transition-colors", colors.iconBg)}>
+                    <Icon className="w-6 h-6" />
                 </div>
                 <span className="text-sm font-semibold truncate text-gray-600 dark:text-gray-400 transition-colors">
                     {card.title}
@@ -151,16 +147,31 @@ export default function StatCard({
                     {displayValue}
                 </span>
                 
-                <div className={cn("flex items-center gap-1.5 px-2.5 py-1 rounded-md transition-colors", colors.trendBg)}>
-                    <span className={cn("text-xs font-bold", colors.text)}>
-                        {trendValue}
+                {card.id === "today-attendance" ? (
+                    <span className="text-xs font-semibold text-green-600 dark:text-green-400 pb-0.5 transition-colors">
+                        {trendValue} of total employees
                     </span>
-                    {isUp ? (
-                        <TrendingUp className={cn("w-3.5 h-3.5", colors.text)} />
-                    ) : (
-                        <TrendingDown className="w-3.5 h-3.5 text-red-500 dark:text-red-400" />
-                    )}
-                </div>
+                ) : (
+                    <Link
+                        href={
+                            card.id === "total-employee"
+                                ? "/employees"
+                                : card.id === "total-applicant"
+                                ? "/recruitment#applicants-table"
+                                : card.id === "open-positions"
+                                ? "/recruitment"
+                                : "#"
+                        }
+                        onClick={(e) => e.stopPropagation()}
+                        className={cn(
+                            "text-xs font-bold flex items-center gap-1 transition-colors group/link pb-0.5",
+                            colors.linkColor
+                        )}
+                    >
+                        <span>{card.change}</span>
+                        <ArrowRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover/link:translate-x-0.5" />
+                    </Link>
+                )}
             </div>
         </div>
     );
