@@ -28,57 +28,19 @@ export default function HeroSection() {
                     Streamline HR operations, automate workflows and empower your employees with a modern HRMS platform.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 mt-8">
-                    {/* <Link
-    href="/login"
-    className="
-    bg-[#6D5DFD]
-    text-white
-    px-6
-    py-3
-    rounded-xl
-    font-semibold
-    hover:bg-[#5B4DF0]
-    transition
-    text-center
-    "
-  >
-    Start Free Trial
-  </Link> */}
-                {/* <button className="bg-[#6D5DFD] text-white px-6 py-3 rounded-xl font-semibold hover:bg-[#5B4DF0] transition">
-                    Start Free Trial
-                </button> */}
-                {/* <button className="border border-[#D1D5DB] bg-white text-gray-900 px-6 py-3 rounded-xl font-semibold hover:bg-gray-100 transition">
-                    Explore Demo
-                </button> */}
-             {/* <Link
-  href="/login"
-  className="
-  flex
-  items-center
-  justify-center
-  gap-2
-  border
-  border-[#D1D5DB]
-  bg-white
-  text-gray-900
-  px-6
-  py-3
-  rounded-xl
-  font-semibold
-  hover:bg-gray-100
-  transition
-  text-center
-  "
->
-  <Play
-    size={18}
-    className="outline-gray-900"
-  />
-
-  <span>Explore Demo</span>
-</Link> */}
-
-            </div>
+                    <Link
+                        href="/register-company"
+                        className="bg-[#6D5DFD] text-white px-6 py-3 rounded-xl font-semibold hover:bg-[#5B4DF0] transition text-center"
+                    >
+                        Get Started Free
+                    </Link>
+                    <Link
+                        href="/login"
+                        className="flex items-center justify-center gap-2 border border-[#D1D5DB] bg-white text-gray-900 px-6 py-3 rounded-xl font-semibold hover:bg-gray-100 transition text-center"
+                    >
+                        Login
+                    </Link>
+                </div>
                <div className="flex flex-wrap gap-4 mt-10">
 
   {/* Secure */}
