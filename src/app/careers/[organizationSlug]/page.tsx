@@ -5,6 +5,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Briefcase, MapPin, Clock, Search, ChevronRight, Sparkles, Calendar, Banknote } from "lucide-react";
 import { cn } from "@/utils/cn";
+import { recruitmentService } from "@/services/recruitmentService";
 
 interface JobOpening {
     id: string;
@@ -67,27 +68,30 @@ export default function CareerPortalIndex() {
     const organizationSlug = (params.organizationSlug as string) || "macenza";
 
     const [jobs, setJobs] = useState<JobOpening[]>([]);
+    const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedDepartment, setSelectedDepartment] = useState("All");
 
-    // Load jobs from localStorage
+    // Load jobs from API
     useEffect(() => {
-        const stored = localStorage.getItem("hrms_jobs");
-        if (stored) {
-            try {
-                const parsed = JSON.parse(stored) as JobOpening[];
-                // Only show ACTIVE jobs for the public careers portal
-                setJobs(parsed.filter(j => j.status === "Active"));
-            } catch (e) {
-                console.error("Failed to parse hrms_jobs from localStorage, resetting:", e);
-                localStorage.setItem("hrms_jobs", JSON.stringify(DEFAULT_ACTIVE));
-                setJobs(DEFAULT_ACTIVE);
-            }
-        } else {
-            localStorage.setItem("hrms_jobs", JSON.stringify(DEFAULT_ACTIVE));
-            setJobs(DEFAULT_ACTIVE);
-        }
-    }, []);
+        let active = true;
+        setLoading(true);
+        recruitmentService.getPublicJobs(organizationSlug)
+            .then(data => {
+                if (active) {
+                    setJobs(data as unknown as JobOpening[]);
+                    setLoading(false);
+                }
+            })
+            .catch(err => {
+                console.error("Failed to fetch public jobs from API:", err);
+                if (active) {
+                    setJobs([]);
+                    setLoading(false);
+                }
+            });
+        return () => { active = false; };
+    }, [organizationSlug]);
 
     // Get company title
     const companyTitle = useMemo(() => {
@@ -112,6 +116,14 @@ export default function CareerPortalIndex() {
             return matchesSearch && matchesDept;
         });
     }, [jobs, searchQuery, selectedDepartment]);
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-950">
+                <div className="w-8 h-8 rounded-full border-4 border-primary border-t-transparent animate-spin" />
+            </div>
+        );
+    }
 
     return (
         <div className="bg-gray-50 dark:bg-gray-950 min-h-screen text-gray-800 dark:text-gray-150 transition-colors duration-300">

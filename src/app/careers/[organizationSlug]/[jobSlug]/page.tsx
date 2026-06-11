@@ -9,11 +9,13 @@ import {
     Calendar, Globe, Building, Banknote
 } from "lucide-react";
 import { FaGithub, FaLinkedin } from "react-icons/fa";
+import { recruitmentService } from "@/services/recruitmentService";
 import { toast } from "sonner";
 import { cn } from "@/utils/cn";
 
 interface ScreeningQuestion {
-    id: string;
+    id?: string;
+    _id?: string;
     questionText: string;
     isOptional: boolean;
 }
@@ -158,24 +160,24 @@ export default function CareerJobApplicationPage() {
 
     // Load jobs and find matching active job
     useEffect(() => {
-        const stored = localStorage.getItem("hrms_jobs");
-        if (stored) {
-            try {
-                const parsed = JSON.parse(stored) as JobOpening[];
-                const found = parsed.find(j => j.slug === jobSlug && j.status === "Active");
-                setJob(found || null);
-            } catch (e) {
-                console.error("Failed to parse hrms_jobs in detail view:", e);
-                const found = DEFAULT_ACTIVE.find(j => j.slug === jobSlug);
-                setJob(found || null);
-            }
-        } else {
-            localStorage.setItem("hrms_jobs", JSON.stringify(DEFAULT_ACTIVE));
-            const found = DEFAULT_ACTIVE.find(j => j.slug === jobSlug);
-            setJob(found || null);
-        }
-        setLoading(false);
-    }, [jobSlug]);
+        let active = true;
+        setLoading(true);
+        recruitmentService.getPublicJobBySlug(organizationSlug, jobSlug)
+            .then(data => {
+                if (active) {
+                    setJob(data as unknown as JobOpening);
+                    setLoading(false);
+                }
+            })
+            .catch(err => {
+                console.error("Failed to load public job detail:", err);
+                if (active) {
+                    setJob(null);
+                    setLoading(false);
+                }
+            });
+        return () => { active = false; };
+    }, [organizationSlug, jobSlug]);
 
     const companyTitle = useMemo(() => {
         return organizationSlug
@@ -214,7 +216,8 @@ export default function CareerJobApplicationPage() {
         // Verify required screening questions are answered
         if (job && job.screeningQuestions) {
             for (const q of job.screeningQuestions) {
-                if (!q.isOptional && !screeningAnswers[q.id]?.trim()) {
+                const qId = q._id || q.id || "";
+                if (!q.isOptional && !screeningAnswers[qId]?.trim()) {
                     toast.error(`Please answer the required question: "${q.questionText}"`);
                     return;
                 }
@@ -245,11 +248,14 @@ export default function CareerJobApplicationPage() {
         }
 
         // Construct screening answers array
-        const answersArray = (job.screeningQuestions || []).map(q => ({
-            questionId: q.id,
-            questionText: q.questionText,
-            answer: screeningAnswers[q.id] || ""
-        }));
+        const answersArray = (job.screeningQuestions || []).map(q => {
+            const qId = q._id || q.id || "";
+            return {
+                questionId: qId,
+                questionText: q.questionText,
+                answer: screeningAnswers[qId] || ""
+            };
+        });
 
         // Create applicant record
         const newApplicant: Applicant = {
@@ -280,47 +286,39 @@ export default function CareerJobApplicationPage() {
             screeningAnswers: answersArray
         };
 
-        // Save application to localStorage with safety
+        // Submit candidate application payload via API
         try {
-            const storedApplicants = localStorage.getItem("hrms_applications");
-            let currentApplicants = [];
-            if (storedApplicants) {
-                try {
-                    currentApplicants = JSON.parse(storedApplicants);
-                } catch (e) {
-                    console.error("Failed to parse hrms_applications during submission, resetting:", e);
-                }
-            }
-            localStorage.setItem("hrms_applications", JSON.stringify([newApplicant, ...currentApplicants]));
-        } catch (e) {
-            console.error("Failed to save new applicant to localStorage:", e);
-        }
+            await recruitmentService.submitApplication(organizationSlug, jobSlug, {
+                candidateName,
+                email,
+                phone,
+                resumeName: resumeFile.name,
+                resumeData,
+                notes: notes.trim() || undefined,
+                currentLocation,
+                highestQualification,
+                yearsOfExperience: Number(yearsOfExperience),
+                availableStartDate,
+                portfolioUrl: portfolioUrl.trim() || undefined,
+                gitHubProfile: gitHubProfile.trim() || undefined,
+                linkedInProfile: linkedInProfile.trim() || undefined,
+                currentCompany: currentCompany.trim() || undefined,
+                currentCtc: currentCtc.trim() || undefined,
+                expectedCtc: expectedCtc.trim() || undefined,
+                noticePeriod: noticePeriod.trim() || undefined,
+                coverLetterName: coverLetterFile ? coverLetterFile.name : undefined,
+                coverLetterData: coverLetterFile ? coverLetterData : undefined,
+                screeningAnswers: answersArray
+            });
 
-        // 2. Increment applicant counter in jobs array with safety
-        try {
-            const storedJobs = localStorage.getItem("hrms_jobs");
-            if (storedJobs) {
-                let parsedJobs: JobOpening[] = [];
-                try {
-                    parsedJobs = JSON.parse(storedJobs);
-                } catch (e) {
-                    console.error("Failed to parse hrms_jobs during submission increment:", e);
-                }
-                const updatedJobs = parsedJobs.map(j => {
-                    if (j.id === job.id) {
-                        return { ...j, applicantsCount: (j.applicantsCount || 0) + 1 };
-                    }
-                    return j;
-                });
-                localStorage.setItem("hrms_jobs", JSON.stringify(updatedJobs));
-            }
+            setSubmitting(false);
+            setSubmitted(true);
+            toast.success("Application submitted successfully!");
         } catch (e) {
-            console.error("Failed to update job applicant count in localStorage:", e);
+            console.error("Failed to submit application to API:", e);
+            setSubmitting(false);
+            toast.error("Failed to submit application. Please try again.");
         }
-
-        setSubmitting(false);
-        setSubmitted(true);
-        toast.success("Application submitted successfully!");
     };
 
     if (loading) {
@@ -739,21 +737,24 @@ export default function CareerJobApplicationPage() {
                                         <div className="border-b border-gray-100 dark:border-gray-855 pb-4">
                                             <h3 className="text-sm font-bold uppercase tracking-wider text-gray-955 dark:text-white mb-4">Screening Questions</h3>
                                             <div className="space-y-4">
-                                                {job.screeningQuestions.map((q, index) => (
-                                                    <div key={q.id} className="space-y-2">
-                                                        <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block">
-                                                            {index + 1}. {q.questionText} {q.isOptional ? <span className="text-gray-400 font-semibold italic">(Optional)</span> : <span className="text-red-500">*</span>}
-                                                        </label>
-                                                        <textarea
-                                                            required={!q.isOptional}
-                                                            rows={3}
-                                                            placeholder="Enter your answer here..."
-                                                            value={screeningAnswers[q.id] || ""}
-                                                            onChange={(e) => handleScreeningAnswerChange(q.id, e.target.value)}
-                                                            className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-850 border border-gray-200 dark:border-gray-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary text-gray-855 dark:text-gray-200 resize-y"
-                                                        />
-                                                    </div>
-                                                ))}
+                                                {job.screeningQuestions.map((q, index) => {
+                                                    const qId = q._id || q.id || "";
+                                                    return (
+                                                        <div key={qId} className="space-y-2">
+                                                            <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block">
+                                                                {index + 1}. {q.questionText} {q.isOptional ? <span className="text-gray-400 font-semibold italic">(Optional)</span> : <span className="text-red-500">*</span>}
+                                                            </label>
+                                                            <textarea
+                                                                required={!q.isOptional}
+                                                                rows={3}
+                                                                placeholder="Enter your answer here..."
+                                                                value={screeningAnswers[qId] || ""}
+                                                                onChange={(e) => handleScreeningAnswerChange(qId, e.target.value)}
+                                                                className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-850 border border-gray-200 dark:border-gray-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary text-gray-855 dark:text-gray-200 resize-y"
+                                                            />
+                                                        </div>
+                                                    );
+                                                })}
                                             </div>
                                         </div>
                                     )}

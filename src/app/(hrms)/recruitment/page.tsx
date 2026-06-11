@@ -13,6 +13,15 @@ import { FaGithub, FaLinkedin } from "react-icons/fa";
 import { toast } from "sonner";
 import Link from "next/link";
 import { cn } from "@/utils/cn";
+import { 
+    useRecruitmentJobs, 
+    useCreateJob, 
+    useUpdateJob, 
+    useDeleteJob, 
+    useRecruitmentApplicants, 
+    useUpdateApplicantStatus, 
+    useDeleteApplicant 
+} from "@/hooks/api/useRecruitment";
 
 // Interfaces
 interface ScreeningQuestion {
@@ -324,6 +333,15 @@ const INITIAL_APPLICANTS: Applicant[] = [
 export default function RecruitmentPage() {
     const { company } = useAppSelector((state) => state.settings);
     
+    const { data: dbJobs = [], isLoading: loadingJobs, refetch: refetchJobs } = useRecruitmentJobs();
+    const { data: dbApplicants = [], isLoading: loadingApplicants, refetch: refetchApplicants } = useRecruitmentApplicants();
+
+    const createJobMutation = useCreateJob();
+    const updateJobMutation = useUpdateJob();
+    const deleteJobMutation = useDeleteJob();
+    const updateApplicantStatusMutation = useUpdateApplicantStatus();
+    const deleteApplicantMutation = useDeleteApplicant();
+    
     // Org slug generator
     const organizationSlug = useMemo(() => {
         if (company?.companyName) {
@@ -333,11 +351,13 @@ export default function RecruitmentPage() {
     }, [company]);
 
     // State Variables
-    const [jobs, setJobs] = useState<JobOpening[]>([]);
-    const [applicants, setApplicants] = useState<Applicant[]>([]);
     const [activeTab, setActiveTab] = useState<"dashboard" | "form">("dashboard");
     const [isEditing, setIsEditing] = useState(false);
     const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
+
+    // Dynamic Database Data Mapping
+    const jobs = (dbJobs || []) as unknown as JobOpening[];
+    const applicants = (dbApplicants || []) as unknown as Applicant[];
 
     // Filter states
     const [jobSearch, setJobSearch] = useState("");
@@ -431,37 +451,8 @@ export default function RecruitmentPage() {
         setOpenDropdownId(prev => prev === applicantId ? null : applicantId);
     };
 
-    // 1. Initial Load & Seed
-    useEffect(() => {
-        const storedJobs = localStorage.getItem("hrms_jobs");
-        const storedApplicants = localStorage.getItem("hrms_applications");
-
-        if (storedJobs) {
-            try {
-                setJobs(JSON.parse(storedJobs));
-            } catch (e) {
-                console.error("Failed to parse hrms_jobs from localStorage, resetting:", e);
-                localStorage.setItem("hrms_jobs", JSON.stringify(INITIAL_JOBS));
-                setJobs(INITIAL_JOBS);
-            }
-        } else {
-            localStorage.setItem("hrms_jobs", JSON.stringify(INITIAL_JOBS));
-            setJobs(INITIAL_JOBS);
-        }
-
-        if (storedApplicants) {
-            try {
-                setApplicants(JSON.parse(storedApplicants));
-            } catch (e) {
-                console.error("Failed to parse hrms_applications from localStorage, resetting:", e);
-                localStorage.setItem("hrms_applications", JSON.stringify(INITIAL_APPLICANTS));
-                setApplicants(INITIAL_APPLICANTS);
-            }
-        } else {
-            localStorage.setItem("hrms_applications", JSON.stringify(INITIAL_APPLICANTS));
-            setApplicants(INITIAL_APPLICANTS);
-        }
-    }, []);
+    // Loading Check
+    const isPageLoading = loadingJobs || loadingApplicants;
 
     // Scroll to applicants table if hash present
     useEffect(() => {
@@ -476,23 +467,10 @@ export default function RecruitmentPage() {
         }
     }, [applicants]);
 
-    // Sync with localStorage on changes
-    const updateJobsList = (newJobsList: JobOpening[]) => {
-        setJobs(newJobsList);
-        localStorage.setItem("hrms_jobs", JSON.stringify(newJobsList));
-    };
-
-    const updateApplicantsList = (newApplicantsList: Applicant[]) => {
-        setApplicants(newApplicantsList);
-        localStorage.setItem("hrms_applications", JSON.stringify(newApplicantsList));
-    };
-
-    // Reload lists from localStorage (to pull applicant updates)
+    // Reload lists (to pull applicant updates)
     const handleRefresh = () => {
-        const storedJobs = localStorage.getItem("hrms_jobs");
-        const storedApplicants = localStorage.getItem("hrms_applications");
-        if (storedJobs) setJobs(JSON.parse(storedJobs));
-        if (storedApplicants) setApplicants(JSON.parse(storedApplicants));
+        refetchJobs();
+        refetchApplicants();
         toast.success("Recruitment data updated.");
     };
 
@@ -522,35 +500,34 @@ export default function RecruitmentPage() {
     };
 
     // Handle Launch Job (make active)
-    const handleLaunchJob = (id: string) => {
-        const updated = jobs.map(j => {
-            if (j.id === id) {
-                toast.success(`"${j.title}" is now active and publicly visible!`);
-                return { ...j, status: "Active" as const };
-            }
-            return j;
-        });
-        updateJobsList(updated);
+    const handleLaunchJob = async (id: string) => {
+        try {
+            await updateJobMutation.mutateAsync({ id, jobData: { status: "Active" } });
+            toast.success("Job is now active and publicly visible!");
+        } catch (e) {
+            toast.error("Failed to launch job.");
+        }
     };
 
     // Handle Close Job
-    const handleCloseJob = (id: string) => {
-        const updated = jobs.map(j => {
-            if (j.id === id) {
-                toast.info(`"${j.title}" status changed to Closed.`);
-                return { ...j, status: "Closed" as const };
-            }
-            return j;
-        });
-        updateJobsList(updated);
+    const handleCloseJob = async (id: string) => {
+        try {
+            await updateJobMutation.mutateAsync({ id, jobData: { status: "Closed" } });
+            toast.info("Job status changed to Closed.");
+        } catch (e) {
+            toast.error("Failed to close job.");
+        }
     };
 
     // Handle Delete Job
-    const handleDeleteJob = (id: string) => {
+    const handleDeleteJob = async (id: string) => {
         if (confirm("Are you sure you want to delete this job opening? This will not delete historical applications.")) {
-            const updated = jobs.filter(j => j.id !== id);
-            updateJobsList(updated);
-            toast.success("Job opening deleted successfully.");
+            try {
+                await deleteJobMutation.mutateAsync(id);
+                toast.success("Job opening deleted successfully.");
+            } catch (e) {
+                toast.error("Failed to delete job.");
+            }
         }
     };
 
@@ -591,7 +568,7 @@ export default function RecruitmentPage() {
     };
 
     // Handle Save Job (Form Submit)
-    const handleSaveJob = (statusType: 'Draft' | 'Active') => {
+    const handleSaveJob = async (statusType: 'Draft' | 'Active') => {
         if (!formTitle.trim()) {
             toast.error("Please provide a Job Title.");
             return;
@@ -602,75 +579,58 @@ export default function RecruitmentPage() {
             .replace(/[^a-z0-9]+/g, "-")
             .replace(/(^-|-$)/g, "");
 
-        if (isEditing && selectedJobId) {
-            const updated = jobs.map(j => {
-                if (j.id === selectedJobId) {
-                    return {
-                        ...j,
-                        title: formTitle,
-                        department: formDepartment,
-                        employmentType: formEmploymentType,
-                        openings: formOpenings,
-                        experienceRequired: formExperience,
-                        location: formLocation,
-                        description: formDescription,
-                        status: statusType,
-                        slug: jobSlug,
-                        workMode: formWorkMode,
-                        salaryRange: formSalaryRange,
-                        deadline: formDeadline,
-                        screeningQuestions: formQuestions
-                    };
-                }
-                return j;
-            });
-            updateJobsList(updated);
-            toast.success("Job opening updated successfully.");
-        } else {
-            const newJob: JobOpening = {
-                id: `job-${Date.now()}`,
-                title: formTitle,
-                department: formDepartment,
-                employmentType: formEmploymentType,
-                openings: formOpenings,
-                experienceRequired: formExperience,
-                location: formLocation,
-                description: formDescription,
-                status: statusType,
-                slug: jobSlug,
-                applicantsCount: 0,
-                createdAt: new Date().toISOString(),
-                workMode: formWorkMode,
-                salaryRange: formSalaryRange,
-                deadline: formDeadline,
-                screeningQuestions: formQuestions
-            };
-            updateJobsList([newJob, ...jobs]);
-            toast.success(statusType === "Active" ? "Job launched publicly!" : "Draft job saved successfully.");
-        }
+        const jobData = {
+            title: formTitle,
+            department: formDepartment,
+            employmentType: formEmploymentType,
+            openings: formOpenings,
+            experienceRequired: formExperience,
+            location: formLocation,
+            description: formDescription,
+            status: statusType,
+            slug: jobSlug,
+            workMode: formWorkMode,
+            salaryRange: formSalaryRange,
+            deadline: formDeadline,
+            screeningQuestions: formQuestions.map(q => ({
+                questionText: q.questionText,
+                isOptional: q.isOptional
+            }))
+        };
 
-        setActiveTab("dashboard");
+        try {
+            if (isEditing && selectedJobId) {
+                await updateJobMutation.mutateAsync({ id: selectedJobId, jobData });
+                toast.success("Job opening updated successfully.");
+            } else {
+                await createJobMutation.mutateAsync(jobData);
+                toast.success(statusType === "Active" ? "Job launched publicly!" : "Draft job saved successfully.");
+            }
+            setActiveTab("dashboard");
+        } catch (e) {
+            toast.error("Failed to save job opening.");
+        }
     };
 
     // Update Applicant Status Direct
-    const handleUpdateApplicantStatusDirect = (applicantId: string, candidateName: string, status: Applicant['status']) => {
-        const updated = applicants.map(a => {
-            if (a.id === applicantId) {
-                return { ...a, status };
-            }
-            return a;
-        });
-
-        updateApplicantsList(updated);
-        toast.success(`Updated ${candidateName}'s status to ${status}`);
+    const handleUpdateApplicantStatusDirect = async (applicantId: string, candidateName: string, status: Applicant['status']) => {
+        try {
+            await updateApplicantStatusMutation.mutateAsync({ id: applicantId, status });
+            toast.success(`Updated ${candidateName}'s status to ${status}`);
+        } catch (e) {
+            toast.error("Failed to update applicant status.");
+        }
     };
 
     // Delete Applicant record
-    const handleDeleteApplicant = (id: string, candidateName: string) => {
+    const handleDeleteApplicant = async (id: string, candidateName: string) => {
         if (confirm(`Remove applicant "${candidateName}" record?`)) {
-            const updated = applicants.filter(a => a.id !== id);
-            updateApplicantsList(updated);
-            toast.success("Applicant record removed.");
+            try {
+                await deleteApplicantMutation.mutateAsync(id);
+                toast.success("Applicant record removed.");
+            } catch (e) {
+                toast.error("Failed to delete applicant record.");
+            }
         }
     };
 
@@ -693,6 +653,10 @@ export default function RecruitmentPage() {
             return matchesSearch && matchesStatus;
         });
     }, [applicants, applicantSearch, applicantStatusFilter]);
+
+    if (isPageLoading) {
+        return null;
+    }
 
     return (
         <div className="min-h-[calc(100vh-4rem)] bg-gray-50/50 dark:bg-[#0a0a0a] text-gray-900 dark:text-gray-100 p-6 lg:p-8 transition-colors duration-300">
