@@ -2,6 +2,7 @@ import React from 'react';
 import Navbar from '@/components/marketing/shared/Navbar';
 import Footer from '@/components/marketing/shared/Footer';
 import CustomerAuthInitializer from '@/components/auth/CustomerAuthInitializer';
+import CookieBanner from '@/components/marketing/shared/CookieBanner';
 
 export default function MarketingLayout({
     children,
@@ -16,6 +17,7 @@ export default function MarketingLayout({
                     {children}
                 </main>
                 <Footer />
+                <CookieBanner />
             </div>
         </CustomerAuthInitializer>
     );
