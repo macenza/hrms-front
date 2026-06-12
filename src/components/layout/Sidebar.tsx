@@ -95,7 +95,6 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             // Shared Links
             { id: 'Attendance', href: '/attendance', icon: CalendarCheck, label: 'Attendance', show: isAdminOrHR },
             { id: 'Projects', href: '/projects', icon: Briefcase, label: 'Projects', show: true },
-            { id: 'Recruitment', href: '/recruitment', icon: UserPlus, label: 'Recruitment', show: isAdminOrHR },
             { id: 'Leave', href: '/leave', icon: CalendarDays, label: 'Leave', show: true },
             { id: 'Holidays', href: '/holidays', icon: CalendarHeart, label: 'Holidays', show: true },
             { id: 'Policies', href: '/policies', icon: FileText, label: 'Policies', show: true },
