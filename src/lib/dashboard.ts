@@ -5,6 +5,7 @@ import type {
     AttendanceRecord,
     EmployeeSummaryRow,
     RoleDistributionItem,
+    PendingLeaveRequest,
 } from '@/store/dashboardSlice';
 
 /** Unwrap common API envelopes: `{ data }`, `{ success, data }`, or raw payload. */
@@ -126,6 +127,7 @@ function normalizeRecentEmployees(items: unknown): EmployeeSummaryRow[] {
                 netSalary: Number(row.netSalary ?? row.salary ?? 0) || 0,
                 status: String(row.status ?? (isActive ? 'ACTIVE' : 'INACTIVE')),
                 employeeId: typeof row.employeeId === 'string' ? row.employeeId : undefined,
+                joiningDate: typeof row.joiningDate === 'string' ? row.joiningDate : undefined,
             };
             const avatar =
                 typeof row.avatar === 'string'
@@ -137,6 +139,26 @@ function normalizeRecentEmployees(items: unknown): EmployeeSummaryRow[] {
             return employee;
         })
         .filter((row): row is EmployeeSummaryRow => row !== null);
+}
+
+function normalizePendingLeaves(items: unknown): PendingLeaveRequest[] {
+    if (!Array.isArray(items)) return [];
+    const result: PendingLeaveRequest[] = [];
+    for (const item of items) {
+        if (!item || typeof item !== 'object') continue;
+        const row = item as Record<string, unknown>;
+        const id = String(row._id ?? row.id ?? '');
+        if (!id) continue;
+        result.push({
+            _id: id,
+            employeeName: String(row.employeeName ?? 'Unknown'),
+            avatar: typeof row.avatar === 'string' ? row.avatar : undefined,
+            leaveType: String(row.leaveType ?? 'Casual'),
+            numberOfDays: Number(row.numberOfDays ?? 0) || 0,
+            createdAt: String(row.createdAt ?? new Date().toISOString())
+        });
+    }
+    return result;
 }
 
 export function normalizeRoleDistributionArray(items: unknown): RoleDistributionItem[] {
@@ -182,7 +204,10 @@ export function normalizeDashboardStats(raw: unknown): DashboardStats {
         usersByRole,
         usersByTeam: toRecordOfNumbers(payload.usersByTeam ?? payload.teams),
         recentEmployees: normalizeRecentEmployees(recentRaw),
+        pendingLeaves: normalizePendingLeaves(payload.pendingLeaves),
         roleDistribution,
+        totalApplicants: Number(payload.totalApplicants ?? 0) || 0,
+        openPositions: Number(payload.openPositions ?? 0) || 0,
     };
 }
 

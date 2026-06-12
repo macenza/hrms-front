@@ -65,6 +65,13 @@ export default function GeneralSettings({
     const [newRoleValue, setNewRoleValue] = useState('');
     const [newDeptValue, setNewDeptValue] = useState('');
 
+    const [companyAddress, setCompanyAddress] = useState('');
+    const [country, setCountry] = useState('');
+    const [state, setState] = useState('');
+    const [district, setDistrict] = useState('');
+    const [city, setCity] = useState('');
+    const [zipCode, setZipCode] = useState('');
+
     const [logoFile, setLogoFile] = useState<File | null>(null);
     const [logoPreview, setLogoPreview] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -496,6 +503,90 @@ export default function GeneralSettings({
                                 </div>
                             </div>
 
+                        </div>
+                    </CardContent>
+                </Card>
+
+                {/* Company Address Card */}
+                <Card className="border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm dark:shadow-none transition-colors duration-300">
+                    <CardContent className="p-6 space-y-6">
+                        <div className="flex items-center gap-2 pb-3 border-b border-gray-100 dark:border-gray-800 transition-colors">
+                            <Building2 size={18} className="text-blue-500 dark:text-blue-400 transition-colors" />
+                            <h3 className="font-bold text-gray-900 dark:text-gray-100">Company Address Details</h3>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                            {/* Company Address */}
+                            <div className="space-y-1.5 md:col-span-2">
+                                <label className="text-sm font-bold text-gray-700 dark:text-gray-300 transition-colors">Company Address</label>
+                                <Input
+                                    value={companyAddress}
+                                    onChange={(e) => setCompanyAddress(e.target.value)}
+                                    placeholder="e.g. 123 Corporate Blvd Suite 100"
+                                    disabled={!canEditGeneral}
+                                    className="text-gray-900 dark:text-gray-100 disabled:bg-gray-50 dark:disabled:bg-gray-900/50 disabled:text-gray-500 dark:disabled:text-gray-400 transition-colors font-medium"
+                                />
+                            </div>
+
+                            {/* Country */}
+                            <div className="space-y-1.5">
+                                <label className="text-sm font-bold text-gray-700 dark:text-gray-300 transition-colors">Country</label>
+                                <Input
+                                    value={country}
+                                    onChange={(e) => setCountry(e.target.value)}
+                                    placeholder="e.g. United States"
+                                    disabled={!canEditGeneral}
+                                    className="text-gray-900 dark:text-gray-100 disabled:bg-gray-50 dark:disabled:bg-gray-900/50 disabled:text-gray-500 dark:disabled:text-gray-400 transition-colors font-medium"
+                                />
+                            </div>
+
+                            {/* State */}
+                            <div className="space-y-1.5">
+                                <label className="text-sm font-bold text-gray-700 dark:text-gray-300 transition-colors">State</label>
+                                <Input
+                                    value={state}
+                                    onChange={(e) => setState(e.target.value)}
+                                    placeholder="e.g. California"
+                                    disabled={!canEditGeneral}
+                                    className="text-gray-900 dark:text-gray-100 disabled:bg-gray-50 dark:disabled:bg-gray-900/50 disabled:text-gray-500 dark:disabled:text-gray-400 transition-colors font-medium"
+                                />
+                            </div>
+
+                            {/* District */}
+                            <div className="space-y-1.5">
+                                <label className="text-sm font-bold text-gray-700 dark:text-gray-300 transition-colors">District</label>
+                                <Input
+                                    value={district}
+                                    onChange={(e) => setDistrict(e.target.value)}
+                                    placeholder="e.g. Santa Clara"
+                                    disabled={!canEditGeneral}
+                                    className="text-gray-900 dark:text-gray-100 disabled:bg-gray-50 dark:disabled:bg-gray-900/50 disabled:text-gray-500 dark:disabled:text-gray-400 transition-colors font-medium"
+                                />
+                            </div>
+
+                            {/* City */}
+                            <div className="space-y-1.5">
+                                <label className="text-sm font-bold text-gray-700 dark:text-gray-300 transition-colors">City</label>
+                                <Input
+                                    value={city}
+                                    onChange={(e) => setCity(e.target.value)}
+                                    placeholder="e.g. San Jose"
+                                    disabled={!canEditGeneral}
+                                    className="text-gray-900 dark:text-gray-100 disabled:bg-gray-50 dark:disabled:bg-gray-900/50 disabled:text-gray-550 dark:disabled:text-gray-400 transition-colors font-medium"
+                                />
+                            </div>
+
+                            {/* Zip Code */}
+                            <div className="space-y-1.5">
+                                <label className="text-sm font-bold text-gray-700 dark:text-gray-300 transition-colors">Zip Code</label>
+                                <Input
+                                    value={zipCode}
+                                    onChange={(e) => setZipCode(e.target.value)}
+                                    placeholder="e.g. 95131"
+                                    disabled={!canEditGeneral}
+                                    className="text-gray-900 dark:text-gray-100 disabled:bg-gray-50 dark:disabled:bg-gray-900/50 disabled:text-gray-550 dark:disabled:text-gray-400 transition-colors font-medium"
+                                />
+                            </div>
                         </div>
                     </CardContent>
                 </Card>

@@ -78,6 +78,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             { id: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', show: true },
             // Administrative Links
             { id: 'Employees', href: '/employees', icon: Users, label: 'Employees', show: isAdminOrHR },
+            { id: 'Recruitment', href: '/recruitment', icon: UserPlus, label: 'Recruitment', show: isAdminOrHR },
             { id: 'Payroll', href: '/payroll', icon: DollarSign, label: 'Payroll', show: role === 'hr' },
             { id: 'Assets', href: '/assets', icon: Package, label: 'Assets', show: isAdminOrHR },
 
@@ -120,8 +121,9 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             localStorage.removeItem('hrms_user');
             localStorage.removeItem('hrms_token');
             localStorage.removeItem('hrms_refreshToken');
-            Cookies.remove('hrms_token');
-            Cookies.remove('role');
+            Cookies.remove('hrms_token', { path: '/' });
+            Cookies.remove('hrms_role', { path: '/' });
+            Cookies.remove('role', { path: '/' });
             
             // Show premium success toast
             toast.success("You have been logged out successfully.");

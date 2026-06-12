@@ -91,9 +91,9 @@ apiClient.interceptors.response.use(
                     localStorage.removeItem('hrms_user');
                     localStorage.removeItem('hrms_token');
                     localStorage.removeItem('hrms_refreshToken');
-                    Cookies.remove('hrms_token');
-                    Cookies.remove('hrms_role');
-                    Cookies.remove('role');
+                    Cookies.remove('hrms_token', { path: '/' });
+                    Cookies.remove('hrms_role', { path: '/' });
+                    Cookies.remove('role', { path: '/' });
 
                     const isPublicRoute = PUBLIC_ROUTES.includes(window.location.pathname);
                     if (!isPublicRoute) {
@@ -124,7 +124,7 @@ apiClient.interceptors.response.use(
                     const newAccessToken = refreshResponse.data?.accessToken;
                     if (newAccessToken && typeof window !== 'undefined') {
                         localStorage.setItem('hrms_token', newAccessToken);
-                        Cookies.set('hrms_token', newAccessToken, { expires: 7, secure: process.env.NODE_ENV === 'production', sameSite: 'lax' });
+                        Cookies.set('hrms_token', newAccessToken, { expires: 7, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/' });
                     }
                     
                     processQueue(null);
@@ -136,9 +136,9 @@ apiClient.interceptors.response.use(
                         localStorage.removeItem('hrms_user');
                         localStorage.removeItem('hrms_token');
                         localStorage.removeItem('hrms_refreshToken');
-                        Cookies.remove('hrms_token');
-                        Cookies.remove('hrms_role');
-                        Cookies.remove('role');
+                        Cookies.remove('hrms_token', { path: '/' });
+                        Cookies.remove('hrms_role', { path: '/' });
+                        Cookies.remove('role', { path: '/' });
 
                         const isPublicRoute = PUBLIC_ROUTES.includes(window.location.pathname);
                         if (!isPublicRoute) {

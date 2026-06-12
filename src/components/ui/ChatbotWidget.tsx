@@ -75,6 +75,10 @@ export default function ChatbotWidget() {
   const router = useRouter();
   const pathname = usePathname();
   const { user } = useAppSelector((state) => state.auth);
+
+  if (pathname?.startsWith('/careers')) {
+    return null;
+  }
   
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);

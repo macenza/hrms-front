@@ -18,6 +18,8 @@ import DocumentsTab from '@/components/profile/tabs/DocumentsTab';
 import CertificatesTab from '@/components/profile/tabs/CertificatesTab';
 import AttendanceTab from '@/components/profile/tabs/AttendanceTab';
 import NotesTab from '@/components/profile/tabs/NotesTab';
+import AssetsTab from '@/components/profile/tabs/AssetsTab';
+import { useAssetData, useUpdateAssetStatus } from '@/hooks/api/useAssets';
 import EditProfileModal from '@/components/profile/EditProfileModal';
 import CropPhotoModal from '@/components/profile/CropPhotoModal';
 import { employeeService } from '@/services/employeeService';
@@ -38,7 +40,8 @@ const profileTabs = [
     { id: 'documents', label: 'Documents' },
     { id: 'certificates', label: 'Certificates' },
     { id: 'attendance', label: 'Attendance' },
-    { id: 'notes', label: 'Notes', adminOnly: true },
+    { id: 'assets', label: 'Assets' },
+    { id: 'notes', label: 'Notes' },
 ] as const;
 
 type TabId = typeof profileTabs[number]['id'];
@@ -124,10 +127,30 @@ export default function EmployeeProfileClient({ id }: EmployeeProfileClientProps
     }, [employee, isCurrentUser, dispatch, user]);
 
 
+    const { data: assetData, isLoading: isAssetLoading } = useAssetData(
+        1,
+        100,
+        '',
+        '',
+        resolvedEmployeeId
+    );
+
     const uploadDocumentMutation = useUploadDocument(resolvedEmployeeId);
     const uploadCertificateMutation = useUploadCertificate(resolvedEmployeeId);
     const addNoteMutation = useAddNote(resolvedEmployeeId);
     const deleteEmployeeMutation = useDeleteEmployee();
+    const updateAssetStatusMutation = useUpdateAssetStatus();
+
+    const handleUnassignAsset = async (assetDbId: string, assetName: string) => {
+        if (confirm(`Are you sure you want to unassign "${assetName}" from this employee?`)) {
+            try {
+                await updateAssetStatusMutation.mutateAsync({ id: assetDbId, status: 'Available' });
+                toast.success('Asset unassigned successfully!');
+            } catch (error) {
+                toast.error('Failed to unassign asset.');
+            }
+        }
+    };
 
     const handleDeleteEmployee = async () => {
         if (confirm(`WARNING: Are you sure you want to delete the employee "${employee.name}"? This action will archive them into the past employees collection and remove them from current employees.`)) {
@@ -482,6 +505,16 @@ export default function EmployeeProfileClient({ id }: EmployeeProfileClientProps
                         />
                     )}
 
+                    {activeTab === 'assets' && (
+                        <AssetsTab
+                            assets={assetData?.records || []}
+                            isLoading={isAssetLoading}
+                            isAdminOrHR={isAdminOrHR}
+                            onUnassign={handleUnassignAsset}
+                            isUnassigning={updateAssetStatusMutation.isPending}
+                        />
+                    )}
+
                     {activeTab === 'notes' && (
                         <NotesTab
                             notes={records.notes?.map((note: any) => ({
@@ -495,7 +528,7 @@ export default function EmployeeProfileClient({ id }: EmployeeProfileClientProps
                                 })
                             })) || []}
                             isLoading={isProfileLoading}
-                            onAddNote={handleAddNote}
+                            onAddNote={isAdminOrHR ? handleAddNote : undefined}
                         />
                     )}
                 </div>

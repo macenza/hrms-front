@@ -238,8 +238,8 @@ export default function DashboardPage() {
                     <div className={isAdminOrHR ? "lg:col-span-3" : "lg:col-span-5"}>
                         <AttendanceList
                             isEmployee={isEmployee}
-                            listData={attendanceData?.recentList ?? []}
-                            isLoading={isAttendanceLoading}
+                            listData={stats?.pendingLeaves ?? []}
+                            isLoading={isStatsLoading}
                         />
                     </div>
                     {isAdminOrHR && (
