@@ -3,6 +3,7 @@
 
 import React, { useMemo } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { ArrowRight, Lock } from "lucide-react";
 import { useAppSelector } from "@/store/hooks";
 import { cn } from "@/utils/cn";
@@ -28,6 +29,7 @@ export interface RecentEmployee {
     netSalary?: number;
     status?: string;
     avatar?: string;
+    joiningDate?: string;
 }
 
 interface EmployeeSummaryProps {
@@ -42,7 +44,7 @@ const getAvatarColor = (name: string) => {
     const colors = [
         'bg-blue-100 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400',
         'bg-green-100 text-green-700 dark:bg-green-500/10 dark:text-green-400',
-        'bg-purple-100 text-purple-700 dark:bg-purple-500/10 dark:text-purple-400',
+        'bg-purple-100 text-purple-700 dark:bg-purple-50/10 dark:text-purple-400',
         'bg-orange-100 text-orange-700 dark:bg-orange-500/10 dark:text-orange-400',
         'bg-pink-100 text-pink-700 dark:bg-pink-500/10 dark:text-pink-400'
     ];
@@ -62,7 +64,6 @@ export default function EmployeeSummary({
     // Keep auth in Redux, it's global client state
     const { user } = useAppSelector((state) => state.auth);
     const isAdminOrHR = user?.role?.toLowerCase() === 'admin' || user?.role?.toLowerCase() === 'hr';
-
     const displayEmployees = useMemo(() => {
         if (!employees) return [];
         return employees.slice(0, 5);
@@ -78,7 +79,6 @@ export default function EmployeeSummary({
             maximumFractionDigits: 0 
         }).format(amount);
     };
-
     // Premium Skeleton Loader
     if (isLoading && employees.length === 0) {
         return (
@@ -93,14 +93,24 @@ export default function EmployeeSummary({
                             <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-800 animate-pulse shrink-0" />
                             <div className="w-24 h-4 bg-gray-200 dark:bg-gray-800 rounded animate-pulse" />
                         </div>
-                        <div className="w-20 h-4 bg-gray-200 dark:bg-gray-800 rounded animate-pulse" />
-                        <div className="w-16 h-4 bg-gray-200 dark:bg-gray-800 rounded animate-pulse" />
-                        <div className="w-16 h-5 bg-gray-200 dark:bg-gray-800 rounded-full animate-pulse" />
+                        <div className="w-24 h-4 bg-gray-200 dark:bg-gray-800 rounded animate-pulse" />
+                        <div className="w-24 h-4 bg-gray-200 dark:bg-gray-800 rounded animate-pulse" />
                     </div>
                 ))}
             </div>
         );
     }
+
+    const formatJoiningDate = (dateStr?: string) => {
+        if (!dateStr) return 'N/A';
+        const date = new Date(dateStr);
+        if (isNaN(date.getTime())) return 'N/A';
+        return date.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+        });
+    };
 
     return (
         <div
@@ -111,15 +121,15 @@ export default function EmployeeSummary({
         >
             <div className="flex items-center justify-between">
                 <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 transition-colors">
-                    Recent Employees
+                    Recent new joiners
                 </h3>
-                <button 
-                    onClick={() => router.push('/employees')}
+                <Link 
+                    href="/employees"
                     className="group flex items-center gap-1 text-xs font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors bg-blue-50 dark:bg-blue-500/10 hover:bg-blue-100 dark:hover:bg-blue-500/20 px-3 py-1.5 rounded-md"
                 >
                     See All
                     <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
-                </button>
+                </Link>
             </div>
             
             <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-200 dark:scrollbar-thumb-gray-700">
@@ -143,7 +153,7 @@ export default function EmployeeSummary({
                     <tbody className="divide-y divide-gray-50 dark:divide-gray-800/50">
                         {displayEmployees.length === 0 ? (
                             <tr>
-                                <td colSpan={4} className="text-center py-8">
+                                <td colSpan={3} className="text-center py-8">
                                     <div className="flex flex-col items-center justify-center text-sm text-gray-400 dark:text-gray-500 border-2 border-dashed border-gray-100 dark:border-gray-800 rounded-xl p-4 mt-2 transition-colors">
                                         No employee data available.
                                     </div>
@@ -198,7 +208,7 @@ export default function EmployeeSummary({
                                                 formatCurrency(emp.netSalary || 0)
                                             ) : (
                                                 <div className="flex items-center gap-1.5 text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-800/50 px-2 py-1 rounded w-max transition-colors" title="Requires Admin/HR Privileges">
-                                                    <Lock className="w-3 h-3" />
+                                                    <Lock className="w-3.5 h-3.5" />
                                                     <span className="text-xs">Masked</span>
                                                 </div>
                                             )}

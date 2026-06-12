@@ -34,7 +34,8 @@ export function useDailyAttendance(date: string, enabled: boolean) {
                     checkOut: log.checkOutTime ? new Date(log.checkOutTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : null,
                     hours: minutes > 0 ? `${Number(hoursValue).toFixed(1)}h` : '0h',
                     late: log.isLate ? 'Yes' : null,
-                    status: log.isLate ? 'Late' : log.status
+                    status: log.isLate ? 'Late' : log.status,
+                    shiftId: log.user?.profile?.employment?.shiftId || null
                 };
             });
         },
@@ -50,6 +51,16 @@ export function useMarkAttendance() {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['attendance', 'daily'] });
             queryClient.invalidateQueries({ queryKey: ['attendance', 'dashboard'] });
+            queryClient.invalidateQueries({ queryKey: ['attendance', 'calendar'] });
         }
+    });
+}
+
+export function useCalendarAttendance(employeeId: string, month: number, year: number, enabled: boolean = true) {
+    return useQuery({
+        queryKey: ['attendance', 'calendar', employeeId, month, year],
+        queryFn: () => attendanceService.getCalendarAttendance(employeeId, month, year),
+        enabled: !!employeeId && enabled,
+        staleTime: 5 * 60 * 1000,
     });
 }

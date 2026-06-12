@@ -63,42 +63,44 @@ export default function NotesTab({
             <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-2 transition-colors">HR Notes & Remarks</h2>
             <div className="flex items-start sm:items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 mb-6 transition-colors">
                 <Lock size={14} className="text-gray-400 dark:text-gray-500 shrink-0 mt-0.5 sm:mt-0" />
-                <p>Private notes regarding this employee. These are not visible to the employee.</p>
+                <p>Official notes and remarks regarding this employee.</p>
             </div>
 
             {/* Input Area */}
-            <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-4 mb-8 shadow-sm focus-within:ring-2 focus-within:ring-blue-600/20 dark:focus-within:ring-blue-500/40 focus-within:border-blue-600 dark:focus-within:border-blue-500 transition-all duration-300">
-                <textarea
-                    value={newNoteText}
-                    onChange={(e) => setNewNoteText(e.target.value)}
-                    placeholder="Type a new private note here..."
-                    disabled={isSubmitting}
-                    className="w-full text-sm text-gray-700 dark:text-gray-300 resize-none outline-none bg-transparent placeholder-gray-400 dark:placeholder-gray-600 min-h-[80px] disabled:opacity-50 transition-colors"
-                />
-                <div className="flex justify-between items-center mt-2 pt-3 border-t border-gray-100 dark:border-gray-800 transition-colors">
-                    <p className="text-xs text-gray-400 dark:text-gray-500 font-medium transition-colors">
-                        {newNoteText.length} characters
-                    </p>
-                    <Button
-                        variant="primary"
-                        onClick={handleSubmit}
-                        disabled={!newNoteText.trim() || isSubmitting}
-                        className="gap-2 shadow-sm shadow-blue-500/25 dark:shadow-none min-w-[120px] font-semibold"
-                    >
-                        {isSubmitting ? (
-                            <>
-                                <Loader2 size={16} className="animate-spin" />
-                                Saving...
-                            </>
-                        ) : (
-                            <>
-                                <Plus size={16} strokeWidth={2.5} />
-                                Add Note
-                            </>
-                        )}
-                    </Button>
+            {onAddNote && (
+                <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-4 mb-8 shadow-sm focus-within:ring-2 focus-within:ring-blue-600/20 dark:focus-within:ring-blue-500/40 focus-within:border-blue-600 dark:focus-within:border-blue-500 transition-all duration-300">
+                    <textarea
+                        value={newNoteText}
+                        onChange={(e) => setNewNoteText(e.target.value)}
+                        placeholder="Type a new private note here..."
+                        disabled={isSubmitting}
+                        className="w-full text-sm text-gray-700 dark:text-gray-300 resize-none outline-none bg-transparent placeholder-gray-400 dark:placeholder-gray-600 min-h-[80px] disabled:opacity-50 transition-colors"
+                    />
+                    <div className="flex justify-between items-center mt-2 pt-3 border-t border-gray-100 dark:border-gray-800 transition-colors">
+                        <p className="text-xs text-gray-400 dark:text-gray-500 font-medium transition-colors">
+                            {newNoteText.length} characters
+                        </p>
+                        <Button
+                            variant="primary"
+                            onClick={handleSubmit}
+                            disabled={!newNoteText.trim() || isSubmitting}
+                            className="gap-2 shadow-sm shadow-blue-500/25 dark:shadow-none min-w-[120px] font-semibold"
+                        >
+                            {isSubmitting ? (
+                                <>
+                                    <Loader2 size={16} className="animate-spin" />
+                                    Saving...
+                                </>
+                            ) : (
+                                <>
+                                    <Plus size={16} strokeWidth={2.5} />
+                                    Add Note
+                                </>
+                            )}
+                        </Button>
+                    </div>
                 </div>
-            </div>
+            )}
 
             {/* Notes List */}
             <div className="space-y-4">

@@ -65,6 +65,13 @@ export default function GeneralSettings({
     const [newRoleValue, setNewRoleValue] = useState('');
     const [newDeptValue, setNewDeptValue] = useState('');
 
+    const [companyAddress, setCompanyAddress] = useState('');
+    const [country, setCountry] = useState('');
+    const [state, setState] = useState('');
+    const [district, setDistrict] = useState('');
+    const [city, setCity] = useState('');
+    const [zipCode, setZipCode] = useState('');
+
     const [logoFile, setLogoFile] = useState<File | null>(null);
     const [logoPreview, setLogoPreview] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -87,11 +94,16 @@ export default function GeneralSettings({
             setLastCompanyUpdate(initialData.lastCompanyUpdate || null);
             setRoles(initialData.roles || ['employee', 'manager', 'hr', 'admin']);
             setDepartments(initialData.departments || ['HR', 'Engineering', 'Marketing', 'Sales', 'Finance']);
+            setLogoFile(null);
 
             if (initialData.companyLogoUrl) {
-                const fullUrl = initialData.companyLogoUrl.startsWith('http') || initialData.companyLogoUrl.startsWith('/')
-                    ? initialData.companyLogoUrl
-                    : `http://localhost:4000/${initialData.companyLogoUrl}`;
+                let fullUrl = initialData.companyLogoUrl;
+                if (!initialData.companyLogoUrl.startsWith('http') && !initialData.companyLogoUrl.startsWith('/') && !initialData.companyLogoUrl.startsWith('data:')) {
+                    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
+                    const baseHost = apiUrl.replace(/\/api\/?$/, '');
+                    const cleanUrl = initialData.companyLogoUrl.startsWith('/') ? initialData.companyLogoUrl : `/${initialData.companyLogoUrl}`;
+                    fullUrl = `${baseHost}${cleanUrl}`;
+                }
                 setLogoPreview(fullUrl);
             } else {
                 setLogoPreview(null);
@@ -355,6 +367,10 @@ export default function GeneralSettings({
                             <p className="text-xs text-gray-500 dark:text-gray-400">
                                 Set the base theme color used across sidebar highlights, action buttons, and loading bars.
                             </p>
+                            <p className="text-[11px] text-amber-600 dark:text-amber-400 font-semibold flex items-center gap-1.5 mt-1 transition-colors">
+                                <ShieldAlert size={13} className="shrink-0" />
+                                Branding details (color, name, logo) can only be updated once every 30 days.
+                            </p>
                         </div>
 
                         <div className="mt-4 flex flex-col gap-3">
@@ -490,6 +506,92 @@ export default function GeneralSettings({
                         </div>
                     </CardContent>
                 </Card>
+
+                {/* Company Address Card */}
+                <Card className="border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm dark:shadow-none transition-colors duration-300">
+                    <CardContent className="p-6 space-y-6">
+                        <div className="flex items-center gap-2 pb-3 border-b border-gray-100 dark:border-gray-800 transition-colors">
+                            <Building2 size={18} className="text-blue-500 dark:text-blue-400 transition-colors" />
+                            <h3 className="font-bold text-gray-900 dark:text-gray-100">Company Address Details</h3>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                            {/* Company Address */}
+                            <div className="space-y-1.5 md:col-span-2">
+                                <label className="text-sm font-bold text-gray-700 dark:text-gray-300 transition-colors">Company Address</label>
+                                <Input
+                                    value={companyAddress}
+                                    onChange={(e) => setCompanyAddress(e.target.value)}
+                                    placeholder="e.g. 123 Corporate Blvd Suite 100"
+                                    disabled={!canEditGeneral}
+                                    className="text-gray-900 dark:text-gray-100 disabled:bg-gray-50 dark:disabled:bg-gray-900/50 disabled:text-gray-500 dark:disabled:text-gray-400 transition-colors font-medium"
+                                />
+                            </div>
+
+                            {/* Country */}
+                            <div className="space-y-1.5">
+                                <label className="text-sm font-bold text-gray-700 dark:text-gray-300 transition-colors">Country</label>
+                                <Input
+                                    value={country}
+                                    onChange={(e) => setCountry(e.target.value)}
+                                    placeholder="e.g. United States"
+                                    disabled={!canEditGeneral}
+                                    className="text-gray-900 dark:text-gray-100 disabled:bg-gray-50 dark:disabled:bg-gray-900/50 disabled:text-gray-500 dark:disabled:text-gray-400 transition-colors font-medium"
+                                />
+                            </div>
+
+                            {/* State */}
+                            <div className="space-y-1.5">
+                                <label className="text-sm font-bold text-gray-700 dark:text-gray-300 transition-colors">State</label>
+                                <Input
+                                    value={state}
+                                    onChange={(e) => setState(e.target.value)}
+                                    placeholder="e.g. California"
+                                    disabled={!canEditGeneral}
+                                    className="text-gray-900 dark:text-gray-100 disabled:bg-gray-50 dark:disabled:bg-gray-900/50 disabled:text-gray-500 dark:disabled:text-gray-400 transition-colors font-medium"
+                                />
+                            </div>
+
+                            {/* District */}
+                            <div className="space-y-1.5">
+                                <label className="text-sm font-bold text-gray-700 dark:text-gray-300 transition-colors">District</label>
+                                <Input
+                                    value={district}
+                                    onChange={(e) => setDistrict(e.target.value)}
+                                    placeholder="e.g. Santa Clara"
+                                    disabled={!canEditGeneral}
+                                    className="text-gray-900 dark:text-gray-100 disabled:bg-gray-50 dark:disabled:bg-gray-900/50 disabled:text-gray-500 dark:disabled:text-gray-400 transition-colors font-medium"
+                                />
+                            </div>
+
+                            {/* City */}
+                            <div className="space-y-1.5">
+                                <label className="text-sm font-bold text-gray-700 dark:text-gray-300 transition-colors">City</label>
+                                <Input
+                                    value={city}
+                                    onChange={(e) => setCity(e.target.value)}
+                                    placeholder="e.g. San Jose"
+                                    disabled={!canEditGeneral}
+                                    className="text-gray-900 dark:text-gray-100 disabled:bg-gray-50 dark:disabled:bg-gray-900/50 disabled:text-gray-550 dark:disabled:text-gray-400 transition-colors font-medium"
+                                />
+                            </div>
+
+                            {/* Zip Code */}
+                            <div className="space-y-1.5">
+                                <label className="text-sm font-bold text-gray-700 dark:text-gray-300 transition-colors">Zip Code</label>
+                                <Input
+                                    value={zipCode}
+                                    onChange={(e) => setZipCode(e.target.value)}
+                                    placeholder="e.g. 95131"
+                                    disabled={!canEditGeneral}
+                                    className="text-gray-900 dark:text-gray-100 disabled:bg-gray-50 dark:disabled:bg-gray-900/50 disabled:text-gray-550 dark:disabled:text-gray-400 transition-colors font-medium"
+                                />
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+
+
 
                 {/* Roles & Departments Customization Section */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
@@ -742,6 +844,8 @@ export default function GeneralSettings({
                     </div>
                 )}
             </form>
+
+
         </div>
     );
 }

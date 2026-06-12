@@ -2,24 +2,17 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { 
-    ShieldCheck, 
     Key, 
     Save, 
     Lock, 
     ShieldAlert, 
     Loader2, 
-    Laptop, 
-    Smartphone, 
-    Globe, 
     Search, 
     X, 
     Check, 
-    AlertCircle, 
     Eye, 
     EyeOff,
-    UserCheck,
-    LogOut,
-    CheckCircle2
+    UserCheck
 } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import { Button } from '@/components/ui/Button'; 
@@ -28,8 +21,6 @@ import { Badge } from '@/components/ui/Badge';
 import { useAppSelector } from '@/store/hooks';
 import { toast } from 'sonner';
 import { 
-    useActiveSessions, 
-    useRevokeOtherSessions, 
     useSearchEmployees, 
     useAdminPasswordOverride 
 } from '@/hooks/api/useSettings';
@@ -62,11 +53,7 @@ export default function SecuritySettings({
     const [showConfirmPass, setShowConfirmPass] = useState(false);
     const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
 
-    // --- State: Active Sessions ---
-    const { data: sessions, isLoading: isLoadingSessions, refetch: refetchSessions } = useActiveSessions();
-    const revokeOtherSessionsMutation = useRevokeOtherSessions();
-    const [isRevoking, setIsRevoking] = useState(false);
-    const [confirmRevoke, setConfirmRevoke] = useState(false);
+
 
     // --- State: Admin Password Override ---
     const [searchQuery, setSearchQuery] = useState('');
@@ -132,19 +119,7 @@ export default function SecuritySettings({
         }
     };
 
-    const handleRevokeOthers = async () => {
-        setIsRevoking(true);
-        try {
-            await revokeOtherSessionsMutation.mutateAsync();
-            toast.success("Successfully logged out all other sessions.");
-            setConfirmRevoke(false);
-            refetchSessions();
-        } catch (err: any) {
-            toast.error(err.response?.data?.message || "Failed to revoke other sessions.");
-        } finally {
-            setIsRevoking(false);
-        }
-    };
+
 
     const handleAdminOverrideSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -355,107 +330,7 @@ export default function SecuritySettings({
                 </form>
             </section>
 
-            {/* Active Login Sessions Section */}
-            <section className="bg-white dark:bg-gray-900 border border-gray-150 dark:border-gray-800 rounded-2xl p-6 transition-colors shadow-sm">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-4">
-                    <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                            <ShieldCheck size={18} className="text-blue-500 dark:text-blue-400 transition-colors" />
-                            <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100 tracking-tight transition-colors">Active Sessions</h2>
-                        </div>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 font-medium transition-colors">
-                            Manage your active login sessions across devices and browsers.
-                        </p>
-                    </div>
-                    
-                    {sessions && sessions.length > 1 && (
-                        <div className="flex shrink-0">
-                            {confirmRevoke ? (
-                                <div className="flex items-center gap-2 animate-in fade-in duration-200">
-                                    <Button
-                                        variant="danger"
-                                        size="sm"
-                                        onClick={handleRevokeOthers}
-                                        disabled={isRevoking}
-                                        className="gap-1 font-bold text-xs"
-                                    >
-                                        {isRevoking ? <Loader2 size={12} className="animate-spin" /> : <LogOut size={12} />}
-                                        Confirm Logout
-                                    </Button>
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => setConfirmRevoke(false)}
-                                        className="text-xs bg-white dark:bg-gray-900"
-                                    >
-                                        Cancel
-                                    </Button>
-                                </div>
-                            ) : (
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => setConfirmRevoke(true)}
-                                    className="border-red-200 dark:border-red-950 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 text-xs font-bold gap-1 bg-white dark:bg-gray-900"
-                                >
-                                    <LogOut size={12} />
-                                    Revoke Other Sessions
-                                </Button>
-                            )}
-                        </div>
-                    )}
-                </div>
 
-                {isLoadingSessions ? (
-                    <div className="py-12 flex justify-center items-center">
-                        <Loader2 className="animate-spin text-primary" size={24} />
-                    </div>
-                ) : sessions && sessions.length > 0 ? (
-                    <div className="divide-y divide-gray-100 dark:divide-gray-800 border border-gray-100 dark:border-gray-800 rounded-xl overflow-hidden bg-gray-50/20 dark:bg-gray-950/10">
-                        {sessions.map((session: any) => {
-                            const isMobile = session.device.toLowerCase().includes('mobile');
-                            const DeviceIcon = isMobile ? Smartphone : Laptop;
-
-                            return (
-                                <div key={session.id} className="p-4 sm:p-5 flex items-start gap-4 hover:bg-gray-50/50 dark:hover:bg-gray-800/20 transition-all">
-                                    <div className="p-2.5 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl text-gray-500 dark:text-gray-400 shrink-0">
-                                        <DeviceIcon size={18} />
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-2 flex-wrap">
-                                            <span className="font-bold text-gray-900 dark:text-gray-100 text-sm">{session.device}</span>
-                                            {session.isCurrent && (
-                                                <Badge variant="success" className="text-[10px] font-bold px-1.5 py-0.5 uppercase tracking-wider flex items-center gap-0.5">
-                                                    <CheckCircle2 size={10} /> Current Session
-                                                </Badge>
-                                            )}
-                                        </div>
-                                        
-                                        <div className="mt-1 flex items-center gap-x-4 gap-y-1 text-xs text-gray-500 dark:text-gray-400 font-medium flex-wrap">
-                                            <span className="flex items-center gap-1">
-                                                <Globe size={12} className="text-gray-400" />
-                                                {session.browser}
-                                            </span>
-                                            <span>•</span>
-                                            <span>IP: {session.ipAddress}</span>
-                                            <span>•</span>
-                                            <span>Location: {session.location}</span>
-                                        </div>
-
-                                        <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-1">
-                                            First authenticated on {new Date(session.createdAt).toLocaleString()}
-                                        </p>
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                ) : (
-                    <div className="py-8 text-center text-sm text-gray-500 dark:text-gray-400">
-                        No active sessions identified.
-                    </div>
-                )}
-            </section>
 
             {/* Exclusive Admin Password Override Section */}
             {isAdmin && (

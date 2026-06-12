@@ -38,7 +38,7 @@ export default function CustomerAuthInitializer({ children }: { children: React.
                         // Keep cookies in sync
                         const currentToken = localStorage.getItem('customer_token');
                         if (currentToken) {
-                            Cookies.set('customer_token', currentToken, { expires: 7, secure: process.env.NODE_ENV === 'production', sameSite: 'lax' });
+                            Cookies.set('customer_token', currentToken, { expires: 7, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/' });
                         }
                     } else {
                         throw new Error("Invalid customer context");
@@ -48,7 +48,7 @@ export default function CustomerAuthInitializer({ children }: { children: React.
                     dispatch(logOutCustomer());
                     localStorage.removeItem('customer_user');
                     localStorage.removeItem('customer_token');
-                    Cookies.remove('customer_token');
+                    Cookies.remove('customer_token', { path: '/' });
                     
                     const isProtected = typeof window !== 'undefined' && window.location.pathname.startsWith('/customer-dashboard');
                     if (isProtected) {
@@ -59,7 +59,12 @@ export default function CustomerAuthInitializer({ children }: { children: React.
                 }
             } else {
                 dispatch(logOutCustomer());
-                setIsHydrated(true);
+                const isProtected = typeof window !== 'undefined' && window.location.pathname.startsWith('/customer-dashboard');
+                if (isProtected) {
+                    window.location.href = '/login?error=session_expired';
+                } else {
+                    setIsHydrated(true);
+                }
             }
         };
 

@@ -9,12 +9,13 @@ export interface AssignAssetPayload {
 }
 
 export const assetService = {
-    getDashboardData: async (page: number = 1, limit: number = 10, status: string = '', search: string = '') => {
+    getDashboardData: async (page: number = 1, limit: number = 10, status: string = '', search: string = '', employeeId: string = '') => {
         try {
             // Enforced BASE constant
             let url = `${ENDPOINTS.ASSET.BASE}?page=${page}&limit=${limit}`;
             if (status) url += `&status=${encodeURIComponent(status)}`;
             if (search) url += `&search=${encodeURIComponent(search)}`;
+            if (employeeId) url += `&employeeId=${encodeURIComponent(employeeId)}`;
             const response = await apiClient.get(url);
             return response.data;
         } catch (error) {

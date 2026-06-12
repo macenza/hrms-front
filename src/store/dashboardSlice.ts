@@ -9,6 +9,17 @@ export interface EmployeeSummaryRow {
     jobTitle: string;
     netSalary: number;
     status?: string;
+    employeeId?: string;
+    joiningDate?: string;
+}
+
+export interface PendingLeaveRequest {
+    _id: string;
+    employeeName: string;
+    avatar?: string;
+    leaveType: string;
+    numberOfDays: number;
+    createdAt: string;
 }
 
 export interface RoleDistributionItem {
@@ -24,7 +35,10 @@ export interface DashboardStats {
     usersByRole: Record<string, number>;
     usersByTeam: Record<string, number>;
     recentEmployees: EmployeeSummaryRow[];
+    pendingLeaves?: PendingLeaveRequest[];
     roleDistribution?: RoleDistributionItem[];
+    totalApplicants?: number;
+    openPositions?: number;
 }
 
 export interface DailyAttendance {

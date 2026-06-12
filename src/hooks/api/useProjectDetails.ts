@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { projectService } from '@/services/projectService';
 import { taskService } from '@/services/taskService';
 import { toUiTaskStatus } from '@/lib/taskStatus';
+import { getAvatarUrl } from '@/utils/avatarUtils';
 
 export function useCreateProject() {
     const queryClient = useQueryClient();
@@ -69,7 +70,7 @@ export function useProjectTasks(projectId: string) {
                     dueDate: t.dueDate ? new Date(t.dueDate).toISOString().split('T')[0] : '',
                     assignee: t.assignee || null,
                     assigneeName: t.assignee?.name || t.assigneeName || 'Unassigned',
-                    assigneeAvatar: t.assignee?.profile?.avatar || t.assigneeAvatar || '',
+                    assigneeAvatar: getAvatarUrl(t.assignee?.profile?.avatar || t.assigneeAvatar) || '',
                 };
             });
         },

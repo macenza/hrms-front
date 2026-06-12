@@ -3,6 +3,7 @@
 
 import React from 'react';
 import { cn } from '@/utils/cn';
+import { useBreakpoint } from '@/hooks/useMediaQuery';
 
 // UI Components
 import { Card } from '@/components/ui/Card';
@@ -23,6 +24,8 @@ export interface Employee {
     joiningDate: string;
     status: EmployeeStatus;
     dob?: string;
+    shiftId?: string | null;
+    batchNo?: string;
 }
 
 export interface PaginationState {
@@ -49,7 +52,6 @@ const getInitials = (name: string) => {
 const getAvatarColor = (name: string) => {
     if (!name) return 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300';
     
-    // Upgraded with proper dark mode text/bg contrasts
     const colors = [
         'bg-blue-100 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400',
         'bg-green-100 text-green-700 dark:bg-green-500/10 dark:text-green-400',
@@ -84,11 +86,28 @@ const TableRowSkeleton = () => (
         </td>
         <td className="px-6 py-4"><div className="h-4 w-24 bg-gray-200 dark:bg-gray-800 rounded"></div></td>
         <td className="px-6 py-4"><div className="h-4 w-28 bg-gray-200 dark:bg-gray-800 rounded"></div></td>
-        <td className="px-6 py-4"><div className="h-4 w-40 bg-gray-200 dark:bg-gray-800 rounded"></div></td>
-        <td className="px-6 py-4"><div className="h-4 w-24 bg-gray-200 dark:bg-gray-800 rounded"></div></td>
-        <td className="px-6 py-4"><div className="h-4 w-24 bg-gray-200 dark:bg-gray-800 rounded"></div></td>
+        <td className="px-6 py-4 hidden lg:table-cell"><div className="h-4 w-40 bg-gray-200 dark:bg-gray-800 rounded"></div></td>
+        <td className="px-6 py-4 hidden lg:table-cell"><div className="h-4 w-24 bg-gray-200 dark:bg-gray-800 rounded"></div></td>
+        <td className="px-6 py-4 hidden xl:table-cell"><div className="h-4 w-24 bg-gray-200 dark:bg-gray-800 rounded"></div></td>
         <td className="px-6 py-4"><div className="h-6 w-16 bg-gray-200 dark:bg-gray-800 rounded-full"></div></td>
     </tr>
+);
+
+// Mobile Card Skeleton
+const CardSkeleton = () => (
+    <div className="animate-pulse p-4 rounded-xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800">
+        <div className="flex items-center gap-3 mb-3">
+            <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-800 shrink-0" />
+            <div className="space-y-2 flex-1">
+                <div className="h-4 w-32 bg-gray-200 dark:bg-gray-800 rounded" />
+                <div className="h-3 w-20 bg-gray-100 dark:bg-gray-800/50 rounded" />
+            </div>
+        </div>
+        <div className="flex items-center justify-between">
+            <div className="h-5 w-24 bg-gray-200 dark:bg-gray-800 rounded" />
+            <div className="h-5 w-16 bg-gray-200 dark:bg-gray-800 rounded-full" />
+        </div>
+    </div>
 );
 
 export default function EmployeeTable({
@@ -98,6 +117,9 @@ export default function EmployeeTable({
     onRowClick,
     onPageChange
 }: EmployeeTableProps) {
+    const breakpoint = useBreakpoint();
+    const isMobile = breakpoint === 'mobile';
+
     const startEntry = pagination.totalEntries === 0 ? 0 : ((pagination.currentPage - 1) * pagination.entriesPerPage) + 1;
     const endEntry = Math.min(pagination.currentPage * pagination.entriesPerPage, pagination.totalEntries);
 
@@ -111,70 +133,125 @@ export default function EmployeeTable({
                 <div className="absolute inset-0 bg-white/40 dark:bg-black/20 z-10 pointer-events-none transition-opacity duration-200 backdrop-blur-[1px]" />
             )}
 
-            <div className="overflow-x-auto">
-                <table className="w-full text-left text-sm whitespace-nowrap">
-                    <thead className="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-400 font-medium transition-colors">
-                        <tr>
-                            <th className="px-6 py-4 tracking-wider text-xs uppercase">Employee</th>
-                            <th className="px-6 py-4 tracking-wider text-xs uppercase">Department</th>
-                            <th className="px-6 py-4 tracking-wider text-xs uppercase">Role</th>
-                            <th className="px-6 py-4 tracking-wider text-xs uppercase">Email</th>
-                            <th className="px-6 py-4 tracking-wider text-xs uppercase">Phone</th>
-                            <th className="px-6 py-4 tracking-wider text-xs uppercase">Joining Date</th>
-                            <th className="px-6 py-4 tracking-wider text-xs uppercase">Status</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                        {isInitialLoad ? (
-                            Array.from({ length: 5 }).map((_, idx) => <TableRowSkeleton key={idx} />)
-                        ) : data.length === 0 ? (
+            {/* Mobile Card View */}
+            {isMobile ? (
+                <div className="p-3 space-y-3">
+                    {isInitialLoad ? (
+                        Array.from({ length: 5 }).map((_, idx) => <CardSkeleton key={idx} />)
+                    ) : data.length === 0 ? (
+                        <div className="px-4 py-12 text-center text-gray-500 dark:text-gray-400">
+                            No employees found matching your criteria.
+                        </div>
+                    ) : (
+                        data.map((employee) => (
+                            <div
+                                key={employee.id}
+                                onClick={() => onRowClick(employee)}
+                                className="p-4 rounded-xl bg-gray-50/50 dark:bg-gray-800/20 border border-gray-100 dark:border-gray-800 hover:bg-gray-100 dark:hover:bg-gray-800/40 cursor-pointer transition-colors active:scale-[0.99]"
+                            >
+                                <div className="flex items-center gap-3 mb-2.5">
+                                    <div className={cn(
+                                        "w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm shrink-0",
+                                        getAvatarColor(employee.name)
+                                    )}>
+                                        {getInitials(employee.name)}
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                        <p className="font-semibold text-gray-900 dark:text-gray-100 truncate" title={employee.name}>
+                                            {employee.name}
+                                        </p>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                                            {employee.empId}
+                                        </p>
+                                    </div>
+                                    <Badge variant={getStatusBadgeVariant(employee.status)} className="shrink-0">
+                                        {employee.status}
+                                    </Badge>
+                                </div>
+                                <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400 pl-[52px]">
+                                    <span className="font-medium">{employee.department}</span>
+                                    <span className="text-gray-300 dark:text-gray-600">•</span>
+                                    <span>{employee.role}</span>
+                                </div>
+                            </div>
+                        ))
+                    )}
+                </div>
+            ) : (
+                /* Desktop / Tablet Table View */
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left text-sm whitespace-nowrap">
+                        <thead className="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-400 font-medium transition-colors">
                             <tr>
-                                <td colSpan={7} className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
-                                    No employees found matching your criteria.
-                                </td>
+                                <th className="px-6 py-4 tracking-wider text-xs uppercase">Employee</th>
+                                <th className="px-6 py-4 tracking-wider text-xs uppercase">Department</th>
+                                <th className="px-6 py-4 tracking-wider text-xs uppercase">Role</th>
+                                <th className="px-6 py-4 tracking-wider text-xs uppercase hidden lg:table-cell">Email</th>
+                                <th className="px-6 py-4 tracking-wider text-xs uppercase hidden lg:table-cell">Phone</th>
+                                <th className="px-6 py-4 tracking-wider text-xs uppercase hidden xl:table-cell">Joining Date</th>
+                                <th className="px-6 py-4 tracking-wider text-xs uppercase">Status</th>
                             </tr>
-                        ) : (
-                            data.map((employee) => (
-                                <tr
-                                    key={employee.id}
-                                    onClick={() => onRowClick(employee)}
-                                    className="hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer transition-colors group"
-                                >
-                                    <td className="px-6 py-4">
-                                        <div className="flex items-center space-x-3">
-                                            <div className={cn(
-                                                "w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm shrink-0",
-                                                getAvatarColor(employee.name)
-                                            )}>
-                                                {getInitials(employee.name)}
-                                            </div>
-                                            <div>
-                                                <p className="font-semibold text-gray-900 dark:text-gray-100 transition-colors">{employee.name}</p>
-                                                <p className="text-xs text-gray-500 dark:text-gray-400 transition-colors">{employee.empId}</p>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4 text-gray-600 dark:text-gray-300 transition-colors">{employee.department}</td>
-                                    <td className="px-6 py-4 text-gray-600 dark:text-gray-300 transition-colors">{employee.role}</td>
-                                    <td className="px-6 py-4 text-gray-600 dark:text-gray-300 transition-colors">{employee.email}</td>
-                                    <td className="px-6 py-4 text-gray-600 dark:text-gray-300 transition-colors">{employee.phone}</td>
-                                    <td className="px-6 py-4 text-gray-600 dark:text-gray-300 transition-colors">{employee.joiningDate}</td>
-                                    <td className="px-6 py-4">
-                                        <Badge variant={getStatusBadgeVariant(employee.status)}>
-                                            {employee.status}
-                                        </Badge>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                            {isInitialLoad ? (
+                                Array.from({ length: 5 }).map((_, idx) => <TableRowSkeleton key={idx} />)
+                            ) : data.length === 0 ? (
+                                <tr>
+                                    <td colSpan={7} className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
+                                        No employees found matching your criteria.
                                     </td>
                                 </tr>
-                            ))
-                        )}
-                    </tbody>
-                </table>
-            </div>
+                            ) : (
+                                data.map((employee) => (
+                                    <tr
+                                        key={employee.id}
+                                        onClick={() => onRowClick(employee)}
+                                        className="hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer transition-colors group"
+                                    >
+                                        <td className="px-6 py-4">
+                                            <div className="flex items-center space-x-3">
+                                                <div className={cn(
+                                                    "w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm shrink-0",
+                                                    getAvatarColor(employee.name)
+                                                )}>
+                                                    {getInitials(employee.name)}
+                                                </div>
+                                                <div>
+                                                    <p className="font-semibold text-gray-900 dark:text-gray-100 transition-colors">{employee.name}</p>
+                                                    <p className="text-xs text-gray-500 dark:text-gray-400 transition-colors">{employee.empId}</p>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4 text-gray-600 dark:text-gray-300 transition-colors">{employee.department}</td>
+                                        <td className="px-6 py-4 text-gray-600 dark:text-gray-300 transition-colors">{employee.role}</td>
+                                        <td className="px-6 py-4 text-gray-600 dark:text-gray-300 transition-colors hidden lg:table-cell">{employee.email}</td>
+                                        <td className="px-6 py-4 text-gray-600 dark:text-gray-300 transition-colors hidden lg:table-cell">{employee.phone}</td>
+                                        <td className="px-6 py-4 text-gray-600 dark:text-gray-300 transition-colors hidden xl:table-cell">{employee.joiningDate}</td>
+                                        <td className="px-6 py-4">
+                                            <Badge variant={getStatusBadgeVariant(employee.status)}>
+                                                {employee.status}
+                                            </Badge>
+                                        </td>
+                                    </tr>
+                                ))
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            )}
 
             {/* Pagination Footer */}
             <div className="flex flex-col sm:flex-row items-center justify-between px-6 py-4 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50 gap-4 transition-colors">
                 <span className="text-sm text-gray-500 dark:text-gray-400">
-                    Showing <span className="font-medium text-gray-900 dark:text-gray-100">{startEntry}</span> to <span className="font-medium text-gray-900 dark:text-gray-100">{endEntry}</span> of <span className="font-medium text-gray-900 dark:text-gray-100">{pagination.totalEntries}</span> entries
+                    {isMobile ? (
+                        <span className="font-medium text-gray-700 dark:text-gray-300">
+                            Page {pagination.currentPage} of {pagination.totalPages}
+                        </span>
+                    ) : (
+                        <>
+                            Showing <span className="font-medium text-gray-900 dark:text-gray-100">{startEntry}</span> to <span className="font-medium text-gray-900 dark:text-gray-100">{endEntry}</span> of <span className="font-medium text-gray-900 dark:text-gray-100">{pagination.totalEntries}</span> entries
+                        </>
+                    )}
                 </span>
                 
                 <div className="flex space-x-1.5">

@@ -1,7 +1,7 @@
 // src/components/auth/EmployeeLoginForm.tsx
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Eye, EyeOff, Loader2, AlertCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useAppDispatch } from '@/store/hooks';
@@ -11,6 +11,8 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import Link from 'next/link';
 import Cookies from 'js-cookie';
+import apiClient from '@/services/apiClient';
+import { setCompanySettings } from '@/store/settingsSlice';
 
 export default function EmployeeLoginForm() {
     const router = useRouter();
@@ -19,8 +21,21 @@ export default function EmployeeLoginForm() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState<string | null>(null);
+    const [infoMessage, setInfoMessage] = useState<string | null>(null);
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const params = new URLSearchParams(window.location.search);
+            const err = params.get('error');
+            if (err === 'session_expired') {
+                setError('Your session has expired. Please log in again.');
+            } else if (err === 'logged_out') {
+                setInfoMessage('You have been successfully logged out.');
+            }
+        }
+    }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -34,13 +49,27 @@ export default function EmployeeLoginForm() {
             // Store tokens for cookieless cross-domain compatibility
             if (data.accessToken) {
                 localStorage.setItem('hrms_token', data.accessToken);
-                Cookies.set('hrms_token', data.accessToken, { expires: 7, secure: process.env.NODE_ENV === 'production', sameSite: 'lax' });
+                Cookies.set('hrms_token', data.accessToken, { expires: 7, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/' });
             }
             if (data.refreshToken) {
                 localStorage.setItem('hrms_refreshToken', data.refreshToken);
             }
             if (data.user?.role) {
-                Cookies.set('hrms_role', data.user.role.toLowerCase(), { expires: 7, secure: process.env.NODE_ENV === 'production', sameSite: 'lax' });
+                Cookies.set('hrms_role', data.user.role.toLowerCase(), { expires: 7, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/' });
+            }
+
+            // Immediately load and apply company branding
+            try {
+                const settingsRes = await apiClient.get('/settings/company');
+                const settings = settingsRes.data?.data;
+                if (settings) {
+                    dispatch(setCompanySettings(settings));
+                    if (settings.brandColor) {
+                        document.documentElement.style.setProperty('--primary-color', settings.brandColor);
+                    }
+                }
+            } catch (e) {
+                console.error("Failed to load company settings on login:", e);
             }
             
             // Normalize Mongoose _id to frontend id
@@ -71,6 +100,13 @@ export default function EmployeeLoginForm() {
                 <div className="mb-6 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm rounded-lg flex items-center justify-center gap-2 font-medium">
                     <AlertCircle size={18} className="shrink-0" />
                     <span>{error}</span>
+                </div>
+            )}
+
+            {infoMessage && (
+                <div className="mb-6 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 text-blue-605 dark:text-blue-400 text-sm rounded-lg flex items-center justify-center gap-2 font-medium">
+                    <AlertCircle size={18} className="shrink-0 text-blue-500" />
+                    <span>{infoMessage}</span>
                 </div>
             )}
             

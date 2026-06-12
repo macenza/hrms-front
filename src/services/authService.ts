@@ -58,9 +58,9 @@ export const logoutUser = async () => {
             localStorage.removeItem('hrms_user');
             localStorage.removeItem('hrms_token');
             localStorage.removeItem('hrms_refreshToken');
-            Cookies.remove('hrms_token');
-            Cookies.remove('hrms_role');
-            Cookies.remove('role');
+            Cookies.remove('hrms_token', { path: '/' });
+            Cookies.remove('hrms_role', { path: '/' });
+            Cookies.remove('role', { path: '/' });
         }
     }
 };
@@ -80,6 +80,7 @@ export interface CustomerRegisterPayload {
     password: string;
     companyName: string;
     subscriptionPlan: string;
+    phone?: string;
 }
 
 export interface CustomerAuthResponse {
@@ -123,7 +124,7 @@ export const logoutCustomer = async () => {
         if (typeof window !== 'undefined') {
             localStorage.removeItem('customer_user');
             localStorage.removeItem('customer_token');
-            Cookies.remove('customer_token');
+            Cookies.remove('customer_token', { path: '/' });
         }
     }
 };

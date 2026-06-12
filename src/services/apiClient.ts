@@ -59,7 +59,30 @@ apiClient.interceptors.response.use(
                 return Promise.reject(error);
             }
 
-            const PUBLIC_ROUTES = ['/', '/login', '/signup', '/hrms-login'];
+            // Secure logout for B2B Customer context on 401
+            const isCustomerApi = originalRequest.url?.includes('/customers');
+            if (isCustomerApi) {
+                if (typeof window !== 'undefined') {
+                    console.log('Customer session expired. Forcing logout.');
+                    localStorage.removeItem('customer_user');
+                    localStorage.removeItem('customer_token');
+                    Cookies.remove('customer_token');
+                    Cookies.remove('customer_refreshToken');
+                    
+                    // Call backend logout asynchronously to clear HttpOnly cookies
+                    apiClient.post('/customers/logout').catch(() => {});
+                    
+                    const isProtectedRoute = window.location.pathname.startsWith('/customer-dashboard') || 
+                                             window.location.pathname.startsWith('/billing') || 
+                                             window.location.pathname.startsWith('/subscriptions');
+                    if (isProtectedRoute) {
+                        window.location.href = '/login?error=session_expired';
+                    }
+                }
+                return Promise.reject(error);
+            }
+
+            const PUBLIC_ROUTES = ['/', '/login', '/signup', '/hrms-login', '/privacy-policy', '/terms-and-conditions'];
 
             // Prevent infinite refresh loops
             if (originalRequest.url?.includes(ENDPOINTS.AUTH.REFRESH)) {
@@ -68,9 +91,9 @@ apiClient.interceptors.response.use(
                     localStorage.removeItem('hrms_user');
                     localStorage.removeItem('hrms_token');
                     localStorage.removeItem('hrms_refreshToken');
-                    Cookies.remove('hrms_token');
-                    Cookies.remove('hrms_role');
-                    Cookies.remove('role');
+                    Cookies.remove('hrms_token', { path: '/' });
+                    Cookies.remove('hrms_role', { path: '/' });
+                    Cookies.remove('role', { path: '/' });
 
                     const isPublicRoute = PUBLIC_ROUTES.includes(window.location.pathname);
                     if (!isPublicRoute) {
@@ -101,7 +124,7 @@ apiClient.interceptors.response.use(
                     const newAccessToken = refreshResponse.data?.accessToken;
                     if (newAccessToken && typeof window !== 'undefined') {
                         localStorage.setItem('hrms_token', newAccessToken);
-                        Cookies.set('hrms_token', newAccessToken, { expires: 7, secure: process.env.NODE_ENV === 'production', sameSite: 'lax' });
+                        Cookies.set('hrms_token', newAccessToken, { expires: 7, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/' });
                     }
                     
                     processQueue(null);
@@ -113,9 +136,9 @@ apiClient.interceptors.response.use(
                         localStorage.removeItem('hrms_user');
                         localStorage.removeItem('hrms_token');
                         localStorage.removeItem('hrms_refreshToken');
-                        Cookies.remove('hrms_token');
-                        Cookies.remove('hrms_role');
-                        Cookies.remove('role');
+                        Cookies.remove('hrms_token', { path: '/' });
+                        Cookies.remove('hrms_role', { path: '/' });
+                        Cookies.remove('role', { path: '/' });
 
                         const isPublicRoute = PUBLIC_ROUTES.includes(window.location.pathname);
                         if (!isPublicRoute) {

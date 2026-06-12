@@ -3,8 +3,9 @@ import React, { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAppSelector, useAppDispatch } from '@/store/hooks'; 
 import Link from 'next/link';
-import { Download, Edit, ChevronRight, Menu, X, MoreVertical, Loader2, Camera } from 'lucide-react';
+import { Download, Edit, ChevronRight, Menu, X, MoreVertical, Loader2, Camera, Trash2 } from 'lucide-react';
 import { cn } from '@/utils/cn';
+import { getAvatarUrl } from '@/utils/avatarUtils';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Card, CardContent } from '@/components/ui/Card';
@@ -17,6 +18,8 @@ import DocumentsTab from '@/components/profile/tabs/DocumentsTab';
 import CertificatesTab from '@/components/profile/tabs/CertificatesTab';
 import AttendanceTab from '@/components/profile/tabs/AttendanceTab';
 import NotesTab from '@/components/profile/tabs/NotesTab';
+import AssetsTab from '@/components/profile/tabs/AssetsTab';
+import { useAssetData, useUpdateAssetStatus } from '@/hooks/api/useAssets';
 import EditProfileModal from '@/components/profile/EditProfileModal';
 import CropPhotoModal from '@/components/profile/CropPhotoModal';
 import { employeeService } from '@/services/employeeService';
@@ -24,7 +27,6 @@ import { setCredentials } from '@/store/authSlice';
 import { useEffect } from 'react';
 import { 
     useEmployeeProfile, 
-    useEmployeeAttendance, 
     useUploadDocument,
     useUploadCertificate,
     useAddNote 
@@ -38,7 +40,8 @@ const profileTabs = [
     { id: 'documents', label: 'Documents' },
     { id: 'certificates', label: 'Certificates' },
     { id: 'attendance', label: 'Attendance' },
-    { id: 'notes', label: 'Notes', adminOnly: true },
+    { id: 'assets', label: 'Assets' },
+    { id: 'notes', label: 'Notes' },
 ] as const;
 
 type TabId = typeof profileTabs[number]['id'];
@@ -92,27 +95,62 @@ export default function EmployeeProfileClient({ id }: EmployeeProfileClientProps
 
     useEffect(() => {
         if (employee && isCurrentUser) {
+            // Keep theme settings in sync by merging current redux user settings with fetched profile settings
+            const mergedSettings = {
+                ...(employee.profile?.settings || {}),
+                ...(user?.profile?.settings || {})
+            };
+
             const updatedUser = {
                 ...user,
                 name: employee.name,
                 role: employee.role,
-                profile: employee.profile
+                profile: {
+                    ...(employee.profile || {}),
+                    settings: mergedSettings
+                }
             };
-            if (JSON.stringify(user?.profile) !== JSON.stringify(employee.profile) || user?.name !== employee.name) {
+
+            // Compare profiles ignoring settings to avoid circular loops on theme toggle
+            const userProfileToCompare = user?.profile ? { ...user.profile, settings: undefined } : undefined;
+            const employeeProfileToCompare = employee.profile ? { ...employee.profile, settings: undefined } : undefined;
+
+            if (
+                JSON.stringify(userProfileToCompare) !== JSON.stringify(employeeProfileToCompare) || 
+                user?.name !== employee.name ||
+                JSON.stringify(user?.profile?.settings) !== JSON.stringify(mergedSettings)
+            ) {
                 localStorage.setItem('hrms_user', JSON.stringify(updatedUser));
                 dispatch(setCredentials({ user: updatedUser as any }));
             }
         }
     }, [employee, isCurrentUser, dispatch, user]);
-    const { data: attendanceData, isLoading: isAttendanceLoading } = useEmployeeAttendance(
-        resolvedEmployeeId, 
-        activeTab === 'attendance'
+
+
+    const { data: assetData, isLoading: isAssetLoading } = useAssetData(
+        1,
+        100,
+        '',
+        '',
+        resolvedEmployeeId
     );
 
     const uploadDocumentMutation = useUploadDocument(resolvedEmployeeId);
     const uploadCertificateMutation = useUploadCertificate(resolvedEmployeeId);
     const addNoteMutation = useAddNote(resolvedEmployeeId);
     const deleteEmployeeMutation = useDeleteEmployee();
+    const updateAssetStatusMutation = useUpdateAssetStatus();
+
+    const handleUnassignAsset = async (assetDbId: string, assetName: string) => {
+        if (confirm(`Are you sure you want to unassign "${assetName}" from this employee?`)) {
+            try {
+                await updateAssetStatusMutation.mutateAsync({ id: assetDbId, status: 'Available' });
+                toast.success('Asset unassigned successfully!');
+            } catch (error) {
+                toast.error('Failed to unassign asset.');
+            }
+        }
+    };
 
     const handleDeleteEmployee = async () => {
         if (confirm(`WARNING: Are you sure you want to delete the employee "${employee.name}"? This action will archive them into the past employees collection and remove them from current employees.`)) {
@@ -237,10 +275,7 @@ export default function EmployeeProfileClient({ id }: EmployeeProfileClientProps
                                 <div className="relative group shrink-0">
                                     {employee.profile?.avatar && !avatarError ? (
                                         <img 
-                                            src={employee.profile.avatar.startsWith('http') 
-                                                ? employee.profile.avatar 
-                                                : `${process.env.NEXT_PUBLIC_API_URL ? process.env.NEXT_PUBLIC_API_URL.replace('/api', '') : 'http://localhost:4000'}${employee.profile.avatar}?t=${employee.updatedAt ? new Date(employee.updatedAt).getTime() : Date.now()}`
-                                            } 
+                                            src={`${getAvatarUrl(employee.profile.avatar)}?t=${employee.updatedAt ? new Date(employee.updatedAt).getTime() : Date.now()}`} 
                                             alt={employee.name} 
                                             className="w-14 h-14 sm:w-20 sm:h-20 rounded-full object-cover shadow-inner transition-transform duration-300"
                                             onError={() => {
@@ -257,18 +292,23 @@ export default function EmployeeProfileClient({ id }: EmployeeProfileClientProps
                                     )}
                                     
                                     {/* Upload overlay */}
-                                    {(isCurrentUser || isAdminOrHR) && (
+                                    {isCurrentUser && (
                                         <label className="absolute inset-0 bg-black/50 text-white rounded-full flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 cursor-pointer transition-all duration-300 border border-white/20">
                                             <Camera size={18} className="mb-0.5" />
                                             <span className="text-[9px] sm:text-[10px] font-bold text-center px-1">Upload Photo</span>
                                             <input 
                                                 type="file" 
-                                                accept="image/*" 
+                                                accept="image/jpeg,image/png,image/webp" 
                                                 className="hidden" 
                                                 value=""
                                                 onChange={(e) => {
                                                     const file = e.target.files?.[0];
                                                     if (file) {
+                                                        // Validate file size (2MB max)
+                                                        if (file.size > 2 * 1024 * 1024) {
+                                                            toast.error('File size must be less than 2 MB');
+                                                            return;
+                                                        }
                                                         const reader = new FileReader();
                                                         reader.onload = () => {
                                                             setPendingPhotoSrc(reader.result as string);
@@ -329,7 +369,7 @@ export default function EmployeeProfileClient({ id }: EmployeeProfileClientProps
             <Card className="border-gray-200 dark:border-gray-800 shadow-sm bg-white dark:bg-gray-900 overflow-hidden min-h-[500px] transition-colors duration-300">
                 {/* Mobile Tab Menu Logic... */}
                 
-                <div className="hidden lg:flex overflow-x-auto hide-scrollbar border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 transition-colors">
+                <div className="flex overflow-x-auto hide-scrollbar border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 transition-colors">
                     {visibleTabs.map((tab) => (
                         <button
                             key={tab.id}
@@ -377,12 +417,20 @@ export default function EmployeeProfileClient({ id }: EmployeeProfileClientProps
                                 skills: employment.skills || [],
                                 dateOfJoining: employment.joiningDate
                                     ? new Date(employment.joiningDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
-                                    : ''
+                                    : '',
+                                shiftName: employment.shiftName || '',
+                                shiftTiming: employment.shiftTiming || '',
+                                batchNo: employment.batchNo || '',
+                                companyName: employment.companyName || ''
                             }}
                             onUpdateSkills={async (newSkills) => {
                                 try {
                                     await employeeService.update(resolvedEmployeeId, {
-                                        'profile.employment.skills': newSkills
+                                        profile: {
+                                            employment: {
+                                                skills: newSkills
+                                            }
+                                        }
                                     });
                                     toast.success("Skills updated successfully!");
                                     refreshProfile();
@@ -453,20 +501,17 @@ export default function EmployeeProfileClient({ id }: EmployeeProfileClientProps
 
                     {activeTab === 'attendance' && (
                         <AttendanceTab
-                            stats={attendanceData?.stats}
-                            logs={attendanceData?.logs?.map((log: any) => {
-                                const checkInDate = log.checkInTime ? new Date(log.checkInTime) : null;
-                                const checkOutDate = log.checkOutTime ? new Date(log.checkOutTime) : null;
-                                return {
-                                    id: log._id || log.id,
-                                    date: log.dateString || (checkInDate ? checkInDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A'),
-                                    checkIn: checkInDate ? checkInDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }) : '-',
-                                    checkOut: checkOutDate ? checkOutDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }) : '-',
-                                    totalHours: log.totalWorkedMinutes ? `${(log.totalWorkedMinutes / 60).toFixed(2)} hrs` : '0.00 hrs',
-                                    status: log.status
-                                };
-                            }) || []}
-                            isLoading={isAttendanceLoading}
+                            employeeId={resolvedEmployeeId}
+                        />
+                    )}
+
+                    {activeTab === 'assets' && (
+                        <AssetsTab
+                            assets={assetData?.records || []}
+                            isLoading={isAssetLoading}
+                            isAdminOrHR={isAdminOrHR}
+                            onUnassign={handleUnassignAsset}
+                            isUnassigning={updateAssetStatusMutation.isPending}
                         />
                     )}
 
@@ -483,7 +528,7 @@ export default function EmployeeProfileClient({ id }: EmployeeProfileClientProps
                                 })
                             })) || []}
                             isLoading={isProfileLoading}
-                            onAddNote={handleAddNote}
+                            onAddNote={isAdminOrHR ? handleAddNote : undefined}
                         />
                     )}
                 </div>

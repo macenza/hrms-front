@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Briefcase, MapPin, User, Calendar, Hash, Tag, Plus, Building, X, Loader2 } from 'lucide-react';
+import { Briefcase, MapPin, User, Calendar, Hash, Tag, Plus, Building, X, Loader2, Clock } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -17,6 +17,10 @@ export interface EmploymentDetailsData {
     employmentType: string;
     workLocation: string;
     skills: string[];
+    shiftName?: string;
+    shiftTiming?: string;
+    batchNo?: string;
+    companyName?: string;
 }
 
 interface EmploymentDetailsTabProps {
@@ -116,11 +120,22 @@ export default function EmploymentDetailsTab({
                     <CardContent className="pt-6">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-6 gap-x-8">
                             <DetailItem label="Employee ID" value={data.employeeId} icon={Hash} />
+                            <DetailItem label="Company Name" value={data.companyName} icon={Building} />
                             <DetailItem label="Designation" value={data.designation} icon={Tag} />
                             <DetailItem label="Reporting Manager" value={data.reportingManager} icon={User} />
                             <DetailItem label="Date of Joining" value={data.dateOfJoining} icon={Calendar} />
                             <DetailItem label="Department" value={data.department} icon={Building} />
                             <DetailItem label="Employment Type" value={data.employmentType} />
+                            <DetailItem
+                                label="Shift"
+                                value={data.shiftName ? `${data.shiftName} (${data.shiftTiming})` : 'No Shift Assigned'}
+                                icon={Clock}
+                            />
+                            <DetailItem
+                                label="Batch No."
+                                value={data.batchNo}
+                                icon={Tag}
+                            />
                             <div className="sm:col-span-2 pt-2 border-t border-gray-100 dark:border-gray-800 transition-colors">
                                 <DetailItem
                                     label="Work Location"

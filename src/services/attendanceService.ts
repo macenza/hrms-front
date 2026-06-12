@@ -37,5 +37,17 @@ export const attendanceService = {
     }) => {
         const response = await apiClient.post('/attendance/mark', payload);
         return response.data;
+    },
+    
+    getCalendarAttendance: async (employeeId: string, month: number, year: number) => {
+        try {
+            const response = await apiClient.get('/attendance/calendar', {
+                params: { employeeId, month, year }
+            });
+            return response.data;
+        } catch (error) {
+            console.error("Error fetching calendar attendance:", error);
+            throw error;
+        }
     }
 };

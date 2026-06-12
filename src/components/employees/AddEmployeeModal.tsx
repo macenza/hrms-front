@@ -9,6 +9,7 @@ import ProfilePhotoUploadStep from '@/components/employees/ProfilePhotoUploadSte
 import { useAppSelector } from '@/store/hooks';
 import { useCompanySettings } from '@/hooks/api/useSettings';
 import { useActiveEmployees } from '@/hooks/api/useEmployees';
+import { useShifts } from '@/hooks/api/useShifts';
 import { z } from 'zod';
 
 export interface EmployeeFormData {
@@ -27,6 +28,8 @@ export interface EmployeeFormData {
     joiningDate: string;
     reportingManager: string;
     workLocation: string;
+    shiftId: string;
+    batchNo: string;
 }
 
 export interface AddEmployeeSubmitMeta {
@@ -59,6 +62,8 @@ const getInitialFormState = (settings: any): EmployeeFormData => {
         joiningDate: new Date().toISOString().split('T')[0],
         reportingManager: '',
         workLocation: '',
+        shiftId: '',
+        batchNo: '',
     };
 };
 
@@ -79,6 +84,8 @@ const step2Schema = z.object({
     employmentType: z.enum(['Full-Time', 'Part-Time', 'Contract', 'Internship']),
     reportingManager: z.string().trim().optional(),
     workLocation: z.string().trim().optional(),
+    shiftId: z.string().trim().optional(),
+    batchNo: z.string().trim().optional(),
 });
 
 export default function AddEmployeeModal({ isOpen, onClose, onSubmit, isSubmitting = false }: AddEmployeeModalProps) {
@@ -86,6 +93,7 @@ export default function AddEmployeeModal({ isOpen, onClose, onSubmit, isSubmitti
     const { user } = useAppSelector((state) => state.auth);
     const { data: companySettings } = useCompanySettings();
     const { data: activeEmployees } = useActiveEmployees();
+    const { data: shifts = [] } = useShifts();
 
     const dynamicRoles = companySettings?.roles || ['employee', 'manager', 'hr', 'admin'];
     const dynamicDepartments = companySettings?.departments || ['HR', 'Engineering', 'Marketing', 'Sales', 'Finance'];
@@ -169,8 +177,17 @@ export default function AddEmployeeModal({ isOpen, onClose, onSubmit, isSubmitti
                     department: formData.department,
                     joiningDate: formData.joiningDate,
                     employmentType: formData.employmentType,
+                    batchNo: formData.batchNo.trim(),
                     ...(formData.reportingManager ? { reportingManager: formData.reportingManager } : {}),
                     ...(formData.workLocation ? { workLocation: formData.workLocation } : {}),
+                    ...(formData.shiftId ? {
+                        shiftId: formData.shiftId,
+                        shiftName: shifts.find((s: any) => s._id === formData.shiftId)?.name || '',
+                        shiftTiming: (() => {
+                            const found = shifts.find((s: any) => s._id === formData.shiftId);
+                            return found ? `${found.startTime} - ${found.endTime}` : '';
+                        })()
+                    } : {}),
                 }
             }
         };
@@ -183,39 +200,7 @@ export default function AddEmployeeModal({ isOpen, onClose, onSubmit, isSubmitti
     return (
         <Modal isOpen={isOpen} onClose={handleClose} title="Add New Employee" className="max-w-3xl">
             <form onSubmit={handleSubmit} className="flex flex-col">
-                {/* --- PROGRESS BAR --- */}
-                <div className="px-4 pt-2 pb-6">
-                    <div className="relative flex items-center justify-between w-full">
-                        {/* Background track */}
-                        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-0.5 bg-gray-200 dark:bg-gray-800 z-0 transition-colors duration-300"></div>
-
-                        {/* Active track */}
-                        <div
-                            className="absolute left-0 top-1/2 -translate-y-1/2 h-0.5 bg-blue-600 z-0 transition-all duration-300"
-                            style={{ width: step === 1 ? '0%' : step === 2 ? '50%' : '100%' }}
-                        ></div>
-
-                        {/* Steps */}
-                        {[1, 2, 3].map((num) => (
-                            <div key={num} className="relative z-10 flex flex-col items-center gap-2 bg-white dark:bg-gray-900 px-2 transition-colors duration-300">
-                                <div className={cn(
-                                    "w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-colors border-2",
-                                    step >= num
-                                        ? "bg-blue-600 border-blue-600 text-white"
-                                        : "bg-white border-gray-300 text-gray-400 dark:bg-gray-900 dark:border-gray-700 dark:text-gray-500"
-                                )}>
-                                    {step > num ? <Check size={16} /> : num}
-                                </div>
-                                <span className={cn(
-                                    "text-xs font-semibold uppercase tracking-wider",
-                                    step >= num ? "text-blue-600" : "text-gray-400 dark:text-gray-500"
-                                )}>
-                                    {num === 1 ? 'Personal Info' : num === 2 ? 'Job Details' : 'Documents'}
-                                </span>
-                            </div>
-                        ))}
-                    </div>
-                </div>
+                {/* Step indicator removed per design request — form still uses 3-step flow */}
 
                 {/* --- FORM CONTENT --- */}
                 <div className="flex-1 p-2 min-h-[250px]">
@@ -399,6 +384,33 @@ export default function AddEmployeeModal({ isOpen, onClose, onSubmit, isSubmitti
                                 onChange={handleChange}
                                 placeholder="e.g. Head Office, Remote"
                             />
+
+                            <Input
+                                disabled={isSubmitting}
+                                label="Batch No."
+                                name="batchNo"
+                                value={formData.batchNo}
+                                onChange={handleChange}
+                                placeholder="e.g. 101, 102"
+                            />
+
+                            <div className="flex flex-col gap-1.5">
+                                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors">Shift Timing</label>
+                                <select
+                                    disabled={isSubmitting}
+                                    name="shiftId"
+                                    value={formData.shiftId}
+                                    onChange={handleChange}
+                                    className="h-10 px-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-600 text-sm bg-white dark:bg-gray-950 dark:border-gray-800 dark:text-gray-100 dark:focus:ring-blue-500 transition-colors"
+                                >
+                                    <option value="">No Shift Assigned</option>
+                                    {shifts?.map((shift: any) => (
+                                        <option key={shift._id} value={shift._id}>
+                                            {shift.name} ({shift.startTime} - {shift.endTime})
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
                         </div>
                     )}
 

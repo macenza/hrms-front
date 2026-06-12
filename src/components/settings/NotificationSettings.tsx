@@ -4,8 +4,8 @@
 import React, { useState, useEffect } from 'react';
 import { Mail, Bell, ShieldCheck, Lock, Webhook, Save, Loader2, MessageSquare } from 'lucide-react';
 import { cn } from '@/utils/cn';
-import { Button } from '@/components/ui/Button'; 
-import { Input } from '@/components/ui/Input'; 
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
 import { useAppSelector } from '@/store/hooks';
 import { toast } from 'sonner';
 
@@ -40,7 +40,7 @@ export default function NotificationSettings({
 }: NotificationSettingsProps) {
     const [prefs, setPrefs] = useState<NotificationPrefsState>(defaultPrefs);
     const [isSaving, setIsSaving] = useState(false);
-    
+
     const { user } = useAppSelector((state) => state.auth);
     const userRole = user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : 'Employee';
 
@@ -69,7 +69,7 @@ export default function NotificationSettings({
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        
+
         // Validation if Slack/Teams enabled
         if (prefs.slackTeamsEnabled && prefs.slackTeamsWebhook.trim() === '') {
             toast.error("Webhook URL cannot be empty if webhook integration is enabled.");
@@ -116,7 +116,7 @@ export default function NotificationSettings({
 
     return (
         <form onSubmit={handleSubmit} className="animate-in fade-in duration-300 max-w-4xl space-y-10">
-            
+
             <div className="flex justify-between items-start mb-2">
                 <div>
                     <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 tracking-tight transition-colors">Notification Preferences</h2>
@@ -130,31 +130,33 @@ export default function NotificationSettings({
             </div>
 
             {/* Admin Emails Section */}
-            <section className="bg-white dark:bg-gray-900 border border-gray-150 dark:border-gray-800 rounded-2xl p-6 transition-colors shadow-sm">
-                <div className="flex items-center gap-2 mb-1">
-                    <Mail size={18} className="text-blue-500 dark:text-blue-400 transition-colors" />
-                    <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 transition-colors">Administrative Emails</h3>
-                </div>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 transition-colors">Choose what operational events trigger an email to your inbox.</p>
-                
-                <div className="space-y-3">
-                    <NotificationRow
-                        title="New Leave Requests"
-                        description="Get notified when an employee applies for time off."
-                        control={<Switch id="email_leave_requests" checked={prefs.email_leave_requests} />}
-                    />
-                    <NotificationRow
-                        title="Payroll Processing"
-                        description="Alerts regarding payroll generation, modifications, and approvals."
-                        control={<Switch id="email_payroll_processing" checked={prefs.email_payroll_processing} />}
-                    />
-                    <NotificationRow
-                        title="New Employee Onboarding"
-                        description="Alerts when a new employee profile is initialized in the system."
-                        control={<Switch id="email_onboarding" checked={prefs.email_onboarding} />}
-                    />
-                </div>
-            </section>
+            {(userRole === 'Admin') && (
+                <section className="bg-white dark:bg-gray-900 border border-gray-150 dark:border-gray-800 rounded-2xl p-6 transition-colors shadow-sm">
+                    <div className="flex items-center gap-2 mb-1">
+                        <Mail size={18} className="text-blue-500 dark:text-blue-400 transition-colors" />
+                        <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 transition-colors">Administrative Emails</h3>
+                    </div>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 transition-colors">Choose what operational events trigger an email to your inbox.</p>
+
+                    <div className="space-y-3">
+                        <NotificationRow
+                            title="New Leave Requests"
+                            description="Get notified when an employee applies for time off."
+                            control={<Switch id="email_leave_requests" checked={prefs.email_leave_requests} />}
+                        />
+                        <NotificationRow
+                            title="Payroll Processing"
+                            description="Alerts regarding payroll generation, modifications, and approvals."
+                            control={<Switch id="email_payroll_processing" checked={prefs.email_payroll_processing} />}
+                        />
+                        <NotificationRow
+                            title="New Employee Onboarding"
+                            description="Alerts when a new employee profile is initialized in the system."
+                            control={<Switch id="email_onboarding" checked={prefs.email_onboarding} />}
+                        />
+                    </div>
+                </section>
+            )}
 
             {/* System Alerts Section */}
             <section className="bg-white dark:bg-gray-900 border border-gray-150 dark:border-gray-800 rounded-2xl p-6 transition-colors shadow-sm">
@@ -163,7 +165,7 @@ export default function NotificationSettings({
                     <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 transition-colors">System Alerts</h3>
                 </div>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 transition-colors">In-app notifications for the admin dashboard.</p>
-                
+
                 <div className="space-y-3">
                     <NotificationRow
                         title="Daily Attendance Summary"
@@ -187,7 +189,7 @@ export default function NotificationSettings({
                 <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 transition-colors">
                     Route real-time operational system alerts directly into your team channels (Slack or MS Teams).
                 </p>
-                
+
                 <div className="space-y-6">
                     <div className="flex items-center justify-between p-4 border border-gray-100 dark:border-gray-800 rounded-xl bg-gray-50/30 dark:bg-gray-950/10">
                         <div className="pr-4">
@@ -232,7 +234,7 @@ export default function NotificationSettings({
                         <strong className="text-gray-900 dark:text-gray-100">Privacy & System Policy:</strong> Your notification preferences are private and only apply to your account. Some critical system alerts (like security audits) will always be sent.
                     </p>
                 </div>
-                
+
                 <Button
                     type="submit"
                     variant="primary"
@@ -259,12 +261,14 @@ export default function NotificationSettings({
 
 function NotificationRow({ title, description, control }: { title: string; description: string; control: React.ReactNode }) {
     return (
-        <div className="flex items-center justify-between p-4 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl hover:border-blue-200 dark:hover:border-blue-900/50 transition-all shadow-sm dark:shadow-none">
-            <div className="pr-4">
+        <div className="flex items-center justify-between gap-4 p-4 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl hover:border-blue-200 dark:hover:border-blue-900/50 transition-all shadow-sm dark:shadow-none">
+            <div className="min-w-0 flex-1">
                 <p className="font-bold text-gray-900 dark:text-gray-100 transition-colors">{title}</p>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5 transition-colors">{description}</p>
             </div>
-            {control}
+            <div className="shrink-0">
+                {control}
+            </div>
         </div>
     );
 }

@@ -1,7 +1,7 @@
 // src/components/auth/CustomerLoginForm.tsx
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Eye, EyeOff, Loader2, AlertCircle, ShieldCheck } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useAppDispatch } from '@/store/hooks';
@@ -19,9 +19,25 @@ export default function CustomerLoginForm() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState<string | null>(null);
+    const [infoMessage, setInfoMessage] = useState<string | null>(null);
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [success, setSuccess] = useState(false);
+
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const params = new URLSearchParams(window.location.search);
+            const err = params.get('error');
+            const registered = params.get('registered');
+            if (err === 'session_expired') {
+                setError('Your session has expired. Please log in again.');
+            } else if (err === 'logged_out') {
+                setInfoMessage('You have been successfully logged out.');
+            } else if (registered === 'true') {
+                setInfoMessage('Workspace registered successfully! Please log in to access your dashboard.');
+            }
+        }
+    }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -33,7 +49,7 @@ export default function CustomerLoginForm() {
             
             if (data.accessToken) {
                 // Set B2B Customer Edge Cookie
-                Cookies.set('customer_token', data.accessToken, { expires: 7, secure: process.env.NODE_ENV === 'production', sameSite: 'lax' });
+                Cookies.set('customer_token', data.accessToken, { expires: 7, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/' });
                 localStorage.setItem('customer_token', data.accessToken);
             }
             if (data.customer) {
@@ -84,6 +100,13 @@ export default function CustomerLoginForm() {
                 <div className="mb-6 p-4 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 text-red-600 dark:text-red-400 text-sm rounded-xl flex items-center gap-2 font-medium">
                     <AlertCircle size={18} className="shrink-0" />
                     <span>{error}</span>
+                </div>
+            )}
+
+            {infoMessage && (
+                <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-805/50 text-blue-600 dark:text-blue-400 text-sm rounded-xl flex items-center gap-2 font-medium">
+                    <ShieldCheck size={18} className="shrink-0 text-blue-500" />
+                    <span>{infoMessage}</span>
                 </div>
             )}
             

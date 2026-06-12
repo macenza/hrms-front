@@ -14,10 +14,28 @@ interface RoleChartProps {
 }
 
 // Custom tooltip to ensure perfect Tailwind dark mode support
-const CustomTooltip = ({ active, payload }: any) => {
+const CustomTooltip = ({ active, payload, coordinate }: any) => {
     if (active && payload && payload.length) {
+        let style: React.CSSProperties = {};
+        if (coordinate) {
+            const { x, y } = coordinate;
+            const vx = x - 80;
+            const vy = y - 80;
+            const len = Math.sqrt(vx * vx + vy * vy);
+            if (len > 0) {
+                // Offset the tooltip radially outward by 55px
+                const dx = (vx / len) * 55;
+                const dy = (vy / len) * 55;
+                style = {
+                    transform: `translate(${dx}px, ${dy}px)`,
+                };
+            }
+        }
         return (
-            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-2.5 rounded-xl shadow-lg transition-colors">
+            <div 
+                className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-2.5 rounded-xl shadow-lg transition-colors pointer-events-none"
+                style={style}
+            >
                 <p className="text-xs font-bold text-gray-900 dark:text-gray-100 uppercase tracking-wider">
                     {payload[0].name}
                 </p>
@@ -112,7 +130,7 @@ export default function RoleChart({
                                     />
                                 ))}
                             </Pie>
-                            <Tooltip content={<CustomTooltip />} cursor={{ fill: "transparent" }} />
+                            <Tooltip content={<CustomTooltip />} cursor={{ fill: "transparent" }} wrapperStyle={{ zIndex: 100 }} />
                         </PieChart>
                         
                         {/* Center Text */}

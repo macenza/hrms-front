@@ -1,6 +1,7 @@
 "use client";
 import React, { useMemo, useState } from "react";
-import { CalendarDays, Upload, Loader2 } from "lucide-react";
+import { useRouter } from 'next/navigation';
+import { CalendarDays, Upload, Loader2, Cake } from "lucide-react";
 import dynamic from 'next/dynamic';
 import StatCard from "@/components/dashboard/StatCard";
 import EmployeeSummary from "@/components/dashboard/EmployeeSummary";
@@ -8,7 +9,9 @@ import AttendanceList from "@/components/dashboard/AttendanceList";
 import { STAT_CARDS } from "@/lib/data";
 import { useAppSelector } from "@/store/hooks";
 import { useDashboardStats, useDashboardAttendance } from "@/hooks/api/useDashboard";
+import { useActiveEmployees } from "@/hooks/api/useEmployees";
 import { normalizeRoleDistribution } from "@/lib/dashboard";
+import AttendanceCalendar from "@/components/attendance/AttendanceCalendar";
 
 const AttendanceChart = dynamic(
     () => import('@/components/dashboard/AttendanceChart'),
@@ -30,7 +33,22 @@ const RoleChart = dynamic(
     }
 );
 
+const calculateDaysToBirthday = (dobString?: string) => {
+    if (!dobString) return undefined;
+    const birthDate = new Date(dobString);
+    if (isNaN(birthDate.getTime())) return undefined;
+    const today = new Date();
+    const todayZero = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const nextBirthday = new Date(today.getFullYear(), birthDate.getMonth(), birthDate.getDate());
+    if (todayZero > nextBirthday) {
+        nextBirthday.setFullYear(today.getFullYear() + 1);
+    }
+    const diffTime = nextBirthday.getTime() - todayZero.getTime();
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+};
+
 export default function DashboardPage() {
+    const router = useRouter();
     const { user, isAuthenticated } = useAppSelector((state) => state.auth);
     const role = user?.role?.toLowerCase() || 'employee';
     const isAdminOrHR = role === 'admin' || role === 'hr';
@@ -60,6 +78,20 @@ export default function DashboardPage() {
                 : stats?.usersByRole;
         return normalizeRoleDistribution(source);
     }, [stats?.roleDistribution, attendanceData?.workingFormat, stats?.usersByRole]);
+
+    // Fetch all active employees for birthday reminders (Admin/HR only)
+    const { data: allEmployees } = useActiveEmployees();
+
+    const upcomingBirthdays = useMemo(() => {
+        if (!allEmployees) return [];
+        return allEmployees
+            .map((emp: any) => ({
+                emp,
+                days: calculateDaysToBirthday(emp.dob),
+            }))
+            .filter((item: any) => item.days !== undefined && item.days <= 10)
+            .sort((a: any, b: any) => (a.days ?? 0) - (b.days ?? 0));
+    }, [allEmployees]);
 
     const csvContent = useMemo(() => {
         if (!stats) return null;
@@ -132,7 +164,7 @@ export default function DashboardPage() {
                 </div>
 
                 {isAdminOrHR && (
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                         {STAT_CARDS.map((card) => (
                             <StatCard
                                 key={card.id}
@@ -145,14 +177,52 @@ export default function DashboardPage() {
                     </div>
                 )}
 
+                {/* Upcoming Birthdays (Admin/HR only) */}
+                {isAdminOrHR && upcomingBirthdays.length > 0 && (
+                    <div className="bg-gradient-to-r from-pink-500/10 via-purple-500/10 to-blue-500/10 dark:from-pink-500/20 dark:via-purple-500/20 dark:to-blue-500/20 rounded-xl p-5 border border-pink-500/20 dark:border-pink-500/30 shadow-sm animate-in slide-in-from-top duration-300">
+                        <div className="flex items-center gap-2 mb-3">
+                            <Cake className="w-5 h-5 text-pink-500" />
+                            <h3 className="text-xs font-bold uppercase tracking-wider text-gray-800 dark:text-gray-200">
+                                Upcoming Birthdays (Within 10 Days)
+                            </h3>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                            {upcomingBirthdays.map(({ emp, days }: any) => {
+                                const dayText = days === 0 ? "Today! 🎂" : days === 1 ? "Tomorrow!" : `in ${days} days`;
+                                return (
+                                    <div
+                                        key={emp.id}
+                                        onClick={() => router.push(`/employees/${emp.id}`)}
+                                        className="flex items-center gap-3 p-3 bg-white/60 dark:bg-gray-900/60 hover:bg-white dark:hover:bg-gray-900 border border-gray-100 dark:border-gray-800/80 rounded-lg shadow-sm cursor-pointer hover:shadow transition-all duration-200"
+                                    >
+                                        <div className="w-10 h-10 rounded-full bg-pink-100 dark:bg-pink-900/30 flex items-center justify-center font-bold text-pink-600 dark:text-pink-400 text-sm shrink-0">
+                                            {emp.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()}
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <p className="text-sm font-bold text-gray-900 dark:text-gray-100 truncate">{emp.name}</p>
+                                            <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">
+                                                {emp.department} · <span className="font-bold text-pink-600 dark:text-pink-400">{dayText}</span>
+                                            </p>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                )}
+
                 <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
                     <div className={isAdminOrHR ? "lg:col-span-3" : "lg:col-span-5"}>
-                        <AttendanceChart
-                            timeframe={activeTimeframe}
-                            isEmployee={isEmployee}
-                            chartData={attendanceData}
-                            isLoading={isAttendanceLoading}
-                        />
+                        {isEmployee ? (
+                            <AttendanceCalendar employeeId={user?.id || user?._id || ""} />
+                        ) : (
+                            <AttendanceChart
+                                timeframe={activeTimeframe}
+                                isEmployee={isEmployee}
+                                chartData={attendanceData}
+                                isLoading={isAttendanceLoading}
+                            />
+                        )}
                     </div>
                     {isAdminOrHR && (
                         <div className="lg:col-span-2">
@@ -168,8 +238,8 @@ export default function DashboardPage() {
                     <div className={isAdminOrHR ? "lg:col-span-3" : "lg:col-span-5"}>
                         <AttendanceList
                             isEmployee={isEmployee}
-                            listData={attendanceData?.recentList ?? []}
-                            isLoading={isAttendanceLoading}
+                            listData={stats?.pendingLeaves ?? []}
+                            isLoading={isStatsLoading}
                         />
                     </div>
                     {isAdminOrHR && (

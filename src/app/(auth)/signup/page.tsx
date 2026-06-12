@@ -20,6 +20,7 @@ export default function SaaSBuyerSignupPage() {
     const [companyName, setCompanyName] = useState('');
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
+    const [phone, setPhone] = useState('');
     const [password, setPassword] = useState('');
     const [plan, setPlan] = useState('Growth');
     const [showPassword, setShowPassword] = useState(false);
@@ -34,9 +35,8 @@ export default function SaaSBuyerSignupPage() {
 
     // Simulated Razorpay details based on plan
     const getPlanPrice = () => {
-        if (plan === 'Growth') return { usd: 49, inr: 3999 };
-        if (plan === 'Professional') return { usd: 129, inr: 9999 };
-        return { usd: 499, inr: 39999 }; // Enterprise
+        if (plan === 'Growth') return { usd: 6, inr: 499 };
+        return { usd: 24, inr: 1999 }; // Professional
     };
 
     // Auto-redirect if already logged in
@@ -66,11 +66,12 @@ export default function SaaSBuyerSignupPage() {
                     email,
                     password,
                     companyName,
-                    subscriptionPlan: plan
+                    subscriptionPlan: plan,
+                    phone: phone || undefined
                 });
 
                 if (data.accessToken) {
-                    Cookies.set('customer_token', data.accessToken, { expires: 7, secure: process.env.NODE_ENV === 'production', sameSite: 'lax' });
+                    Cookies.set('customer_token', data.accessToken, { expires: 7, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/' });
                     localStorage.setItem('customer_token', data.accessToken);
                 }
                 if (data.customer) {
@@ -82,11 +83,11 @@ export default function SaaSBuyerSignupPage() {
                 setIsPaying(false);
                 setPaymentSuccess(true);
 
-                // Hold screen for checked animation then redirect
+                // Hold screen for checked animation then redirect to login page
                 setTimeout(() => {
                     setShowPaymentModal(false);
-                    window.location.href = '/customer-dashboard';
-                }, 1500);
+                    window.location.href = '/login?registered=true';
+                }, 3000);
             } catch (err: any) {
                 setIsPaying(false);
                 setShowPaymentModal(false);
@@ -141,16 +142,28 @@ export default function SaaSBuyerSignupPage() {
                         </div>
                     </div>
 
-                    <div className="space-y-1.5">
-                        <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Corporate Email Address</label>
-                        <Input
-                            type="email"
-                            placeholder="admin@company.com"
-                            required
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            className="text-gray-900 dark:text-gray-100"
-                        />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-1.5">
+                            <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Corporate Email Address</label>
+                            <Input
+                                type="email"
+                                placeholder="admin@company.com"
+                                required
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                className="text-gray-900 dark:text-gray-100"
+                            />
+                        </div>
+                        <div className="space-y-1.5">
+                            <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Phone Number (Optional)</label>
+                            <Input
+                                type="tel"
+                                placeholder="+91 98765 43210"
+                                value={phone}
+                                onChange={(e) => setPhone(e.target.value)}
+                                className="text-gray-900 dark:text-gray-100"
+                            />
+                        </div>
                     </div>
 
                     <div className="space-y-1.5">
@@ -160,9 +173,8 @@ export default function SaaSBuyerSignupPage() {
                             onChange={(e) => setPlan(e.target.value)}
                             className="w-full h-11 px-3 rounded-lg border border-gray-300 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-[#6D5DFD] focus:border-transparent text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 font-bold cursor-pointer transition"
                         >
-                            <option value="Growth">Growth Plan ($49/mo - ₹3,999/mo)</option>
-                            <option value="Professional">Professional Plan ($129/mo - ₹9,999/mo)</option>
-                            <option value="Enterprise">Enterprise Workspace ($499/mo - ₹39,999/mo)</option>
+                            <option value="Growth">Growth Plan (₹499/mo)</option>
+                            <option value="Professional">Professional Plan (₹1,999/mo) - Coming Soon</option>
                         </select>
                     </div>
 
@@ -234,12 +246,22 @@ export default function SaaSBuyerSignupPage() {
                         {/* Modal Body */}
                         <div className="p-6">
                             {paymentSuccess ? (
-                                <div className="text-center py-8 animate-in zoom-in-95 duration-300">
-                                    <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg shadow-emerald-100">
+                                <div className="text-center py-8 animate-in zoom-in-95 duration-300 space-y-4">
+                                    <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-2 shadow-lg shadow-emerald-100">
                                         <CheckCircle2 className="w-10 h-10" />
                                     </div>
-                                    <h4 className="font-black text-lg text-gray-900">Payment Captured!</h4>
-                                    <p className="text-xs text-gray-500 mt-1 font-semibold">Creating your corporate workspace, please wait...</p>
+                                    <div>
+                                        <h4 className="font-black text-lg text-gray-900">Payment Captured!</h4>
+                                        <p className="text-xs text-gray-550 mt-1 font-semibold">Creating your corporate workspace, please wait...</p>
+                                    </div>
+                                    <div className="pt-2 px-6">
+                                        <Link
+                                            href="/login"
+                                            className="inline-flex items-center justify-center w-full py-3.5 px-5 text-sm font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-md transition duration-200"
+                                        >
+                                            Login as Customer
+                                        </Link>
+                                    </div>
                                 </div>
                             ) : (
                                 <>

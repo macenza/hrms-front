@@ -25,6 +25,7 @@ export interface EmployeeSummaryRow {
     jobTitle: string;
     netSalary: number;
     status: "PAID" | "PENDING" | "OVERDUE";
+    employeeId?: string;
 }
 
 /** Attendance list row */

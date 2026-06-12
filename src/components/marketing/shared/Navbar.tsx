@@ -4,9 +4,13 @@ import Link from "next/link";
 import { Menu, CircleX } from "lucide-react";
 import React, { useState } from "react";
 import ThemeToggle from "@/components/theme/ThemeToggle";
+import { useAppSelector } from "@/store/hooks";
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
+  const customer = useAppSelector((state) => state.customerAuth.customer);
+  const isAuthenticated = useAppSelector((state) => state.customerAuth.isAuthenticated);
+
   return (
     <nav className="w-full h-20 bg-white shadow-md border-b border-gray-200 px-6 md:px-12 flex items-center justify-between">
 
@@ -79,22 +83,24 @@ export default function Navbar() {
        
         <div className="flex md:flex-row flex-col gap-4 mt-8 md:mt-0 md:ml-12">
           {/* <ThemeToggle /> */}
-          <Link
-            href="/hrms-login"
-            className="border border-gray-300 text-gray-700 hover:text-[#6D5DFD] dark:border-gray-700 dark:text-gray-300 dark:hover:text-white rounded-xl px-5 py-2 hover:scale-95 transition duration-300 font-semibold text-sm flex items-center justify-center"
-          >
-            Employee Login
-          </Link>
+          {isAuthenticated && customer ? (
+            <Link
+              href="/customer-dashboard"
+              className="bg-indigo-50 border border-indigo-200 text-[#6D5DFD] dark:bg-indigo-950/20 dark:border-indigo-900/30 dark:text-[#8B7BFF] rounded-xl px-5 py-2 hover:scale-95 transition duration-300 font-bold text-sm flex items-center justify-center gap-1.5"
+            >
+              <span>{customer.name}</span>
+            </Link>
+          ) : (
+            <Link
+              href="/login"
+              className="border border-gray-300 text-gray-700 hover:text-[#6D5DFD] dark:border-gray-700 dark:text-gray-300 dark:hover:text-white rounded-xl px-5 py-2 hover:scale-95 transition duration-300 font-semibold text-sm flex items-center justify-center"
+            >
+              Login
+            </Link>
+          )}
 
           <Link
-            href="/login"
-            className="bg-white border border-[#5B4DF0] text-[#111827] rounded-xl px-5 py-2 hover:scale-95 transition duration-300 font-semibold text-sm flex items-center justify-center"
-          >
-            Customer Login
-          </Link>
-
-          <Link
-            href="/signup"
+            href="/register-company"
             className="bg-[#6D5DFD] text-white rounded-xl px-5 py-2 border border-[#5B4DF0] hover:bg-[#5B4DF0] hover:scale-95 transition duration-300 font-semibold text-sm flex items-center justify-center"
           >
             Get Started
