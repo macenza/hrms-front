@@ -1,7 +1,6 @@
 import React from 'react';
-import { Mail, Phone, MapPin, Loader2 } from 'lucide-react';
-import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
+import { Mail, Phone, MapPin } from 'lucide-react';
+import ContactForm from './ContactForm';
 
 export const metadata = {
     title: 'Contact Sales & Support | MACENZA HRMS',
@@ -47,7 +46,7 @@ export default function ContactPage() {
                             </div>
                             <div>
                                 <p className="text-xs text-gray-200">Email us</p>
-                                <p className="font-bold text-sm">sales@macenza-hrms.com</p>
+                                <p className="font-bold text-sm">info@macenza.com</p>
                             </div>
                         </div>
 
@@ -82,58 +81,7 @@ export default function ContactPage() {
                     <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">
                         Send us a message
                     </h3>
-                    <form className="space-y-5">
-                        <div className="space-y-1.5">
-                            <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Your Full Name</label>
-                            <Input 
-                                type="text"
-                                placeholder="John Doe"
-                                required
-                                className="text-gray-900 dark:text-gray-100"
-                            />
-                        </div>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div className="space-y-1.5">
-                                <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Work Email</label>
-                                <Input 
-                                    type="email"
-                                    placeholder="john@company.com"
-                                    required
-                                    className="text-gray-900 dark:text-gray-100"
-                                />
-                            </div>
-                            <div className="space-y-1.5">
-                                <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Company Name</label>
-                                <Input 
-                                    type="text"
-                                    placeholder="Acme Corp"
-                                    required
-                                    className="text-gray-900 dark:text-gray-100"
-                                />
-                            </div>
-                        </div>
-
-                        <div className="space-y-1.5">
-                            <label className="text-sm font-bold text-gray-700 dark:text-gray-300">How can we help you?</label>
-                            <textarea 
-                                rows={4}
-                                placeholder="Describe your organizational size, custom needs, or support requests..."
-                                required
-                                className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 font-medium"
-                            />
-                        </div>
-
-                        <div className="pt-2">
-                            <Button 
-                                type="submit" 
-                                variant="primary"
-                                className="w-full py-5 text-sm font-bold shadow-lg shadow-blue-200 dark:shadow-none"
-                            >
-                                Submit Inquiry
-                            </Button>
-                        </div>
-                    </form>
+                    <ContactForm />
                 </div>
             </div>
         </div>
