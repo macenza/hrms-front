@@ -3,8 +3,9 @@ import React, { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAppSelector, useAppDispatch } from '@/store/hooks'; 
 import Link from 'next/link';
-import { Download, Edit, ChevronRight, Menu, X, MoreVertical, Loader2, Camera } from 'lucide-react';
+import { Download, Edit, ChevronRight, Menu, X, MoreVertical, Loader2, Camera, Trash2 } from 'lucide-react';
 import { cn } from '@/utils/cn';
+import { getAvatarUrl } from '@/utils/avatarUtils';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Card, CardContent } from '@/components/ui/Card';
@@ -26,7 +27,6 @@ import { setCredentials } from '@/store/authSlice';
 import { useEffect } from 'react';
 import { 
     useEmployeeProfile, 
-    useEmployeeAttendance, 
     useUploadDocument,
     useUploadCertificate,
     useAddNote 
@@ -125,10 +125,7 @@ export default function EmployeeProfileClient({ id }: EmployeeProfileClientProps
             }
         }
     }, [employee, isCurrentUser, dispatch, user]);
-    const { data: attendanceData, isLoading: isAttendanceLoading } = useEmployeeAttendance(
-        resolvedEmployeeId, 
-        activeTab === 'attendance'
-    );
+
 
     const { data: assetData, isLoading: isAssetLoading } = useAssetData(
         1,
@@ -278,10 +275,7 @@ export default function EmployeeProfileClient({ id }: EmployeeProfileClientProps
                                 <div className="relative group shrink-0">
                                     {employee.profile?.avatar && !avatarError ? (
                                         <img 
-                                            src={employee.profile.avatar.startsWith('http') 
-                                                ? employee.profile.avatar 
-                                                : `${process.env.NEXT_PUBLIC_API_URL ? process.env.NEXT_PUBLIC_API_URL.replace('/api', '') : 'http://localhost:4000'}${employee.profile.avatar}?t=${employee.updatedAt ? new Date(employee.updatedAt).getTime() : Date.now()}`
-                                            } 
+                                            src={`${getAvatarUrl(employee.profile.avatar)}?t=${employee.updatedAt ? new Date(employee.updatedAt).getTime() : Date.now()}`} 
                                             alt={employee.name} 
                                             className="w-14 h-14 sm:w-20 sm:h-20 rounded-full object-cover shadow-inner transition-transform duration-300"
                                             onError={() => {
@@ -304,12 +298,17 @@ export default function EmployeeProfileClient({ id }: EmployeeProfileClientProps
                                             <span className="text-[9px] sm:text-[10px] font-bold text-center px-1">Upload Photo</span>
                                             <input 
                                                 type="file" 
-                                                accept="image/*" 
+                                                accept="image/jpeg,image/png,image/webp" 
                                                 className="hidden" 
                                                 value=""
                                                 onChange={(e) => {
                                                     const file = e.target.files?.[0];
                                                     if (file) {
+                                                        // Validate file size (2MB max)
+                                                        if (file.size > 2 * 1024 * 1024) {
+                                                            toast.error('File size must be less than 2 MB');
+                                                            return;
+                                                        }
                                                         const reader = new FileReader();
                                                         reader.onload = () => {
                                                             setPendingPhotoSrc(reader.result as string);
@@ -502,20 +501,7 @@ export default function EmployeeProfileClient({ id }: EmployeeProfileClientProps
 
                     {activeTab === 'attendance' && (
                         <AttendanceTab
-                            stats={attendanceData?.stats}
-                            logs={attendanceData?.logs?.map((log: any) => {
-                                const checkInDate = log.checkInTime ? new Date(log.checkInTime) : null;
-                                const checkOutDate = log.checkOutTime ? new Date(log.checkOutTime) : null;
-                                return {
-                                    id: log._id || log.id,
-                                    date: log.dateString || (checkInDate ? checkInDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A'),
-                                    checkIn: checkInDate ? checkInDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }) : '-',
-                                    checkOut: checkOutDate ? checkOutDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }) : '-',
-                                    totalHours: log.totalWorkedMinutes ? `${(log.totalWorkedMinutes / 60).toFixed(2)} hrs` : '0.00 hrs',
-                                    status: log.status
-                                };
-                            }) || []}
-                            isLoading={isAttendanceLoading}
+                            employeeId={resolvedEmployeeId}
                         />
                     )}
 

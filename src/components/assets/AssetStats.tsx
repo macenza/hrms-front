@@ -2,15 +2,14 @@
 'use client';
 
 import React from 'react';
-import { Laptop, CheckCircle2, UserCheck, Wrench } from 'lucide-react';
+import { Laptop, CheckCircle2, UserCheck, Wrench, Bookmark } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/Card';
 import { cn } from '@/utils/cn';
+import { useAssetStatusData } from '@/hooks/api/useAssetStatuses';
 
 export interface AssetStatsData {
     total: number;
-    assigned: number;
-    available: number;
-    maintenance: number;
+    [key: string]: number;
 }
 
 interface AssetStatsProps {
@@ -18,12 +17,23 @@ interface AssetStatsProps {
     isLoading?: boolean;
 }
 
+const getStatusIcon = (statusName: string) => {
+    const lower = statusName.toLowerCase();
+    if (lower.includes('available')) return <CheckCircle2 size={20} />;
+    if (lower.includes('assign')) return <UserCheck size={20} />;
+    if (lower.includes('maintenance')) return <Wrench size={20} />;
+    return <Bookmark size={20} />;
+};
+
 export default function AssetStats({ data, isLoading = false }: AssetStatsProps) {
-    
-    // Premium Skeleton Loader aligned with Dark Mode Blueprint
-    if (isLoading) {
+    const { data: statusData, isLoading: isStatusLoading } = useAssetStatusData(1, 100, '', true);
+    const activeStatuses = statusData?.records || [];
+
+    const isDataLoading = isLoading || isStatusLoading;
+
+    if (isDataLoading) {
         return (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 animate-in fade-in duration-300">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 animate-in fade-in duration-300">
                 {[1, 2, 3, 4].map((i) => (
                     <Card key={i} className="border-gray-200 dark:border-gray-800 shadow-sm dark:shadow-none bg-white dark:bg-gray-900 transition-colors">
                         <CardContent className="p-5 flex items-start justify-between">
@@ -39,43 +49,46 @@ export default function AssetStats({ data, isLoading = false }: AssetStatsProps)
         );
     }
 
-    const safeData = data || { total: 0, assigned: 0, available: 0, maintenance: 0 };
+    const safeData = data || { total: 0 };
     
-    // Upgraded with proper dark mode tinting for premium contrast
-    const statCards = [
-        {
-            title: "Total Assets",
-            value: safeData.total,
-            icon: <Laptop size={20} />,
-            iconBg: "bg-gray-100 dark:bg-gray-800/80",
-            iconColor: "text-gray-600 dark:text-gray-400",
-        },
-        {
-            title: "Assigned",
-            value: safeData.assigned,
-            icon: <UserCheck size={20} />,
-            iconBg: "bg-blue-50 dark:bg-blue-500/10",
-            iconColor: "text-blue-600 dark:text-blue-400",
-        },
-        {
-            title: "Available",
-            value: safeData.available,
-            icon: <CheckCircle2 size={20} />,
-            iconBg: "bg-green-50 dark:bg-green-500/10",
-            iconColor: "text-green-600 dark:text-green-400",
-        },
-        {
-            title: "Under Maintenance",
-            value: safeData.maintenance,
-            icon: <Wrench size={20} />,
-            iconBg: "bg-orange-50 dark:bg-orange-500/10",
-            iconColor: "text-orange-500 dark:text-orange-400",
-        },
-    ];
+    // Sort keys based on sequence of status configurations, fallback to alphabetical
+    const statsKeys = Object.keys(safeData).filter(key => key !== 'total');
+    const sortedKeys = [...statsKeys].sort((a, b) => {
+        const sA = activeStatuses.find(s => s.name.toLowerCase() === a.toLowerCase());
+        const sB = activeStatuses.find(s => s.name.toLowerCase() === b.toLowerCase());
+        return (sA?.sequence ?? 999) - (sB?.sequence ?? 999);
+    });
+
+    const totalCard = {
+        title: "Total Assets",
+        value: safeData.total || 0,
+        icon: <Laptop size={20} />,
+        style: {
+            color: '#3b82f6',
+            backgroundColor: 'rgba(59, 130, 246, 0.1)'
+        }
+    };
+
+    const statusCards = sortedKeys.map(key => {
+        const matchedConfig = activeStatuses.find(s => s.name.toLowerCase() === key.toLowerCase());
+        const statusColor = matchedConfig?.color || '#64748b'; // default slate
+
+        return {
+            title: key,
+            value: safeData[key] || 0,
+            icon: getStatusIcon(key),
+            style: {
+                color: statusColor,
+                backgroundColor: `${statusColor}1a` // Hex opacity 10%
+            }
+        };
+    });
+
+    const allCards = [totalCard, ...statusCards];
 
     return (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 animate-in fade-in duration-300">
-            {statCards.map((stat, index) => (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 animate-in fade-in duration-300">
+            {allCards.map((stat, index) => (
                 <Card 
                     key={index} 
                     className="border-gray-200 dark:border-gray-800 hover:border-blue-200 dark:hover:border-blue-900/50 hover:shadow-md dark:hover:shadow-none hover:-translate-y-0.5 transition-all duration-300 bg-white dark:bg-gray-900 shadow-sm dark:shadow-none group"
@@ -89,11 +102,10 @@ export default function AssetStats({ data, isLoading = false }: AssetStatsProps)
                                 {stat.value}
                             </p>
                         </div>
-                        <div className={cn(
-                            "p-3 rounded-xl shrink-0 shadow-sm dark:shadow-none transition-colors",
-                            stat.iconBg, 
-                            stat.iconColor
-                        )}>
+                        <div 
+                            className="p-3 rounded-xl shrink-0 shadow-sm dark:shadow-none transition-colors"
+                            style={stat.style}
+                        >
                             {stat.icon}
                         </div>
                     </CardContent>

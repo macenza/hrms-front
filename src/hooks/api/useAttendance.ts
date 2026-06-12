@@ -51,6 +51,16 @@ export function useMarkAttendance() {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['attendance', 'daily'] });
             queryClient.invalidateQueries({ queryKey: ['attendance', 'dashboard'] });
+            queryClient.invalidateQueries({ queryKey: ['attendance', 'calendar'] });
         }
+    });
+}
+
+export function useCalendarAttendance(employeeId: string, month: number, year: number, enabled: boolean = true) {
+    return useQuery({
+        queryKey: ['attendance', 'calendar', employeeId, month, year],
+        queryFn: () => attendanceService.getCalendarAttendance(employeeId, month, year),
+        enabled: !!employeeId && enabled,
+        staleTime: 5 * 60 * 1000,
     });
 }

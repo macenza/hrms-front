@@ -88,10 +88,10 @@ export default function PersonalInfoTab({
                 
                 {/* Basic Details Card */}
                 <Card className="border-gray-200 dark:border-gray-800 shadow-sm dark:shadow-none bg-gray-50/50 dark:bg-gray-900/50 transition-colors duration-300">
-                    <CardHeader className="pb-4 border-b border-gray-100 dark:border-gray-800 transition-colors">
+                    <CardHeader className="pb-3 border-b border-gray-100 dark:border-gray-800 transition-colors flex items-center justify-center">
                         <CardTitle className="text-lg text-gray-900 dark:text-gray-100 transition-colors">Basic Details</CardTitle>
                     </CardHeader>
-                    <CardContent className="pt-6">
+                    <CardContent className="pt-5 pb-6 flex flex-col justify-center">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <DetailItem label="Full Name" value={data.fullName} icon={User} />
                             <DetailItem label="Date of Birth" value={data.dob} icon={Calendar} />
@@ -103,10 +103,10 @@ export default function PersonalInfoTab({
 
                 {/* Contact Info Card */}
                 <Card className="border-gray-200 dark:border-gray-800 shadow-sm dark:shadow-none bg-gray-50/50 dark:bg-gray-900/50 transition-colors duration-300">
-                    <CardHeader className="pb-4 border-b border-gray-100 dark:border-gray-800 transition-colors">
-                        <CardTitle className="text-lg text-gray-900 dark:text-gray-100 transition-colors">Contact Info</CardTitle>
+                    <CardHeader className="pb-3 border-b border-gray-100 dark:border-gray-800 transition-colors flex items-center justify-center">
+                        <CardTitle className="text-lg text-gray-900 dark:text-gray-100 transition-colors text-center w-full">Contact Info</CardTitle>
                     </CardHeader>
-                    <CardContent className="pt-6">
+                    <CardContent className="pt-5 pb-6 flex flex-col justify-center">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <DetailItem 
                                 label="Email ID" 

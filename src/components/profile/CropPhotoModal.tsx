@@ -135,7 +135,7 @@ export default function CropPhotoModal({
                         }
                     }
                     setIsSaving(false);
-                }, 'image/jpeg', 0.95);
+                }, 'image/jpeg', 0.90);
             } catch (err) {
                 console.error(err);
                 toast.error("Cropping failed.");

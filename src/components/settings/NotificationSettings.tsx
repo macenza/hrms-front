@@ -261,12 +261,14 @@ export default function NotificationSettings({
 
 function NotificationRow({ title, description, control }: { title: string; description: string; control: React.ReactNode }) {
     return (
-        <div className="flex items-center justify-between p-4 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl hover:border-blue-200 dark:hover:border-blue-900/50 transition-all shadow-sm dark:shadow-none">
-            <div className="pr-4">
+        <div className="flex items-center justify-between gap-4 p-4 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl hover:border-blue-200 dark:hover:border-blue-900/50 transition-all shadow-sm dark:shadow-none">
+            <div className="min-w-0 flex-1">
                 <p className="font-bold text-gray-900 dark:text-gray-100 transition-colors">{title}</p>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5 transition-colors">{description}</p>
             </div>
-            {control}
+            <div className="shrink-0">
+                {control}
+            </div>
         </div>
     );
 }

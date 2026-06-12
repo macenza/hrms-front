@@ -126,6 +126,7 @@ function normalizeRecentEmployees(items: unknown): EmployeeSummaryRow[] {
                 jobTitle: String(row.jobTitle ?? row.role ?? row.designation ?? 'N/A'),
                 netSalary: Number(row.netSalary ?? row.salary ?? 0) || 0,
                 status: String(row.status ?? (isActive ? 'ACTIVE' : 'INACTIVE')),
+                employeeId: typeof row.employeeId === 'string' ? row.employeeId : undefined,
                 joiningDate: typeof row.joiningDate === 'string' ? row.joiningDate : undefined,
             };
             const avatar =

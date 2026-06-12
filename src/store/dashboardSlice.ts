@@ -9,6 +9,7 @@ export interface EmployeeSummaryRow {
     jobTitle: string;
     netSalary: number;
     status?: string;
+    employeeId?: string;
     joiningDate?: string;
 }
 

@@ -6,6 +6,7 @@ import { Tag, Laptop, AlignLeft, Loader2, Hash } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { useAssetCategoryData } from '@/hooks/api/useAssetCategories';
 
 export interface AddAssetPayload {
     assetTag: string;
@@ -38,6 +39,15 @@ export default function AddAssetModal({
 }: AddAssetModalProps) {
     
     const [formData, setFormData] = useState<AddAssetPayload>(initialFormState);
+
+    // Fetch active categories
+    const { data: categoryData, isLoading: isCategoriesLoading } = useAssetCategoryData(1, 100, '', true);
+    const categoriesList = categoryData?.records || [];
+
+    // Fallback categories for backward compatibility and empty states
+    const categories = categoriesList.length > 0
+        ? categoriesList.map(c => c.name)
+        : ['Laptop', 'Monitor', 'Mobile', 'Peripheral', 'Furniture', 'Software', 'Other', 'Accessories'];
 
     // Reset form to blank state whenever the modal is opened
     useEffect(() => {
@@ -130,14 +140,19 @@ export default function AddAssetModal({
                             value={formData.category}
                             onChange={handleChange}
                             required
-                            disabled={isSubmitting}
-                            className="w-full h-10 px-3 rounded-md border border-gray-300 dark:border-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-600 dark:focus:ring-blue-500/40 focus:border-transparent text-sm bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 disabled:bg-gray-50 dark:disabled:bg-gray-900 disabled:text-gray-500 dark:disabled:text-gray-600 transition-all"
+                            disabled={isSubmitting || isCategoriesLoading}
+                            className="w-full h-10 px-3 rounded-md border border-gray-300 dark:border-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-600 dark:focus:ring-blue-500/40 focus:border-transparent text-sm bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 disabled:bg-gray-50 dark:disabled:bg-gray-900 disabled:text-gray-500 dark:disabled:text-gray-600 transition-all cursor-pointer"
                         >
                             <option value="" disabled>Select category...</option>
-                            <option value="Laptop">Laptop</option>
-                            <option value="Monitor">Monitor</option>
-                            <option value="Mobile">Mobile Device</option>
-                            <option value="Accessories">Accessories & Peripherals</option>
+                            {isCategoriesLoading ? (
+                                <option disabled>Loading categories...</option>
+                            ) : (
+                                categories.map((catName) => (
+                                    <option key={catName} value={catName}>
+                                        {catName}
+                                    </option>
+                                ))
+                            )}
                         </select>
                     </div>
                     

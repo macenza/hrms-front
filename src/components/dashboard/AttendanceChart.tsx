@@ -124,7 +124,15 @@ const AttendanceChart = ({
                                 dataKey="day"
                                 axisLine={false}
                                 tickLine={false}
-                                tick={{ fontSize: 12, fill: "#94A3B8" }} // Neutral Slate
+                                interval={timeframe === 'month' ? 4 : 0}
+                                tickFormatter={(val) => {
+                                    if (timeframe === 'month' && val) {
+                                        const parts = val.split(' ');
+                                        return parts[1] || val;
+                                    }
+                                    return val;
+                                }}
+                                tick={{ fontSize: 10, fill: "#94A3B8" }} // Neutral Slate
                             />
                             <YAxis
                                 axisLine={false}

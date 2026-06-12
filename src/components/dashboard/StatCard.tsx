@@ -120,7 +120,7 @@ export default function StatCard({
         <div
             onClick={handleCardClick}
             className={cn(
-                "flex-1 min-w-0 rounded-2xl p-6 flex flex-col gap-4 relative overflow-hidden select-none cursor-pointer",
+                "flex-1 min-w-0 rounded-xl p-3.5 sm:p-5 flex flex-col gap-2.5 sm:gap-3 relative overflow-hidden select-none cursor-pointer",
                 "bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-sm dark:shadow-none",
                 "hover:border-blue-200 dark:hover:border-blue-900/50",
                 !disableAnimations && "transition-all duration-300 hover:shadow-md dark:hover:shadow-none hover:-translate-y-0.5"
@@ -133,20 +133,19 @@ export default function StatCard({
                 </div>
             )}
 
-            <div className="flex items-center gap-3.5">
-                <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center shrink-0 transition-colors", colors.iconBg)}>
-                    <Icon className="w-6 h-6" />
+            <div className="flex items-center gap-2 sm:gap-3">
+                <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center shrink-0 transition-colors hidden sm:flex", colors.iconBg)}>
+                    <Icon className="w-5 h-5" />
                 </div>
-                <span className="text-sm font-semibold truncate text-gray-600 dark:text-gray-400 transition-colors">
+                <span className="text-xs sm:text-sm font-semibold truncate text-gray-600 dark:text-gray-400 transition-colors">
                     {card.title}
                 </span>
             </div>
 
-            <div className="flex items-end justify-between mt-1">
-                <span className="text-3xl font-bold tabular-nums tracking-tight text-gray-900 dark:text-gray-100 transition-colors">
+            <div className="flex items-end justify-between mt-0.5 sm:mt-1">
+                <span className="text-2xl sm:text-3xl font-bold tabular-nums tracking-tight text-gray-900 dark:text-gray-100 transition-colors">
                     {displayValue}
                 </span>
-                
                 {card.id === "today-attendance" ? (
                     <span className="text-xs font-semibold text-green-600 dark:text-green-400 pb-0.5 transition-colors">
                         {trendValue} of total employees

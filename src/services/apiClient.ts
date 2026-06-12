@@ -59,6 +59,29 @@ apiClient.interceptors.response.use(
                 return Promise.reject(error);
             }
 
+            // Secure logout for B2B Customer context on 401
+            const isCustomerApi = originalRequest.url?.includes('/customers');
+            if (isCustomerApi) {
+                if (typeof window !== 'undefined') {
+                    console.log('Customer session expired. Forcing logout.');
+                    localStorage.removeItem('customer_user');
+                    localStorage.removeItem('customer_token');
+                    Cookies.remove('customer_token');
+                    Cookies.remove('customer_refreshToken');
+                    
+                    // Call backend logout asynchronously to clear HttpOnly cookies
+                    apiClient.post('/customers/logout').catch(() => {});
+                    
+                    const isProtectedRoute = window.location.pathname.startsWith('/customer-dashboard') || 
+                                             window.location.pathname.startsWith('/billing') || 
+                                             window.location.pathname.startsWith('/subscriptions');
+                    if (isProtectedRoute) {
+                        window.location.href = '/login?error=session_expired';
+                    }
+                }
+                return Promise.reject(error);
+            }
+
             const PUBLIC_ROUTES = ['/', '/login', '/signup', '/hrms-login', '/privacy-policy', '/terms-and-conditions'];
 
             // Prevent infinite refresh loops

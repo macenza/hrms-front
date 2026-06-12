@@ -7,15 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { toast } from 'sonner';
 import { useEmployees } from '@/hooks/api/useEmployees';
-
-const getAvatarUrl = (avatarPath: string) => {
-    if (!avatarPath) return '';
-    if (avatarPath.startsWith('http')) return avatarPath;
-    const apiBase = process.env.NEXT_PUBLIC_API_URL
-        ? process.env.NEXT_PUBLIC_API_URL.replace('/api', '')
-        : 'http://localhost:4000';
-    return `${apiBase}${avatarPath.startsWith('/') ? '' : '/'}${avatarPath}`;
-};
+import { getAvatarUrl, getInitials } from '@/utils/avatarUtils';
 
 interface TeamTabProps {
     projectId: string;
@@ -145,12 +137,18 @@ export default function TeamTab({ projectId, teamAvatars = [], onUpdateTeam, can
                                                         }`}
                                                     >
                                                         <div className="flex items-center gap-3">
-                                                            <img
-                                                                src={emp.profile?.avatar ? getAvatarUrl(emp.profile.avatar) : `https://api.dicebear.com/7.x/initials/svg?seed=${emp.name}`}
-                                                                alt={emp.name}
-                                                                className="w-10 h-10 rounded-full object-cover border border-gray-200 dark:border-gray-800 shadow-sm transition-colors"
-                                                                onError={(e) => (e.currentTarget.src = `https://api.dicebear.com/7.x/initials/svg?seed=${emp.name}`)}
-                                                            />
+                                                            {emp.profile?.avatar ? (
+                                                                <img
+                                                                    src={getAvatarUrl(emp.profile.avatar) || ''}
+                                                                    alt={emp.name}
+                                                                    className="w-10 h-10 rounded-full object-cover border border-gray-200 dark:border-gray-800 shadow-sm transition-colors"
+                                                                    onError={(e) => (e.currentTarget.style.display = 'none')}
+                                                                />
+                                                            ) : (
+                                                                <div className="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-xs font-bold text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700">
+                                                                    {getInitials(emp.name)}
+                                                                </div>
+                                                            )}
                                                             <div>
                                                                 <p className="text-sm font-bold text-gray-900 dark:text-gray-100 transition-colors">{emp.name}</p>
                                                                 <p className="text-xs text-gray-500 dark:text-gray-400 transition-colors">
@@ -192,12 +190,18 @@ export default function TeamTab({ projectId, teamAvatars = [], onUpdateTeam, can
                                     key={member._id || member.id} 
                                     className="relative group bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-xl p-4 flex flex-col items-center justify-center shadow-sm dark:shadow-none hover:border-blue-300 dark:hover:border-blue-900/50 transition-all duration-300"
                                 >
-                                    <img
-                                        src={member.profile?.avatar ? getAvatarUrl(member.profile.avatar) : `https://api.dicebear.com/7.x/initials/svg?seed=${member.name}`}
-                                        alt={member.name}
-                                        className="w-16 h-16 rounded-full object-cover shadow-sm dark:shadow-none mb-3 border-2 border-white dark:border-gray-900 transition-all"
-                                        onError={(e) => (e.currentTarget.src = `https://api.dicebear.com/7.x/initials/svg?seed=${member.name}`)}
-                                    />
+                                    {member.profile?.avatar ? (
+                                        <img
+                                            src={getAvatarUrl(member.profile.avatar) || ''}
+                                            alt={member.name}
+                                            className="w-16 h-16 rounded-full object-cover shadow-sm dark:shadow-none mb-3 border-2 border-white dark:border-gray-900 transition-all"
+                                            onError={(e) => (e.currentTarget.style.display = 'none')}
+                                        />
+                                    ) : (
+                                        <div className="w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-lg font-bold text-gray-500 dark:text-gray-400 mb-3 border-2 border-white dark:border-gray-900">
+                                            {getInitials(member.name)}
+                                        </div>
+                                    )}
                                     <p className="text-sm font-bold text-gray-900 dark:text-gray-100 transition-colors text-center">{member.name}</p>
                                     <p className="text-xs text-gray-500 dark:text-gray-400 transition-colors text-center line-clamp-1 mb-1">{member.email}</p>
                                     <span className="text-[10px] font-bold uppercase tracking-wider bg-gray-100 dark:bg-gray-900 text-gray-600 dark:text-gray-400 px-2 py-0.5 rounded transition-colors">

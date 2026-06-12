@@ -42,8 +42,22 @@ export const ENDPOINTS = {
     },
     ASSET: {
         BASE: '/assets',
+        UPLOAD: '/assets/upload',
+        VALIDATE: '/assets/validate',
+        IMPORT: '/assets/import',
+        IMPORT_HISTORY: '/assets/import-history',
+        EXPORT_ERRORS: '/assets/import-errors/export',
         ASSIGN: (id: string | number) => `/assets/${id}/assign`,
         UPDATE_STATUS: (id: string | number) => `/assets/${id}/status`,
+    },
+    ASSET_CATEGORY: {
+        BASE: '/asset-categories',
+    },
+    ASSET_STATUS: {
+        BASE: '/asset-statuses',
+    },
+    ASSET_MAPPING_TEMPLATE: {
+        BASE: '/asset-mapping-templates',
     },
     NOTICE: {
         BASE: '/notices',
