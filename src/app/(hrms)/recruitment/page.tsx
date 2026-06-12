@@ -377,15 +377,26 @@ export default function RecruitmentPage() {
         setOpenModalDropdown(false);
     };
 
-    const handleDownloadFile = (base64Data: string | undefined, fileName: string) => {
-        if (!base64Data) {
-            toast.error("File content not found on client side.");
+    const handleDownloadFile = (base64OrPath: string | undefined, fileName: string) => {
+        if (!base64OrPath) {
+            toast.error("File content not found.");
             return;
         }
         try {
             const link = document.createElement("a");
-            link.href = base64Data;
+            
+            let downloadUrl = base64OrPath;
+            if (!base64OrPath.startsWith("data:")) {
+                // If it is a relative path (e.g. /uploads/...), prepend the backend api origin
+                const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
+                const originUrl = apiUrl.replace(/\/api$/, '');
+                const cleanPath = base64OrPath.startsWith('/') ? base64OrPath : '/' + base64OrPath;
+                downloadUrl = originUrl + cleanPath;
+            }
+            
+            link.href = downloadUrl;
             link.download = fileName;
+            link.target = "_blank"; // Open in new tab if needed
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
@@ -613,13 +624,19 @@ export default function RecruitmentPage() {
     };
 
     // Update Applicant Status Direct
-    const handleUpdateApplicantStatusDirect = async (applicantId: string, candidateName: string, status: Applicant['status']) => {
-        try {
-            await updateApplicantStatusMutation.mutateAsync({ id: applicantId, status });
-            toast.success(`Updated ${candidateName}'s status to ${status}`);
-        } catch (e) {
-            toast.error("Failed to update applicant status.");
-        }
+    const handleUpdateApplicantStatusDirect = (applicantId: string, candidateName: string, status: Applicant['status']) => {
+        // Show success toast immediately for instant feedback
+        toast.success(`Updated ${candidateName}'s status to ${status}`);
+        
+        updateApplicantStatusMutation.mutate(
+            { id: applicantId, status },
+            {
+                onError: (error) => {
+                    console.error("Failed to update applicant status:", error);
+                    toast.error(`Failed to update ${candidateName}'s status.`);
+                }
+            }
+        );
     };
 
     // Delete Applicant record

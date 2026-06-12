@@ -74,9 +74,9 @@ export default function StatCard({
             case "today-attendance":
                 return attendanceData?.todayPresent ?? card.value; 
             case "total-applicant":
-                return 45; // Static applicant value or fallback
+                return statsData?.totalApplicants ?? card.value;
             case "open-positions":
-                return 12; // Static open positions
+                return statsData?.openPositions ?? card.value;
             default:
                 return card.value;
         }

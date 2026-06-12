@@ -205,6 +205,8 @@ export function normalizeDashboardStats(raw: unknown): DashboardStats {
         recentEmployees: normalizeRecentEmployees(recentRaw),
         pendingLeaves: normalizePendingLeaves(payload.pendingLeaves),
         roleDistribution,
+        totalApplicants: Number(payload.totalApplicants ?? 0) || 0,
+        openPositions: Number(payload.openPositions ?? 0) || 0,
     };
 }
 

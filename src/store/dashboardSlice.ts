@@ -36,6 +36,8 @@ export interface DashboardStats {
     recentEmployees: EmployeeSummaryRow[];
     pendingLeaves?: PendingLeaveRequest[];
     roleDistribution?: RoleDistributionItem[];
+    totalApplicants?: number;
+    openPositions?: number;
 }
 
 export interface DailyAttendance {

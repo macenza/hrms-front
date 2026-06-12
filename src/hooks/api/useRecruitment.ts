@@ -54,9 +54,38 @@ export function useUpdateApplicantStatus() {
     return useMutation({
         mutationFn: ({ id, status }: { id: string; status: Applicant['status'] }) => 
             recruitmentService.updateApplicantStatus(id, status),
-        onSuccess: () => {
+        onMutate: ({ id, status }) => {
+            // Cancel any outgoing refetches to avoid overwriting our optimistic update
+            queryClient.cancelQueries({ queryKey: ['recruitment', 'applicants'] });
+
+            // Snapshot the previous applicants list
+            const previousApplicants = queryClient.getQueryData<Applicant[]>(['recruitment', 'applicants']);
+
+            // Optimistically update the list in cache
+            if (previousApplicants) {
+                queryClient.setQueryData<Applicant[]>(
+                    ['recruitment', 'applicants'],
+                    previousApplicants.map(app => {
+                        const appId = app.id || app._id;
+                        const targetId = id;
+                        const isMatch = appId && targetId && appId.toString() === targetId.toString();
+                        return isMatch ? { ...app, status } : app;
+                    })
+                );
+            }
+
+            return { previousApplicants };
+        },
+        onError: (err, variables, context) => {
+            // Roll back if mutation fails
+            if (context?.previousApplicants) {
+                queryClient.setQueryData(['recruitment', 'applicants'], context.previousApplicants);
+            }
+        },
+        onSettled: () => {
+            // Always invalidate and refetch in the background to ensure consistency
             queryClient.invalidateQueries({ queryKey: ['recruitment', 'applicants'] });
-            queryClient.invalidateQueries({ queryKey: ['recruitment', 'jobs'] }); // update count
+            queryClient.invalidateQueries({ queryKey: ['recruitment', 'jobs'] });
         }
     });
 }
