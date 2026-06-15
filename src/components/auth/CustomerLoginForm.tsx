@@ -60,7 +60,7 @@ export default function CustomerLoginForm() {
             setSuccess(true);
             
             setTimeout(() => {
-                window.location.href = '/customer-dashboard';
+                window.location.href = '/subscription';
             }, 1000);
         } catch (err: any) {
             setError(err.message || 'Invalid credentials or server error.');

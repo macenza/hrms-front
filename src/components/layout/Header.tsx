@@ -32,7 +32,7 @@ function mapUserToProfile(authUser: User | null): UserProfile {
 export default function Header({ onMenuClick }: HeaderProps) {
     const authUser = useAppSelector((state) => state.auth.user);
     const user = useMemo(() => mapUserToProfile(authUser), [authUser]);
-    const profileHref = authUser?.id ? `/employees/${authUser.id}` : undefined;
+    const profileHref = '/profile';
     
     const [greeting, setGreeting] = useState('Welcome');
     

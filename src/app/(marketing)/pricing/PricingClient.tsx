@@ -237,7 +237,7 @@ export default function PricingClient() {
                             ) : p.isAddon ? (
                                 hasActivePlan ? (
                                     <Link
-                                        href="/customer-dashboard"
+                                        href="/subscription"
                                         className="w-full py-4 px-6 rounded-2xl font-bold flex items-center justify-center bg-white border border-gray-200 text-gray-800 hover:bg-gray-50 hover:border-gray-300 dark:bg-gray-850 dark:border-gray-800 dark:text-white dark:hover:bg-gray-800 transition-all duration-300 text-sm shadow-sm"
                                     >
                                         {p.cta}

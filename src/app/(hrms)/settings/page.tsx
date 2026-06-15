@@ -68,7 +68,7 @@ export default function SettingsPage() {
     // Route Protection
     useEffect(() => {
         if (!isAuthenticated && typeof window !== 'undefined') {
-            router.replace('/hrms-login');
+            router.replace('/login');
         }
     }, [isAuthenticated, router]);
 
@@ -126,7 +126,7 @@ export default function SettingsPage() {
                     Cookies.remove('hrms_role', { path: '/' });
                     Cookies.remove('role', { path: '/' });
                     
-                    router.push('/hrms-login');
+                    router.push('/login');
                 }
             }, 1500);
 

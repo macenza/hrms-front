@@ -32,7 +32,7 @@ export default function HeroSection() {
                         href="/register-company"
                         className="bg-[#6D5DFD] text-white px-6 py-3 rounded-xl font-semibold hover:bg-[#5B4DF0] transition text-center"
                     >
-                        Get Started Free
+                        Get Started
                     </Link>
                     <Link
                         href="/login"
