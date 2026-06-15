@@ -109,8 +109,6 @@ export default function AuthInitializer({ children }: { children: React.ReactNod
                     localStorage.removeItem('hrms_refreshToken');
                     localStorage.removeItem('persist:employeeAuth');
                     Cookies.remove('hrms_token', { path: '/' });
-                    Cookies.remove('hrms_role', { path: '/' });
-                    
                     // CRITICAL: Prevent zombie state if we are on a protected route
                     if (typeof window !== 'undefined' && !isPublicRoute(window.location.pathname)) {
                         window.location.href = '/hrms-login?error=session_expired';
@@ -126,8 +124,6 @@ export default function AuthInitializer({ children }: { children: React.ReactNod
                 localStorage.removeItem('hrms_refreshToken');
                 localStorage.removeItem('persist:employeeAuth');
                 Cookies.remove('hrms_token', { path: '/' });
-                Cookies.remove('hrms_role', { path: '/' });
-
                 if (typeof window !== 'undefined' && !isPublicRoute(window.location.pathname)) {
                     window.location.href = '/hrms-login?error=session_expired';
                 } else {
