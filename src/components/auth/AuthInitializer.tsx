@@ -75,7 +75,7 @@ export default function AuthInitializer({ children }: { children: React.ReactNod
                         Cookies.set('hrms_role', verifiedUser.role.toLowerCase(), { expires: 7, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/' });
                     }
 
-                    // Client-side automatic redirect if user is on /hrms-login with valid session
+                    // Client-side automatic redirect if user is on /login with valid session
                     const isAuthRoute = window.location.pathname.startsWith('/login');
                     if (isAuthRoute) {
                         const searchParams = new URLSearchParams(window.location.search);
