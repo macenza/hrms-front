@@ -10,6 +10,23 @@ import { Loader2 } from 'lucide-react';
 import Cookies from 'js-cookie';
 import { useTheme } from 'next-themes';
 
+const isPublicRoute = (pathname: string): boolean => {
+    const PUBLIC_ROUTES = [
+        '/',
+        '/login',
+        '/signup',
+        '/hrms-login',
+        '/kiosk',
+        '/privacy-policy',
+        '/terms-and-conditions',
+        '/checkout-privacy',
+        '/checkout-terms',
+        '/register-company',
+        '/payment-success'
+    ];
+    return PUBLIC_ROUTES.includes(pathname) || pathname.startsWith('/careers');
+};
+
 export default function AuthInitializer({ children }: { children: React.ReactNode }) {
     const dispatch = useAppDispatch();
     const persistedUser = useAppSelector((state) => state.auth.user);
@@ -90,13 +107,11 @@ export default function AuthInitializer({ children }: { children: React.ReactNod
                     localStorage.removeItem('hrms_token');
                     localStorage.removeItem('hrms_refreshToken');
                     localStorage.removeItem('persist:employeeAuth');
-                    localStorage.removeItem('persist:customerAuth');
                     Cookies.remove('hrms_token', { path: '/' });
                     Cookies.remove('hrms_role', { path: '/' });
                     
-                    const PUBLIC_ROUTES = ['/', '/login', '/signup', '/kiosk', '/privacy-policy', '/terms-and-conditions'];
                     // CRITICAL: Prevent zombie state if we are on a protected route
-                    if (typeof window !== 'undefined' && !PUBLIC_ROUTES.includes(window.location.pathname)) {
+                    if (typeof window !== 'undefined' && !isPublicRoute(window.location.pathname)) {
                         window.location.href = '/login?error=session_expired';
                     }
                 } finally {
@@ -109,12 +124,10 @@ export default function AuthInitializer({ children }: { children: React.ReactNod
                 localStorage.removeItem('hrms_token');
                 localStorage.removeItem('hrms_refreshToken');
                 localStorage.removeItem('persist:employeeAuth');
-                localStorage.removeItem('persist:customerAuth');
                 Cookies.remove('hrms_token', { path: '/' });
                 Cookies.remove('hrms_role', { path: '/' });
 
-                const PUBLIC_ROUTES = ['/', '/login', '/signup', '/kiosk', '/privacy-policy', '/terms-and-conditions'];
-                if (typeof window !== 'undefined' && !PUBLIC_ROUTES.includes(window.location.pathname)) {
+                if (typeof window !== 'undefined' && !isPublicRoute(window.location.pathname)) {
                     window.location.href = '/login?error=session_expired';
                 } else {
                     setIsHydrated(true);
