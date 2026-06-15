@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 
-export default function TermsAndConditionsPage() {
+export default function CheckoutTermsAndConditionsPage() {
     const [activeSection, setActiveSection] = useState('terms');
 
     useEffect(() => {
@@ -36,9 +36,9 @@ export default function TermsAndConditionsPage() {
         <div className="py-20 px-6 md:px-12 lg:px-20 max-w-7xl mx-auto w-full min-h-screen bg-gradient-to-b from-transparent to-gray-50/30 dark:to-gray-950/20">
             {/* Redirect / Back Button to Checkout */}
             <div className="mb-10 flex items-center justify-between">
-                <Link href="/">
+                <Link href="/register-company?step=3">
                     <Button variant="outline" className="flex items-center gap-2 text-sm font-bold border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-900 rounded-xl px-5 py-2.5 transition-all duration-300 hover:shadow-md">
-                        <ChevronLeft size={16} className="text-gray-500" /> Back to Home
+                        <ChevronLeft size={16} className="text-gray-500" /> Back to Checkout & Payment
                     </Button>
                 </Link>
                 <span className="text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-900/50 px-3 py-1.5 rounded-lg border border-gray-200/50 dark:border-gray-800/50">
@@ -64,7 +64,7 @@ export default function TermsAndConditionsPage() {
                 <div className="p-3 bg-[#6D5DFD]/10 dark:bg-[#6D5DFD]/20 rounded-2xl text-[#6D5DFD] shrink-0">
                     <FileText className="w-6 h-6" />
                 </div>
-                <div className="text-base text-gray-650 dark:text-gray-300 leading-relaxed">
+                <div className="text-base text-gray-655 dark:text-gray-300 leading-relaxed">
                     Welcome to <strong>MACENZA</strong>. These terms govern your use of the MACENZA Human Resource Management System (HRMS) SaaS platform, subscription packages, and payment portals. By signing up, subscribing, or using the platform, you agree to be bound by these legal policies.
                 </div>
             </div>
@@ -93,7 +93,7 @@ export default function TermsAndConditionsPage() {
                             className={`flex items-center gap-3 px-4 py-3 text-xs md:text-sm font-bold transition-all duration-300 rounded-2xl border ${
                                 activeSection === 'refunds' 
                                     ? 'text-[#6D5DFD] bg-[#6D5DFD]/10 border-[#6D5DFD]/20 dark:bg-[#6D5DFD]/25 dark:border-[#6D5DFD]/35 shadow-sm' 
-                                    : 'text-gray-500 dark:text-gray-450 hover:text-[#6D5DFD] hover:bg-gray-50/50 dark:hover:bg-gray-900/50 border-transparent'
+                                    : 'text-gray-500 dark:text-gray-455 hover:text-[#6D5DFD] hover:bg-gray-50/50 dark:hover:bg-gray-900/50 border-transparent'
                             }`}
                         >
                             <RefreshCw size={16} /> 2. Refund & Cancel
@@ -103,7 +103,7 @@ export default function TermsAndConditionsPage() {
                             className={`flex items-center gap-3 px-4 py-3 text-xs md:text-sm font-bold transition-all duration-300 rounded-2xl border ${
                                 activeSection === 'pricing' 
                                     ? 'text-[#6D5DFD] bg-[#6D5DFD]/10 border-[#6D5DFD]/20 dark:bg-[#6D5DFD]/25 dark:border-[#6D5DFD]/35 shadow-sm' 
-                                    : 'text-gray-500 dark:text-gray-450 hover:text-[#6D5DFD] hover:bg-gray-50/50 dark:hover:bg-gray-900/50 border-transparent'
+                                    : 'text-gray-500 dark:text-gray-455 hover:text-[#6D5DFD] hover:bg-gray-50/50 dark:hover:bg-gray-900/50 border-transparent'
                             }`}
                         >
                             <CreditCard size={16} /> 3. Pricing Policy
@@ -113,7 +113,7 @@ export default function TermsAndConditionsPage() {
                             className={`flex items-center gap-3 px-4 py-3 text-xs md:text-sm font-bold transition-all duration-300 rounded-2xl border ${
                                 activeSection === 'shipping' 
                                     ? 'text-[#6D5DFD] bg-[#6D5DFD]/10 border-[#6D5DFD]/20 dark:bg-[#6D5DFD]/25 dark:border-[#6D5DFD]/35 shadow-sm' 
-                                    : 'text-gray-500 dark:text-gray-450 hover:text-[#6D5DFD] hover:bg-gray-50/50 dark:hover:bg-gray-900/50 border-transparent'
+                                    : 'text-gray-500 dark:text-gray-455 hover:text-[#6D5DFD] hover:bg-gray-50/50 dark:hover:bg-gray-900/50 border-transparent'
                             }`}
                         >
                             <Truck size={16} /> 4. Shipping & Delivery
@@ -123,7 +123,7 @@ export default function TermsAndConditionsPage() {
                             className={`flex items-center gap-3 px-4 py-3 text-xs md:text-sm font-bold transition-all duration-300 rounded-2xl border ${
                                 activeSection === 'contact' 
                                     ? 'text-[#6D5DFD] bg-[#6D5DFD]/10 border-[#6D5DFD]/20 dark:bg-[#6D5DFD]/25 dark:border-[#6D5DFD]/35 shadow-sm' 
-                                    : 'text-gray-500 dark:text-gray-450 hover:text-[#6D5DFD] hover:bg-gray-50/50 dark:hover:bg-gray-900/50 border-transparent'
+                                    : 'text-gray-500 dark:text-gray-455 hover:text-[#6D5DFD] hover:bg-gray-50/50 dark:hover:bg-gray-900/50 border-transparent'
                             }`}
                         >
                             <Shield size={16} /> 5. Contact Details
@@ -283,21 +283,21 @@ export default function TermsAndConditionsPage() {
                                         </thead>
                                         <tbody className="divide-y divide-gray-100 dark:divide-gray-900 bg-white dark:bg-gray-950">
                                             <tr className="hover:bg-gray-50/50 dark:hover:bg-gray-900/30 transition-colors">
-                                                <td className="px-6 py-4 font-bold text-gray-950 dark:text-white">Growth</td>
+                                                <td className="px-6 py-4 font-bold text-gray-955 dark:text-white">Growth</td>
                                                 <td className="px-6 py-4 font-bold text-[#6D5DFD]">₹3,999</td>
                                                 <td className="px-6 py-4 font-semibold text-gray-700 dark:text-gray-300">$49</td>
                                                 <td className="px-6 py-4 text-xs font-semibold"><span className="px-2 py-1 bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 rounded-md">50 Employees</span></td>
                                                 <td className="px-6 py-4 text-xs">Core HR, Attendance, Leave Manager</td>
                                             </tr>
                                             <tr className="hover:bg-gray-50/50 dark:hover:bg-gray-900/30 transition-colors">
-                                                <td className="px-6 py-4 font-bold text-gray-950 dark:text-white">Professional</td>
+                                                <td className="px-6 py-4 font-bold text-gray-955 dark:text-white">Professional</td>
                                                 <td className="px-6 py-4 font-bold text-[#6D5DFD]">₹9,999</td>
                                                 <td className="px-6 py-4 font-semibold text-gray-700 dark:text-gray-300">$129</td>
                                                 <td className="px-6 py-4 text-xs font-semibold"><span className="px-2 py-1 bg-purple-50 dark:bg-purple-950/30 text-[#6D5DFD] rounded-md">250 Employees</span></td>
                                                 <td className="px-6 py-4 text-xs font-medium text-gray-600 dark:text-gray-450">Core HR, Attendance, Leave, Payroll, Asset Tracking</td>
                                             </tr>
                                             <tr className="hover:bg-gray-50/50 dark:hover:bg-gray-900/30 transition-colors">
-                                                <td className="px-6 py-4 font-bold text-gray-950 dark:text-white">Enterprise</td>
+                                                <td className="px-6 py-4 font-bold text-gray-955 dark:text-white">Enterprise</td>
                                                 <td className="px-6 py-4 font-bold text-[#6D5DFD]">₹39,999</td>
                                                 <td className="px-6 py-4 font-semibold text-gray-700 dark:text-gray-300">$499</td>
                                                 <td className="px-6 py-4 text-xs font-semibold"><span className="px-2 py-1 bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 rounded-md">9,999 Employees</span></td>
@@ -348,14 +348,14 @@ export default function TermsAndConditionsPage() {
                                         <div className="w-2.5 h-2.5 bg-[#6D5DFD] rounded-full shrink-0 mt-1.5" />
                                         <div>
                                             <p className="font-bold text-gray-900 dark:text-white text-sm">Immediate Instance Setup</p>
-                                            <p className="text-xs text-gray-500 mt-0.5">Upon successful transaction authorization via our payment gateway (Razorpay), your business account and tenant database instance will be provisioned automatically.</p>
+                                            <p className="text-xs text-gray-505 mt-0.5">Upon successful transaction authorization via our payment gateway (Razorpay), your business account and tenant database instance will be provisioned automatically.</p>
                                         </div>
                                     </div>
                                     <div className="flex gap-3.5 p-4 bg-gray-50/50 dark:bg-gray-900/50 rounded-2xl border border-gray-100 dark:border-gray-800">
                                         <div className="w-2.5 h-2.5 bg-[#6D5DFD] rounded-full shrink-0 mt-1.5" />
                                         <div>
                                             <p className="font-bold text-gray-900 dark:text-white text-sm">Activation Email Onboarding</p>
-                                            <p className="text-xs text-gray-500 mt-0.5">Within 24 hours (usually within 5 minutes) of payment approval, an onboarding confirmation and account activation email will be sent to the corporate email address provided during checkout. This email will contain your dedicated subdomain URL and login credentials.</p>
+                                            <p className="text-xs text-gray-550 mt-0.5">Within 24 hours (usually within 5 minutes) of payment approval, an onboarding confirmation and account activation email will be sent to the corporate email address provided during checkout. This email will contain your dedicated subdomain URL and login credentials.</p>
                                         </div>
                                     </div>
                                 </div>
@@ -417,7 +417,7 @@ export default function TermsAndConditionsPage() {
                                         </div>
                                     </div>
                                 </div>
-                                <div className="text-xs text-gray-400 border-t border-gray-200/50 dark:border-gray-800 pt-3 flex gap-2 items-center">
+                                <div className="text-xs text-gray-450 border-t border-gray-200/50 dark:border-gray-800 pt-3 flex gap-2 items-center">
                                     <HelpCircle size={14} />
                                     <span>Support Hours: Monday to Friday (10:00 AM to 6:00 PM IST)</span>
                                 </div>
@@ -430,9 +430,9 @@ export default function TermsAndConditionsPage() {
             
             {/* Redirect Button at the Bottom */}
             <div className="mt-20 pt-8 border-t border-gray-150 dark:border-gray-900 flex items-center justify-center animate-in fade-in slide-in-from-bottom-4 duration-700">
-                <Link href="/">
+                <Link href="/register-company?step=3">
                     <Button className="py-5 px-8 text-sm font-black bg-[#6D5DFD] hover:bg-[#5b4eed] text-white flex items-center justify-center gap-2.5 shadow-xl shadow-[#6D5DFD]/20 hover:shadow-2xl hover:shadow-[#6D5DFD]/30 rounded-2xl transition-all duration-300 hover:-translate-y-0.5">
-                        ← Back to Home Page
+                        ← Back to Checkout & Payment Screen
                     </Button>
                 </Link>
             </div>

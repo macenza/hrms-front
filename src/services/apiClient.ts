@@ -2,6 +2,22 @@ import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { ENDPOINTS } from '../constants/endpoints';
 import Cookies from 'js-cookie';
 
+const isPublicRoute = (pathname: string): boolean => {
+    const PUBLIC_ROUTES = [
+        '/',
+        '/login',
+        '/signup',
+        '/hrms-login',
+        '/privacy-policy',
+        '/terms-and-conditions',
+        '/checkout-privacy',
+        '/checkout-terms',
+        '/register-company',
+        '/payment-success'
+    ];
+    return PUBLIC_ROUTES.includes(pathname) || pathname.startsWith('/careers');
+};
+
 const apiClient = axios.create({
     baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api',
     withCredentials: true,
@@ -82,8 +98,6 @@ apiClient.interceptors.response.use(
                 return Promise.reject(error);
             }
 
-            const PUBLIC_ROUTES = ['/', '/login', '/signup', '/hrms-login', '/privacy-policy', '/terms-and-conditions'];
-
             // Prevent infinite refresh loops
             if (originalRequest.url?.includes(ENDPOINTS.AUTH.REFRESH)) {
                 if (typeof window !== 'undefined') {
@@ -95,8 +109,8 @@ apiClient.interceptors.response.use(
                     Cookies.remove('hrms_role', { path: '/' });
                     Cookies.remove('role', { path: '/' });
 
-                    const isPublicRoute = PUBLIC_ROUTES.includes(window.location.pathname);
-                    if (!isPublicRoute) {
+                    const isPublic = isPublicRoute(window.location.pathname);
+                    if (!isPublic) {
                         window.location.href = '/hrms-login?error=session_expired';
                     }
                 }
@@ -140,8 +154,8 @@ apiClient.interceptors.response.use(
                         Cookies.remove('hrms_role', { path: '/' });
                         Cookies.remove('role', { path: '/' });
 
-                        const isPublicRoute = PUBLIC_ROUTES.includes(window.location.pathname);
-                        if (!isPublicRoute) {
+                        const isPublic = isPublicRoute(window.location.pathname);
+                        if (!isPublic) {
                             window.location.href = '/hrms-login?error=session_expired';
                         }
                     }

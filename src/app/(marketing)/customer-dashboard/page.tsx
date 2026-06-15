@@ -61,6 +61,18 @@ export default function CustomerDashboardPage() {
         }
     }, [customer]);
 
+    if (!mounted || !customer) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
+                <ForceLightMode />
+                <div className="flex flex-col items-center gap-3">
+                    <div className="w-10 h-10 border-4 border-[#6D5DFD] border-t-transparent rounded-full animate-spin" />
+                    <span className="text-sm font-bold text-gray-500 dark:text-gray-400">Loading B2B Console...</span>
+                </div>
+            </div>
+        );
+    }
+
     const handleLogout = async () => {
         try {
             await logoutCustomer();
@@ -250,18 +262,6 @@ export default function CustomerDashboardPage() {
     };
 
     const paymentHistory = getPaymentHistory();
-
-    if (!mounted || !customer) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
-                <ForceLightMode />
-                <div className="flex flex-col items-center gap-3">
-                    <div className="w-10 h-10 border-4 border-[#6D5DFD] border-t-transparent rounded-full animate-spin" />
-                    <span className="text-sm font-bold text-gray-500 dark:text-gray-400">Loading B2B Console...</span>
-                </div>
-            </div>
-        );
-    }
 
     // Plan configuration limits and values
     const getPlanConfig = () => {

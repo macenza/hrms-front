@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 
-export default function PrivacyPolicyPage() {
+export default function CheckoutPrivacyPolicyPage() {
     const [activeSection, setActiveSection] = useState('collection');
 
     useEffect(() => {
@@ -36,9 +36,9 @@ export default function PrivacyPolicyPage() {
         <div className="py-20 px-6 md:px-12 lg:px-20 max-w-7xl mx-auto w-full min-h-screen bg-gradient-to-b from-transparent to-gray-50/30 dark:to-gray-950/20">
             {/* Redirect / Back Button to Checkout */}
             <div className="mb-10 flex items-center justify-between">
-                <Link href="/">
+                <Link href="/register-company?step=3">
                     <Button variant="outline" className="flex items-center gap-2 text-sm font-bold border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-900 rounded-xl px-5 py-2.5 transition-all duration-300 hover:shadow-md">
-                        <ChevronLeft size={16} className="text-gray-500" /> Back to Home
+                        <ChevronLeft size={16} className="text-gray-500" /> Back to Checkout & Payment
                     </Button>
                 </Link>
                 <span className="text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-900/50 px-3 py-1.5 rounded-lg border border-gray-200/50 dark:border-gray-800/50">
@@ -305,9 +305,9 @@ export default function PrivacyPolicyPage() {
             
             {/* Redirect Button at the Bottom */}
             <div className="mt-20 pt-8 border-t border-gray-150 dark:border-gray-900 flex items-center justify-center animate-in fade-in slide-in-from-bottom-4 duration-700">
-                <Link href="/">
+                <Link href="/register-company?step=3">
                     <Button className="py-5 px-8 text-sm font-black bg-[#6D5DFD] hover:bg-[#5b4eed] text-white flex items-center justify-center gap-2.5 shadow-xl shadow-[#6D5DFD]/20 hover:shadow-2xl hover:shadow-[#6D5DFD]/30 rounded-2xl transition-all duration-300 hover:-translate-y-0.5">
-                        ← Back to Home Page
+                        ← Back to Checkout & Payment Screen
                     </Button>
                 </Link>
             </div>
