@@ -10,6 +10,7 @@ interface EmployeeHeaderProps {
     onSearchChange: (value: string) => void;
     onAddClick: () => void;
     onExportClick?: () => void;
+    onImportClick?: () => void;
 }
 
 export default function EmployeeHeader({
@@ -17,6 +18,7 @@ export default function EmployeeHeader({
     onSearchChange,
     onAddClick,
     onExportClick,
+    onImportClick,
 }: EmployeeHeaderProps) {
     return (
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 animate-in fade-in duration-300">
@@ -57,7 +59,7 @@ export default function EmployeeHeader({
 
                 {/* Utility Buttons */}
                 <div className="flex items-center gap-2 border-l border-gray-200 dark:border-gray-800 pl-2 ml-1 transition-colors">
-                    <Button variant="outline" className="gap-2 h-10 shadow-sm dark:shadow-none border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 transition-colors">
+                    <Button variant="outline" onClick={onImportClick} className="gap-2 h-10 shadow-sm dark:shadow-none border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 transition-colors">
                         <Upload size={16} className="text-gray-500 dark:text-gray-400" />
                         <span className="hidden sm:inline font-medium">Import</span>
                     </Button>

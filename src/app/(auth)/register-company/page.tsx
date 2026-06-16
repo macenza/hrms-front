@@ -159,11 +159,11 @@ export default function RegisterCompanyPage() {
                 });
 
                 if (data.accessToken) {
-                    Cookies.set('customer_token', data.accessToken, { expires: 7, secure: process.env.NODE_ENV === 'production', sameSite: 'lax' });
-                    localStorage.setItem('customer_token', data.accessToken);
+                    Cookies.set('customer_token', data.accessToken, { secure: process.env.NODE_ENV === 'production', sameSite: 'lax' });
+                    sessionStorage.setItem('customer_token', data.accessToken);
                 }
                 if (data.customer) {
-                    localStorage.setItem('customer_user', JSON.stringify(data.customer));
+                    sessionStorage.setItem('customer_user', JSON.stringify(data.customer));
                 }
 
                 dispatch(setCustomerCredentials({ user: data.customer }));

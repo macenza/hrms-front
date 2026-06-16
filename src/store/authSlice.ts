@@ -7,6 +7,7 @@ export interface User {
     email: string;
     role: 'Admin' | 'HR' | 'Employee';
     isActive?: boolean;
+    mustChangePassword?: boolean;
     profile?: any;
     joinedAt?: string;
     createdAt?: string;

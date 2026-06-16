@@ -116,10 +116,19 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             // Explicitly wipe the Redux state
             dispatch(logOut());
             
-            // Clear local storage and cookies to prevent ghost sessions
+            // Clear storage and cookies to prevent ghost sessions
+            sessionStorage.removeItem('hrms_user');
+            sessionStorage.removeItem('hrms_token');
+            sessionStorage.removeItem('hrms_refreshToken');
+            sessionStorage.removeItem('persist:employeeAuth');
+            sessionStorage.removeItem('persist:customerAuth');
+
             localStorage.removeItem('hrms_user');
             localStorage.removeItem('hrms_token');
             localStorage.removeItem('hrms_refreshToken');
+            localStorage.removeItem('persist:employeeAuth');
+            localStorage.removeItem('persist:customerAuth');
+
             Cookies.remove('hrms_token', { path: '/' });
             Cookies.remove('hrms_role', { path: '/' });
             Cookies.remove('role', { path: '/' });
@@ -133,8 +142,8 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             // Close the sidebar
             if (typeof onClose === 'function') onClose();
             
-            // Force Next.js to navigate to the login page securely
-            router.push('/login');
+            // Force browser to reload and navigate to the login page securely
+            window.location.href = '/login';
         }
     };
 

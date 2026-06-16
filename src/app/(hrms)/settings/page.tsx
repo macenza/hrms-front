@@ -112,21 +112,30 @@ export default function SettingsPage() {
             
             setTimeout(async () => {
                 try {
-                    await logoutUser();
+                     await logoutUser();
                 } catch (e) {
-                    console.error("Backend logout failed:", e);
+                     console.error("Backend logout failed:", e);
                 } finally {
-                    dispatch(logOut());
-                    
-                    // Clear local storage and cookies to prevent ghost sessions
-                    localStorage.removeItem('hrms_user');
-                    localStorage.removeItem('hrms_token');
-                    localStorage.removeItem('hrms_refreshToken');
-                    Cookies.remove('hrms_token', { path: '/' });
-                    Cookies.remove('hrms_role', { path: '/' });
-                    Cookies.remove('role', { path: '/' });
-                    
-                    router.push('/login');
+                     dispatch(logOut());
+                     
+                     // Clear storage and cookies to prevent ghost sessions
+                     sessionStorage.removeItem('hrms_user');
+                     sessionStorage.removeItem('hrms_token');
+                     sessionStorage.removeItem('hrms_refreshToken');
+                     sessionStorage.removeItem('persist:employeeAuth');
+                     sessionStorage.removeItem('persist:customerAuth');
+
+                     localStorage.removeItem('hrms_user');
+                     localStorage.removeItem('hrms_token');
+                     localStorage.removeItem('hrms_refreshToken');
+                     localStorage.removeItem('persist:employeeAuth');
+                     localStorage.removeItem('persist:customerAuth');
+
+                     Cookies.remove('hrms_token', { path: '/' });
+                     Cookies.remove('hrms_role', { path: '/' });
+                     Cookies.remove('role', { path: '/' });
+                     
+                     window.location.href = '/login';
                 }
             }, 1500);
 

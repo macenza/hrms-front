@@ -10,6 +10,24 @@ import { Loader2 } from 'lucide-react';
 import Cookies from 'js-cookie';
 import { useTheme } from 'next-themes';
 
+const isPublicRoute = (pathname: string): boolean => {
+    const PUBLIC_ROUTES = [
+        '/',
+        '/login',
+        '/signup',
+        '/kiosk',
+        '/privacy-policy',
+        '/terms-and-conditions',
+        '/privacy',
+        '/about',
+        '/blog',
+        '/contact',
+        '/features',
+        '/pricing'
+    ];
+    return PUBLIC_ROUTES.includes(pathname) || pathname.startsWith('/careers');
+};
+
 export default function AuthInitializer({ children }: { children: React.ReactNode }) {
     const dispatch = useAppDispatch();
     const persistedUser = useAppSelector((state) => state.auth.user);
@@ -22,6 +40,14 @@ export default function AuthInitializer({ children }: { children: React.ReactNod
             setTheme(persistedUser.profile.settings.theme);
         }
     }, [persistedUser, setTheme]);
+
+    useEffect(() => {
+        if (typeof window !== 'undefined' && persistedUser?.mustChangePassword) {
+            if (window.location.pathname !== '/change-password') {
+                window.location.href = '/change-password';
+            }
+        }
+    }, [persistedUser]);
 
     useEffect(() => {
         if (!isFirstRun.current) return;
@@ -52,8 +78,8 @@ export default function AuthInitializer({ children }: { children: React.ReactNod
                 console.error("Failed to load company settings on boot:", e);
             }
 
-            const token = typeof window !== 'undefined' ? localStorage.getItem('hrms_token') : null;
-            const cachedUserStr = typeof window !== 'undefined' ? localStorage.getItem('hrms_user') : null;
+            const token = typeof window !== 'undefined' ? sessionStorage.getItem('hrms_token') : null;
+            const cachedUserStr = typeof window !== 'undefined' ? sessionStorage.getItem('hrms_user') : null;
             let cachedUser = null;
             try {
                 if (cachedUserStr) cachedUser = JSON.parse(cachedUserStr);
@@ -63,16 +89,23 @@ export default function AuthInitializer({ children }: { children: React.ReactNod
                 try {
                     // apiClient will automatically attempt a refresh if the access token is expired.
                     const verifiedUser = await fetchCurrentUser();
-                    localStorage.setItem('hrms_user', JSON.stringify(verifiedUser)); 
+                    sessionStorage.setItem('hrms_user', JSON.stringify(verifiedUser)); 
                     dispatch(setCredentials({ user: verifiedUser }));
 
+                    if (verifiedUser?.mustChangePassword) {
+                        if (window.location.pathname !== '/change-password') {
+                            window.location.href = '/change-password';
+                            return;
+                        }
+                    }
+
                     // Keep cookies in sync for edge middleware
-                    const currentToken = localStorage.getItem('hrms_token');
+                    const currentToken = sessionStorage.getItem('hrms_token');
                     if (currentToken) {
-                        Cookies.set('hrms_token', currentToken, { expires: 7, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/' });
+                        Cookies.set('hrms_token', currentToken, { secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/' });
                     }
                     if (verifiedUser?.role) {
-                        Cookies.set('hrms_role', verifiedUser.role.toLowerCase(), { expires: 7, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/' });
+                        Cookies.set('hrms_role', verifiedUser.role.toLowerCase(), { secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/' });
                     }
 
                     // Client-side automatic redirect if user is on /hrms-login with valid session
@@ -86,6 +119,11 @@ export default function AuthInitializer({ children }: { children: React.ReactNod
                     // If we reach this catch block, the token is dead AND the refresh failed.
                     console.log("Session verification failed. Logging out.");
                     dispatch(logOut());
+                    sessionStorage.removeItem('hrms_user');
+                    sessionStorage.removeItem('hrms_token');
+                    sessionStorage.removeItem('hrms_refreshToken');
+                    sessionStorage.removeItem('persist:employeeAuth');
+                    sessionStorage.removeItem('persist:customerAuth');
                     localStorage.removeItem('hrms_user');
                     localStorage.removeItem('hrms_token');
                     localStorage.removeItem('hrms_refreshToken');
@@ -94,9 +132,8 @@ export default function AuthInitializer({ children }: { children: React.ReactNod
                     Cookies.remove('hrms_token', { path: '/' });
                     Cookies.remove('hrms_role', { path: '/' });
                     
-                    const PUBLIC_ROUTES = ['/', '/login', '/signup', '/kiosk', '/privacy-policy', '/terms-and-conditions'];
                     // CRITICAL: Prevent zombie state if we are on a protected route
-                    if (typeof window !== 'undefined' && !PUBLIC_ROUTES.includes(window.location.pathname)) {
+                    if (typeof window !== 'undefined' && !isPublicRoute(window.location.pathname)) {
                         window.location.href = '/login?error=session_expired';
                     }
                 } finally {
@@ -105,6 +142,11 @@ export default function AuthInitializer({ children }: { children: React.ReactNod
             } else {
                 // If there's no user cached, they are a guest.
                 dispatch(logOut());
+                sessionStorage.removeItem('hrms_user');
+                sessionStorage.removeItem('hrms_token');
+                sessionStorage.removeItem('hrms_refreshToken');
+                sessionStorage.removeItem('persist:employeeAuth');
+                sessionStorage.removeItem('persist:customerAuth');
                 localStorage.removeItem('hrms_user');
                 localStorage.removeItem('hrms_token');
                 localStorage.removeItem('hrms_refreshToken');
@@ -113,8 +155,7 @@ export default function AuthInitializer({ children }: { children: React.ReactNod
                 Cookies.remove('hrms_token', { path: '/' });
                 Cookies.remove('hrms_role', { path: '/' });
 
-                const PUBLIC_ROUTES = ['/', '/login', '/signup', '/kiosk', '/privacy-policy', '/terms-and-conditions'];
-                if (typeof window !== 'undefined' && !PUBLIC_ROUTES.includes(window.location.pathname)) {
+                if (typeof window !== 'undefined' && !isPublicRoute(window.location.pathname)) {
                     window.location.href = '/login?error=session_expired';
                 } else {
                     setIsHydrated(true);

@@ -233,4 +233,28 @@ export const employeeService = {
             throw error;
         }
     },
+
+    checkExisting: async () => {
+        try {
+            const response = await apiClient.get('/employees/check-existing');
+            return response.data;
+        } catch (error) {
+            console.error("Error checking existing employees:", error);
+            throw error;
+        }
+    },
+
+    bulkImport: async (formData: FormData) => {
+        try {
+            const response = await apiClient.post('/employees/bulk-import', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                }
+            });
+            return response.data;
+        } catch (error) {
+            console.error("Error bulk importing employees:", error);
+            throw error;
+        }
+    },
 };

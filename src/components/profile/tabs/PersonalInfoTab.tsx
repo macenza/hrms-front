@@ -16,6 +16,7 @@ export interface PersonalInfoData {
     phone: string;
     address: string;
     rawDob?: string; // Used for accurate math calculations
+    additionalInfo?: Record<string, string>;
 }
 
 interface PersonalInfoTabProps {
@@ -131,6 +132,27 @@ export default function PersonalInfoTab({
                         </div>
                     </CardContent>
                 </Card>
+
+                {/* Additional Info Card */}
+                {data.additionalInfo && Object.keys(data.additionalInfo).length > 0 && (
+                    <Card className="border-gray-200 dark:border-gray-800 shadow-sm dark:shadow-none bg-gray-50/50 dark:bg-gray-900/50 transition-colors duration-300">
+                        <CardHeader className="pb-3 border-b border-gray-100 dark:border-gray-800 transition-colors flex items-center justify-center">
+                            <CardTitle className="text-lg text-gray-900 dark:text-gray-100 transition-colors text-center w-full">Additional Information</CardTitle>
+                        </CardHeader>
+                        <CardContent className="pt-5 pb-6 flex flex-col justify-center">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {Object.entries(data.additionalInfo).map(([key, val]) => (
+                                    <DetailItem 
+                                        key={key}
+                                        label={key} 
+                                        value={val} 
+                                        icon={Hash} 
+                                    />
+                                ))}
+                            </div>
+                        </CardContent>
+                    </Card>
+                )}
             </div>
 
             {/* Sidebar Widgets */}
