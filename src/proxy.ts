@@ -11,11 +11,11 @@ const RESTRICTED_ROUTES: Record<string, string[]> = {
 
 const HRMS_PROTECTED_PREFIXES = [
     '/dashboard', '/employees', '/leave', '/loan', '/assets',
-    '/notice', '/payroll', '/projects', '/settings', '/profile', '/attendance', '/admin', '/hr'
+    '/notice', '/payroll', '/projects', '/settings', '/profile', '/attendance', '/admin', '/hr', '/subscription'
 ];
 
 const CUSTOMER_PROTECTED_PREFIXES = [
-    '/customer-dashboard', '/billing', '/subscriptions'
+    '/billing', '/subscriptions'
 ];
 
 export function proxy(request: NextRequest) {
@@ -27,28 +27,41 @@ export function proxy(request: NextRequest) {
     const role = rawRole ? rawRole.toLowerCase() : 'unauthenticated';
     
     const { pathname } = request.nextUrl;
-    const isCustomerAuthRoute = pathname.startsWith('/login') || pathname.startsWith('/signup');
-    const isEmployeeAuthRoute = pathname.startsWith('/hrms-login');
+    
+    // Redirect customer-dashboard to /subscription
+    if (pathname.startsWith('/customer-dashboard')) {
+        return NextResponse.redirect(new URL('/subscription', request.url));
+    }
+    
+    const isAuthRoute = pathname.startsWith('/login');
+    const isSignupRoute = pathname.startsWith('/signup');
     const isHrmsProtectedRoute = HRMS_PROTECTED_PREFIXES.some(prefix => pathname.startsWith(prefix));
     const isCustomerProtectedRoute = CUSTOMER_PROTECTED_PREFIXES.some(prefix => pathname.startsWith(prefix));
 
     // Rule 3: Auto-redirects
     const hasAuthError = request.nextUrl.searchParams.has('error') || request.nextUrl.searchParams.has('registered');
 
-    if (isEmployeeAuthRoute) {
-        if (hrmsToken && !hasAuthError) return NextResponse.redirect(new URL('/dashboard', request.url));
+    if (isAuthRoute) {
+        if (hrmsToken && !hasAuthError) {
+            const redirectTo = request.nextUrl.searchParams.get('redirect_to') || '/dashboard';
+            return NextResponse.redirect(new URL(redirectTo, request.url));
+        }
+        if (customerToken && !hasAuthError) {
+            return NextResponse.redirect(new URL('/subscription', request.url));
+        }
         return NextResponse.next();
     }
 
-    if (isCustomerAuthRoute) {
-        // Customers are auto-redirected to customer-dashboard if customer_token is set, ignoring hrms_token
-        if (customerToken && !hasAuthError) return NextResponse.redirect(new URL('/customer-dashboard', request.url));
+    if (isSignupRoute) {
         return NextResponse.next();
     }
 
     // Rule 1: HRMS Protected Routes (Requires hrms_token)
     if (isHrmsProtectedRoute && !hrmsToken) {
-        const loginUrl = new URL('/hrms-login', request.url);
+        if (pathname.startsWith('/subscription') && customerToken) {
+            return NextResponse.next();
+        }
+        const loginUrl = new URL('/login', request.url);
         loginUrl.searchParams.set('redirect_to', pathname);
         return NextResponse.redirect(loginUrl);
     }

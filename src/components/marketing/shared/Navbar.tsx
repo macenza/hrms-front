@@ -9,7 +9,10 @@ import { useAppSelector } from "@/store/hooks";
 export default function Navbar() {
   const [open, setOpen] = useState(false);
   const customer = useAppSelector((state) => state.customerAuth.customer);
-  const isAuthenticated = useAppSelector((state) => state.customerAuth.isAuthenticated);
+  const isCustomerAuthenticated = useAppSelector((state) => state.customerAuth.isAuthenticated);
+
+  const employee = useAppSelector((state) => state.auth.user);
+  const isEmployeeAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
 
   return (
     <nav className="w-full h-20 bg-white shadow-md border-b border-gray-200 px-6 md:px-12 flex items-center justify-between">
@@ -83,9 +86,16 @@ export default function Navbar() {
        
         <div className="flex md:flex-row flex-col gap-4 mt-8 md:mt-0 md:ml-12">
           {/* <ThemeToggle /> */}
-          {isAuthenticated && customer ? (
+          {isEmployeeAuthenticated && employee ? (
             <Link
-              href="/customer-dashboard"
+              href="/dashboard"
+              className="bg-indigo-50 border border-indigo-200 text-[#6D5DFD] dark:bg-indigo-950/20 dark:border-indigo-900/30 dark:text-[#8B7BFF] rounded-xl px-5 py-2 hover:scale-95 transition duration-300 font-bold text-sm flex items-center justify-center gap-1.5"
+            >
+              <span>{employee.name}</span>
+            </Link>
+          ) : isCustomerAuthenticated && customer ? (
+            <Link
+              href="/subscription"
               className="bg-indigo-50 border border-indigo-200 text-[#6D5DFD] dark:bg-indigo-950/20 dark:border-indigo-900/30 dark:text-[#8B7BFF] rounded-xl px-5 py-2 hover:scale-95 transition duration-300 font-bold text-sm flex items-center justify-center gap-1.5"
             >
               <span>{customer.name}</span>

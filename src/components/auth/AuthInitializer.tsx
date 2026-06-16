@@ -10,6 +10,23 @@ import { Loader2 } from 'lucide-react';
 import Cookies from 'js-cookie';
 import { useTheme } from 'next-themes';
 
+const isPublicRoute = (pathname: string): boolean => {
+    const PUBLIC_ROUTES = [
+        '/',
+        '/login',
+        '/signup',
+        '/hrms-login',
+        '/kiosk',
+        '/privacy-policy',
+        '/terms-and-conditions',
+        '/checkout-privacy',
+        '/checkout-terms',
+        '/register-company',
+        '/payment-success'
+    ];
+    return PUBLIC_ROUTES.includes(pathname) || pathname.startsWith('/careers');
+};
+
 export default function AuthInitializer({ children }: { children: React.ReactNode }) {
     const dispatch = useAppDispatch();
     const persistedUser = useAppSelector((state) => state.auth.user);
@@ -29,7 +46,6 @@ export default function AuthInitializer({ children }: { children: React.ReactNod
 
         const hydrateAuth = async () => {
             const isCustomerRoute = typeof window !== 'undefined' && (
-                window.location.pathname.startsWith('/customer-dashboard') || 
                 window.location.pathname.startsWith('/billing') || 
                 window.location.pathname.startsWith('/subscriptions')
             );
@@ -76,8 +92,8 @@ export default function AuthInitializer({ children }: { children: React.ReactNod
                         Cookies.set('hrms_role', verifiedUser.role.toLowerCase(), { expires: 7, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/' });
                     }
 
-                    // Client-side automatic redirect if user is on /hrms-login with valid session
-                    const isAuthRoute = window.location.pathname.startsWith('/hrms-login');
+                    // Client-side automatic redirect if user is on /login with valid session
+                    const isAuthRoute = window.location.pathname.startsWith('/login');
                     if (isAuthRoute) {
                         const searchParams = new URLSearchParams(window.location.search);
                         const redirectTo = searchParams.get('redirect_to') || '/dashboard';
@@ -91,14 +107,12 @@ export default function AuthInitializer({ children }: { children: React.ReactNod
                     localStorage.removeItem('hrms_token');
                     localStorage.removeItem('hrms_refreshToken');
                     localStorage.removeItem('persist:employeeAuth');
-                    localStorage.removeItem('persist:customerAuth');
                     Cookies.remove('hrms_token', { path: '/' });
                     Cookies.remove('hrms_role', { path: '/' });
                     
-                    const PUBLIC_ROUTES = ['/', '/login', '/signup', '/hrms-login', '/kiosk', '/privacy-policy', '/terms-and-conditions'];
                     // CRITICAL: Prevent zombie state if we are on a protected route
-                    if (typeof window !== 'undefined' && !PUBLIC_ROUTES.includes(window.location.pathname)) {
-                        window.location.href = '/hrms-login?error=session_expired';
+                    if (typeof window !== 'undefined' && !isPublicRoute(window.location.pathname)) {
+                        window.location.href = '/login?error=session_expired';
                     }
                 } finally {
                     setIsHydrated(true);
@@ -110,13 +124,11 @@ export default function AuthInitializer({ children }: { children: React.ReactNod
                 localStorage.removeItem('hrms_token');
                 localStorage.removeItem('hrms_refreshToken');
                 localStorage.removeItem('persist:employeeAuth');
-                localStorage.removeItem('persist:customerAuth');
                 Cookies.remove('hrms_token', { path: '/' });
                 Cookies.remove('hrms_role', { path: '/' });
 
-                const PUBLIC_ROUTES = ['/', '/login', '/signup', '/hrms-login', '/kiosk', '/privacy-policy', '/terms-and-conditions'];
-                if (typeof window !== 'undefined' && !PUBLIC_ROUTES.includes(window.location.pathname)) {
-                    window.location.href = '/hrms-login?error=session_expired';
+                if (typeof window !== 'undefined' && !isPublicRoute(window.location.pathname)) {
+                    window.location.href = '/login?error=session_expired';
                 } else {
                     setIsHydrated(true);
                 }

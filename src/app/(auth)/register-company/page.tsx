@@ -6,13 +6,14 @@ import { useRouter } from 'next/navigation';
 import {
     Eye, EyeOff, Loader2, AlertCircle, Building2, CreditCard, QrCode,
     Check, ChevronRight, ChevronLeft, Shield, Sparkles, Users, Zap,
-    Crown, CheckCircle2, ArrowRight, Globe, MapPin, Phone
+    Crown, CheckCircle2, ArrowRight, Globe, MapPin, Phone, Info
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { useAppDispatch } from '@/store/hooks';
 import { setCustomerCredentials } from '@/store/authSlice';
 import { registerCustomer } from '@/services/authService';
+import apiClient from '@/services/apiClient';
 import Cookies from 'js-cookie';
 
 // Step indicator
@@ -25,12 +26,19 @@ const STEPS = [
 // Plan data
 const PLANS = [
     {
-        id: 'Starter',
-        name: 'Starter',
-        price: { usd: 29, inr: 2499 },
-        employeeLimit: 25,
-        description: 'Perfect for small teams getting started.',
-        features: ['Up to 25 Employees', 'Core HR Module', 'Attendance Tracking', 'Leave Management', 'Email Support'],
+        id: 'Growth',
+        name: 'Growth',
+        price: { usd: 49, inr: 499 },
+        employeeLimit: 50,
+        description: 'Perfect for fast-growing startups and small teams.',
+        features: [
+            'Up to 50 active employees',
+            'Comprehensive directory',
+            'Automated Leave management',
+            'Basic Payroll calculations',
+            'Without AI features',
+            'Standard email support (24h)'
+        ],
         popular: false,
         gradient: 'from-blue-500/10 to-cyan-500/10',
         border: 'border-blue-200 dark:border-blue-900/50',
@@ -41,10 +49,18 @@ const PLANS = [
     {
         id: 'Professional',
         name: 'Professional',
-        price: { usd: 99, inr: 7999 },
-        employeeLimit: 100,
-        description: 'For growing companies needing advanced tools.',
-        features: ['Up to 100 Employees', 'All Starter Features', 'Payroll Engine', 'Project Management', 'Priority Support', 'Custom Reports'],
+        price: { usd: 129, inr: 1999 },
+        employeeLimit: 250,
+        description: 'Optimized for mid-market organizations and scaling companies.',
+        features: [
+            'Up to 250 active employees',
+            'Leave & Attendance check-ins',
+            'Automated Disbursement Payroll',
+            'With AI (Employees can give AI interviews)',
+            'Cloudinary excel reporting',
+            'Advanced Asset Lifecycle tracking',
+            'Dedicated account representative'
+        ],
         popular: true,
         gradient: 'from-[#6D5DFD]/10 to-purple-500/10',
         border: 'border-[#6D5DFD]/30 dark:border-[#6D5DFD]/20',
@@ -52,21 +68,20 @@ const PLANS = [
         badge: 'bg-[#6D5DFD]/10 text-[#6D5DFD] dark:bg-[#6D5DFD]/20',
         icon: Zap,
     },
-    {
-        id: 'Enterprise',
-        name: 'Enterprise',
-        price: { usd: 299, inr: 24999 },
-        employeeLimit: 500,
-        description: 'Full-scale enterprise HR operations.',
-        features: ['Up to 500 Employees', 'All Professional Features', 'Recruitment Module', 'Advanced Analytics', 'SSO & SAML', 'Dedicated Account Manager', 'SLA Guarantee'],
-        popular: false,
-        gradient: 'from-amber-500/10 to-orange-500/10',
-        border: 'border-amber-200 dark:border-amber-900/50',
-        activeBorder: 'border-amber-500 ring-2 ring-amber-500/20',
-        badge: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
-        icon: Crown,
-    },
 ];
+
+const loadRazorpayScript = () => {
+    return new Promise((resolve) => {
+        if (typeof window === 'undefined') return resolve(false);
+        if ((window as any).Razorpay) return resolve(true);
+        const script = document.createElement('script');
+        script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+        script.async = true;
+        script.onload = () => resolve(true);
+        script.onerror = () => resolve(false);
+        document.body.appendChild(script);
+    });
+};
 
 export default function RegisterCompanyPage() {
     const router = useRouter();
@@ -96,6 +111,58 @@ export default function RegisterCompanyPage() {
     const [paymentMethod, setPaymentMethod] = useState<'card' | 'upi'>('card');
     const [isPaying, setIsPaying] = useState(false);
     const [paymentSuccess, setPaymentSuccess] = useState(false);
+    const [agreeToTerms, setAgreeToTerms] = useState(false);
+    const [showMockModal, setShowMockModal] = useState(false);
+    const [mockOrderData, setMockOrderData] = useState<any>(null);
+
+    // Save and load state from sessionStorage to persist checkout info & active step
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const params = new URLSearchParams(window.location.search);
+            const urlStep = params.get('step');
+
+            const saved = sessionStorage.getItem('register_company_flow');
+            if (saved) {
+                try {
+                    const data = JSON.parse(saved);
+                    if (data.companyName) setCompanyName(data.companyName);
+                    if (data.companyEmail) setCompanyEmail(data.companyEmail);
+                    if (data.companyPhone) setCompanyPhone(data.companyPhone);
+                    if (data.adminName) setAdminName(data.adminName);
+                    if (data.adminEmail) setAdminEmail(data.adminEmail);
+                    if (data.password) setPassword(data.password);
+                    if (data.address) setAddress(data.address);
+                    if (data.country) setCountry(data.country);
+                    if (data.state) setState(data.state);
+                    if (data.district) setDistrict(data.district);
+                    if (data.city) setCity(data.city);
+                    if (data.zipCode) setZipCode(data.zipCode);
+                    if (data.selectedPlan) setSelectedPlan(data.selectedPlan);
+                    if (data.agreeToTerms) setAgreeToTerms(data.agreeToTerms);
+                    
+                    if (urlStep) {
+                        setStep(parseInt(urlStep, 10));
+                    } else if (data.step) {
+                        setStep(data.step);
+                    }
+                } catch (e) {
+                    console.error('Error parsing saved checkout data:', e);
+                }
+            } else if (urlStep) {
+                setStep(parseInt(urlStep, 10));
+            }
+        }
+    }, []);
+
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const data = {
+                step, companyName, companyEmail, companyPhone, adminName, adminEmail,
+                password, address, country, state, district, city, zipCode, selectedPlan, agreeToTerms
+            };
+            sessionStorage.setItem('register_company_flow', JSON.stringify(data));
+        }
+    }, [step, companyName, companyEmail, companyPhone, adminName, adminEmail, password, address, country, state, district, city, zipCode, selectedPlan, agreeToTerms]);
 
     // General
     const [error, setError] = useState<string | null>(null);
@@ -142,19 +209,35 @@ export default function RegisterCompanyPage() {
 
     const selectedPlanData = PLANS.find(p => p.id === selectedPlan)!;
 
-    const handleCompletePayment = async () => {
-        setIsPaying(true);
-        setError(null);
+    const handleCompleteMockPayment = async (status: 'success' | 'fail') => {
+        if (status === 'fail') {
+            setShowMockModal(false);
+            setError('Payment was simulated as failed/cancelled.');
+            return;
+        }
 
-        // Simulate payment processing (2s delay)
-        setTimeout(async () => {
-            try {
+        setIsPaying(true);
+        setShowMockModal(false);
+        try {
+            const amountInINR = selectedPlanData.price.inr;
+            const response = {
+                razorpay_order_id: mockOrderData.id,
+                razorpay_payment_id: `pay_mock_${Math.random().toString(36).substring(2, 12)}`,
+                razorpay_signature: `sig_mock_${Math.random().toString(36).substring(2, 12)}`
+            };
+
+            // 4. Verify payment signature on backend
+            const verifyRes = await apiClient.post('/payment/verify-signature', response);
+            const verifyData = verifyRes.data;
+
+            if (verifyData.success) {
+                // 5. Complete workspace registration
                 const data = await registerCustomer({
                     name: adminName,
                     email: adminEmail,
                     password,
                     companyName,
-                    subscriptionPlan: selectedPlan === 'Starter' ? 'Growth' : selectedPlan,
+                    subscriptionPlan: selectedPlan,
                 });
 
                 if (data.accessToken) {
@@ -166,20 +249,135 @@ export default function RegisterCompanyPage() {
                 }
 
                 dispatch(setCustomerCredentials({ user: data.customer }));
+                if (typeof window !== 'undefined') {
+                    sessionStorage.removeItem('register_company_flow');
+                }
 
                 setIsPaying(false);
                 setPaymentSuccess(true);
 
-                // Generate mock transaction details and redirect to success page
-                const txnId = `TXN${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
+                // Redirect to payment success page
                 setTimeout(() => {
-                    router.push(`/payment-success?company=${encodeURIComponent(companyName)}&plan=${encodeURIComponent(selectedPlan)}&txn=${txnId}&amount=${selectedPlanData.price.inr}`);
+                    router.push(`/payment-success?company=${encodeURIComponent(companyName)}&plan=${encodeURIComponent(selectedPlan)}&txn=${response.razorpay_payment_id}&amount=${amountInINR}`);
                 }, 1500);
-            } catch (err: any) {
-                setIsPaying(false);
-                setError(err.message || 'Registration failed. Please try again.');
+            } else {
+                throw new Error('Payment verification failed.');
             }
-        }, 2000);
+        } catch (err: any) {
+            setIsPaying(false);
+            setError(err.message || 'Verification failed. Please contact billing support.');
+        }
+    };
+
+    const handleCompletePayment = async () => {
+        setIsPaying(true);
+        setError(null);
+
+        // 1. Load Razorpay script
+        const loaded = await loadRazorpayScript();
+        if (!loaded) {
+            setError('Razorpay SDK failed to load. Please check your internet connection.');
+            setIsPaying(false);
+            return;
+        }
+
+        try {
+            // 2. Request backend to create an order
+            const amountInINR = selectedPlanData.price.inr;
+            const orderRes = await apiClient.post('/payment/create-order', { amount: amountInINR });
+            const orderData = orderRes.data;
+
+            if (!orderData.success) {
+                throw new Error(orderData.message || 'Failed to initialize payment.');
+            }
+
+            // If backend returned a mock order, skip real Razorpay SDK display (prevents 401 Unauthorized)
+            if (orderData.isMock) {
+                setMockOrderData(orderData.order);
+                setShowMockModal(true);
+                setIsPaying(false);
+                return;
+            }
+
+            // 3. Setup Razorpay Popup options
+            const options = {
+                key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || 'rzp_test_dummykey123',
+                amount: orderData.order.amount,
+                currency: orderData.order.currency,
+                name: "Macenza Tech",
+                description: `${selectedPlan} Workspace Subscription`,
+                order_id: orderData.order.id,
+                handler: async function (response: any) {
+                    setIsPaying(true);
+                    try {
+                        // 4. Verify payment signature on backend
+                        const verifyRes = await apiClient.post('/payment/verify-signature', {
+                            razorpay_order_id: response.razorpay_order_id,
+                            razorpay_payment_id: response.razorpay_payment_id,
+                            razorpay_signature: response.razorpay_signature
+                        });
+                        const verifyData = verifyRes.data;
+
+                        if (verifyData.success) {
+                            // 5. Complete workspace registration
+                            const data = await registerCustomer({
+                                name: adminName,
+                                email: adminEmail,
+                                password,
+                                companyName,
+                                subscriptionPlan: selectedPlan === 'Starter' ? 'Growth' : selectedPlan,
+                            });
+
+                            if (data.accessToken) {
+                                Cookies.set('customer_token', data.accessToken, { expires: 7, secure: process.env.NODE_ENV === 'production', sameSite: 'lax' });
+                                localStorage.setItem('customer_token', data.accessToken);
+                            }
+                            if (data.customer) {
+                                localStorage.setItem('customer_user', JSON.stringify(data.customer));
+                            }
+
+                            dispatch(setCustomerCredentials({ user: data.customer }));
+                            if (typeof window !== 'undefined') {
+                                sessionStorage.removeItem('register_company_flow');
+                            }
+
+                            setIsPaying(false);
+                            setPaymentSuccess(true);
+
+                            // Redirect to payment success page
+                            setTimeout(() => {
+                                router.push(`/payment-success?company=${encodeURIComponent(companyName)}&plan=${encodeURIComponent(selectedPlan)}&txn=${response.razorpay_payment_id}&amount=${amountInINR}`);
+                            }, 1500);
+                        } else {
+                            throw new Error('Payment verification failed.');
+                        }
+                    } catch (err: any) {
+                        setIsPaying(false);
+                        setError(err.message || 'Verification failed. Please contact billing support.');
+                    }
+                },
+                prefill: {
+                    name: adminName,
+                    email: adminEmail,
+                    contact: companyPhone
+                },
+                theme: {
+                    color: "#6D5DFD"
+                },
+                modal: {
+                    ondismiss: function() {
+                        setIsPaying(false);
+                    }
+                }
+            };
+
+            const paymentObject = new (window as any).Razorpay(options);
+            paymentObject.open();
+
+        } catch (err: any) {
+            setIsPaying(false);
+            setError(err.message || 'Payment initialization failed. Please try again.');
+        }
     };
 
     return (
@@ -310,10 +508,10 @@ export default function RegisterCompanyPage() {
                         {/* Address */}
                         <div className="space-y-4 pt-2 border-t border-gray-100 dark:border-gray-800">
                             <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 flex items-center gap-1.5 pt-2">
-                                <MapPin size={12} /> Address
+                                <MapPin size={12} /> Company Address
                             </h3>
                             <div className="space-y-1.5">
-                                <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Street Address</label>
+                                <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Company Street Address</label>
                                 <Input type="text" placeholder="123 Main Street, Suite 200" value={address} onChange={(e) => setAddress(e.target.value)} className="text-gray-900 dark:text-gray-100" />
                             </div>
                             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
@@ -522,6 +720,26 @@ export default function RegisterCompanyPage() {
                                     )}
                                 </div>
 
+                                <div className="flex items-start gap-2.5 my-4">
+                                    <input
+                                        id="agree-terms"
+                                        type="checkbox"
+                                        checked={agreeToTerms}
+                                        onChange={(e) => setAgreeToTerms(e.target.checked)}
+                                        className="w-4 h-4 text-[#6D5DFD] border-gray-300 rounded focus:ring-[#6D5DFD] mt-0.5 cursor-pointer"
+                                    />
+                                    <label htmlFor="agree-terms" className="text-xs text-gray-500 dark:text-gray-400 font-medium leading-relaxed cursor-pointer select-none">
+                                        I have read and agree to the{' '}
+                                        <Link href="/checkout-terms" target="_blank" className="text-[#6D5DFD] hover:underline font-bold">
+                                            Terms & Conditions
+                                        </Link>{' '}
+                                        and{' '}
+                                        <Link href="/checkout-privacy" target="_blank" className="text-[#6D5DFD] hover:underline font-bold">
+                                            Privacy Policy
+                                        </Link>.
+                                    </label>
+                                </div>
+
                                 <div className="flex gap-3">
                                     <Button
                                         onClick={handlePrevStep}
@@ -533,7 +751,7 @@ export default function RegisterCompanyPage() {
                                     </Button>
                                     <Button
                                         onClick={handleCompletePayment}
-                                        disabled={isPaying}
+                                        disabled={isPaying || !agreeToTerms}
                                         className="flex-1 py-5 text-sm font-black bg-[#6D5DFD] hover:bg-[#5b4eed] text-white flex items-center justify-center gap-2 shadow-lg shadow-[#6D5DFD]/20 dark:shadow-none rounded-xl"
                                     >
                                         {isPaying ? (
@@ -568,6 +786,71 @@ export default function RegisterCompanyPage() {
                         Sign In
                     </Link>
                 </p>
+            )}
+            {showMockModal && mockOrderData && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white dark:bg-gray-950 border border-gray-150 dark:border-gray-900 rounded-3xl p-6 md:p-8 max-w-md w-full shadow-2xl space-y-6 text-center animate-in zoom-in-95 duration-200">
+                        {/* Header */}
+                        <div className="space-y-2">
+                            <div className="w-12 h-12 bg-amber-100 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 rounded-full flex items-center justify-center mx-auto shadow-sm">
+                                <Shield className="w-6 h-6 animate-pulse" />
+                            </div>
+                            <h3 className="text-xl font-black text-gray-950 dark:text-white">Secure Sandbox Checkout</h3>
+                            <p className="text-xs text-gray-400 dark:text-gray-500 font-bold uppercase tracking-wider">Razorpay Test Mode (Simulated)</p>
+                        </div>
+
+                        {/* Order info */}
+                        <div className="bg-gray-50 dark:bg-gray-900/50 border border-gray-150 dark:border-gray-850 rounded-2xl p-4 text-left space-y-2.5">
+                            <div className="flex justify-between items-center text-xs">
+                                <span className="text-gray-400 font-bold">MERCHANT</span>
+                                <span className="font-extrabold text-gray-800 dark:text-gray-200">MACENZA Solutions</span>
+                            </div>
+                            <div className="flex justify-between items-center text-xs">
+                                <span className="text-gray-400 font-bold">ORDER ID</span>
+                                <span className="font-mono text-gray-700 dark:text-gray-300 font-bold">{mockOrderData.id}</span>
+                            </div>
+                            <div className="flex justify-between items-center text-xs border-t border-gray-200/50 dark:border-gray-800/50 pt-2.5">
+                                <span className="text-gray-400 font-bold">AMOUNT</span>
+                                <span className="text-base font-black text-[#6D5DFD]">₹{selectedPlanData.price.inr.toLocaleString()}</span>
+                            </div>
+                        </div>
+
+                        {/* Message */}
+                        <div className="text-xs text-gray-550 dark:text-gray-400 leading-relaxed bg-blue-50/50 dark:bg-blue-950/10 p-3.5 border border-blue-100/30 dark:border-blue-900/20 rounded-2xl text-left flex gap-2.5 items-start">
+                            <Info className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
+                            <span>No real payment keys were detected in the backend's environment configuration. We've initiated a secure local simulator so you can complete your registration.</span>
+                        </div>
+
+                        {/* Actions */}
+                        <div className="space-y-2 pt-2">
+                            <Button
+                                onClick={() => handleCompleteMockPayment('success')}
+                                className="w-full py-4 bg-[#6D5DFD] hover:bg-[#5b4eed] text-white font-black text-sm rounded-2xl shadow-lg shadow-[#6D5DFD]/20 transition-all duration-300"
+                            >
+                                Simulate Success Payment
+                            </Button>
+                            <div className="grid grid-cols-2 gap-2">
+                                <Button
+                                    onClick={() => handleCompleteMockPayment('fail')}
+                                    variant="outline"
+                                    className="py-3 border-red-200 dark:border-red-950/50 hover:bg-red-50 dark:hover:bg-red-950/20 text-red-650 text-xs font-bold rounded-2xl"
+                                >
+                                    Simulate Fail
+                                </Button>
+                                <Button
+                                    onClick={() => {
+                                        setShowMockModal(false);
+                                        setIsPaying(false);
+                                    }}
+                                    variant="outline"
+                                    className="py-3 text-xs font-bold rounded-2xl"
+                                >
+                                    Cancel
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     );

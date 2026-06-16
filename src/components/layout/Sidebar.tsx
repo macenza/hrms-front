@@ -101,7 +101,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             // { id: 'Loan', href: '/loan', icon: CreditCard, label: 'Loan', show: true },
             { id: 'Notice', href: '/notice', icon: Bell, label: 'Notice', show: true },
             { id: 'Settings', href: '/settings', icon: Settings, label: 'Settings', show: true },
-            { id: 'Subscription', href: '/subscription', icon: CreditCard, label: 'Subscription', show: role === 'admin' },
+            { id: 'Subscription', href: '/subscription', icon: CreditCard, label: 'Subscription Management', show: role === 'admin' },
         ];
         return items.filter(item => item.show);
     }, [isAdminOrHR, user, role]);
@@ -134,7 +134,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             if (typeof onClose === 'function') onClose();
             
             // Force Next.js to navigate to the login page securely
-            router.push('/hrms-login');
+            router.push('/login');
         }
     };
 

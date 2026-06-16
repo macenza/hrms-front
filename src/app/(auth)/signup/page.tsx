@@ -42,7 +42,7 @@ export default function SaaSBuyerSignupPage() {
     // Auto-redirect if already logged in
     useEffect(() => {
         if (isCustomerAuthenticated) {
-            router.push('/customer-dashboard');
+            router.push('/subscription');
         }
     }, [isCustomerAuthenticated, router]);
 
@@ -256,7 +256,7 @@ export default function SaaSBuyerSignupPage() {
                                     </div>
                                     <div className="pt-2 px-6">
                                         <Link
-                                            href="/login"
+                                            href="/login?registered=true"
                                             className="inline-flex items-center justify-center w-full py-3.5 px-5 text-sm font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-md transition duration-200"
                                         >
                                             Login as Customer

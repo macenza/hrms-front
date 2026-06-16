@@ -1,13 +1,35 @@
 'use client';
 
-import React, { Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import React, { Suspense, useState, useEffect } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { CheckCircle2, Printer, Home, LogIn, Sparkles, Calendar, Building2, CreditCard, Hash } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 
 function PaymentSuccessContent() {
     const searchParams = useSearchParams();
+    const router = useRouter();
+    const [countdown, setCountdown] = useState(5);
+
+    useEffect(() => {
+        if (countdown === 0) {
+            router.push('/login');
+        }
+    }, [countdown, router]);
+
+    useEffect(() => {
+        const timer = setInterval(() => {
+            setCountdown((prev) => {
+                if (prev <= 1) {
+                    clearInterval(timer);
+                    return 0;
+                }
+                return prev - 1;
+            });
+        }, 1000);
+        return () => clearInterval(timer);
+    }, []);
+
     const company = searchParams.get('company') || 'Your Company';
     const plan = searchParams.get('plan') || 'Professional';
     const txn = searchParams.get('txn') || `TXN${Date.now().toString(36).toUpperCase()}`;
@@ -48,7 +70,7 @@ function PaymentSuccessContent() {
                             <CheckCircle2 className="w-10 h-10 text-white" />
                         </div>
                         <h1 className="text-2xl font-black tracking-tight">Payment Successful!</h1>
-                        <p className="text-emerald-100 text-sm font-medium mt-1">Your workspace has been created and is ready to use.</p>
+                        <p className="text-emerald-100 text-sm font-medium mt-1">Your workspace has been created and is ready to use. Redirecting to login page in {countdown} seconds...</p>
                     </div>
 
                     {/* Receipt Details */}
@@ -104,7 +126,7 @@ function PaymentSuccessContent() {
                                         <Home size={16} /> Home
                                     </Button>
                                 </Link>
-                                <Link href="/login" className="w-full">
+                                <Link href="/login?registered=true" className="w-full">
                                     <Button
                                         className="w-full py-5 text-sm font-bold bg-[#6D5DFD] hover:bg-[#5b4eed] text-white flex items-center justify-center gap-2 rounded-xl shadow-lg shadow-[#6D5DFD]/20 dark:shadow-none"
                                     >

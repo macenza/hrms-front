@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Eye, EyeOff, Loader2, AlertCircle, LogIn } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Eye, EyeOff, Loader2, AlertCircle, LogIn, CheckCircle2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useAppDispatch } from '@/store/hooks';
 import { setCredentials } from '@/store/authSlice';
@@ -18,8 +18,22 @@ export default function UnifiedLoginForm() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState<string | null>(null);
+    const [infoMessage, setInfoMessage] = useState<string | null>(null);
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const params = new URLSearchParams(window.location.search);
+            const registered = params.get('registered');
+            const err = params.get('error');
+            if (registered === 'true') {
+                setInfoMessage('Workspace registered successfully! Please sign in with your administrator email and password.');
+            } else if (err === 'session_expired') {
+                setError('Your session has expired. Please sign in again.');
+            }
+        }
+    }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -68,7 +82,7 @@ export default function UnifiedLoginForm() {
         <div className="bg-white dark:bg-gray-900 p-8 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-800 animate-in fade-in zoom-in-95 duration-300">
             <div className="mb-8 text-center">
                 <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">
-                    Welcome Back
+                    Workspace Member Login
                 </h1>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 font-medium">
                     Sign in with your organization credentials
@@ -79,6 +93,13 @@ export default function UnifiedLoginForm() {
                 <div className="mb-6 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm rounded-lg flex items-center justify-center gap-2 font-medium">
                     <AlertCircle size={18} className="shrink-0" />
                     <span>{error}</span>
+                </div>
+            )}
+
+            {infoMessage && (
+                <div className="mb-6 p-3 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400 text-sm rounded-lg flex items-center justify-center gap-2 font-medium">
+                    <CheckCircle2 size={18} className="shrink-0" />
+                    <span>{infoMessage}</span>
                 </div>
             )}
             

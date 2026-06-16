@@ -2,6 +2,22 @@ import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { ENDPOINTS } from '../constants/endpoints';
 import Cookies from 'js-cookie';
 
+const isPublicRoute = (pathname: string): boolean => {
+    const PUBLIC_ROUTES = [
+        '/',
+        '/login',
+        '/signup',
+        '/hrms-login',
+        '/privacy-policy',
+        '/terms-and-conditions',
+        '/checkout-privacy',
+        '/checkout-terms',
+        '/register-company',
+        '/payment-success'
+    ];
+    return PUBLIC_ROUTES.includes(pathname) || pathname.startsWith('/careers');
+};
+
 const apiClient = axios.create({
     baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api',
     withCredentials: true,
@@ -19,7 +35,7 @@ apiClient.interceptors.request.use(
             
             // Inspect Request URL directly to determine portal context strictly
             const isCustomerApi = config.url?.includes('/api/customers') || config.url?.includes('/customers');
-            const token = isCustomerApi ? customerToken : hrmsToken;
+            const token = isCustomerApi ? (customerToken || hrmsToken) : hrmsToken;
             if (token) {
                 config.headers.Authorization = `Bearer ${token}`;
             }
@@ -72,8 +88,7 @@ apiClient.interceptors.response.use(
                     // Call backend logout asynchronously to clear HttpOnly cookies
                     apiClient.post('/customers/logout').catch(() => {});
                     
-                    const isProtectedRoute = window.location.pathname.startsWith('/customer-dashboard') || 
-                                             window.location.pathname.startsWith('/billing') || 
+                    const isProtectedRoute = window.location.pathname.startsWith('/billing') || 
                                              window.location.pathname.startsWith('/subscriptions');
                     if (isProtectedRoute) {
                         window.location.href = '/login?error=session_expired';
@@ -81,9 +96,6 @@ apiClient.interceptors.response.use(
                 }
                 return Promise.reject(error);
             }
-
-            const PUBLIC_ROUTES = ['/', '/login', '/signup', '/hrms-login', '/privacy-policy', '/terms-and-conditions'];
-
             // Prevent infinite refresh loops
             if (originalRequest.url?.includes(ENDPOINTS.AUTH.REFRESH)) {
                 if (typeof window !== 'undefined') {
@@ -95,9 +107,9 @@ apiClient.interceptors.response.use(
                     Cookies.remove('hrms_role', { path: '/' });
                     Cookies.remove('role', { path: '/' });
 
-                    const isPublicRoute = PUBLIC_ROUTES.includes(window.location.pathname);
-                    if (!isPublicRoute) {
-                        window.location.href = '/hrms-login?error=session_expired';
+                    const isPublic = isPublicRoute(window.location.pathname);
+                    if (!isPublic) {
+                        window.location.href = '/login?error=session_expired';
                     }
                 }
                 return Promise.reject(error);
@@ -140,9 +152,9 @@ apiClient.interceptors.response.use(
                         Cookies.remove('hrms_role', { path: '/' });
                         Cookies.remove('role', { path: '/' });
 
-                        const isPublicRoute = PUBLIC_ROUTES.includes(window.location.pathname);
-                        if (!isPublicRoute) {
-                            window.location.href = '/hrms-login?error=session_expired';
+                        const isPublic = isPublicRoute(window.location.pathname);
+                        if (!isPublic) {
+                            window.location.href = '/login?error=session_expired';
                         }
                     }
                     return Promise.reject(refreshError);

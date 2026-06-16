@@ -1,7 +1,7 @@
 // scratch/check_dev_server.js
 const http = require('http');
 
-http.get('http://localhost:3000/hrms-login?redirect_to=%2Fdashboard', (res) => {
+http.get('http://localhost:3000/login?redirect_to=%2Fdashboard', (res) => {
     console.log('Dev Server Status Code:', res.statusCode);
     console.log('Headers:', res.headers);
     let data = '';
