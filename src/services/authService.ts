@@ -55,9 +55,18 @@ export const logoutUser = async () => {
         return response.data;
     } finally {
         if (typeof window !== 'undefined') {
+            sessionStorage.removeItem('hrms_user');
+            sessionStorage.removeItem('hrms_token');
+            sessionStorage.removeItem('hrms_refreshToken');
+            sessionStorage.removeItem('persist:employeeAuth');
+            sessionStorage.removeItem('persist:customerAuth');
+
             localStorage.removeItem('hrms_user');
             localStorage.removeItem('hrms_token');
             localStorage.removeItem('hrms_refreshToken');
+            localStorage.removeItem('persist:employeeAuth');
+            localStorage.removeItem('persist:customerAuth');
+
             Cookies.remove('hrms_token', { path: '/' });
             Cookies.remove('hrms_role', { path: '/' });
             Cookies.remove('role', { path: '/' });
@@ -122,8 +131,14 @@ export const logoutCustomer = async () => {
         return response.data;
     } finally {
         if (typeof window !== 'undefined') {
+            sessionStorage.removeItem('customer_user');
+            sessionStorage.removeItem('customer_token');
+            sessionStorage.removeItem('persist:customerAuth');
+
             localStorage.removeItem('customer_user');
             localStorage.removeItem('customer_token');
+            localStorage.removeItem('persist:customerAuth');
+
             Cookies.remove('customer_token', { path: '/' });
         }
     }

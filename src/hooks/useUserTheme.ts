@@ -43,8 +43,8 @@ export function useUserTheme() {
             // Dispatch to Redux
             dispatch(setCredentials({ user: updatedUser }));
 
-            // Update localStorage
-            localStorage.setItem('hrms_user', JSON.stringify(updatedUser));
+            // Update sessionStorage
+            sessionStorage.setItem('hrms_user', JSON.stringify(updatedUser));
 
             try {
                 // Call PUT /settings/notifications to save theme settings to the backend

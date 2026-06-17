@@ -18,8 +18,8 @@ export default function CustomerAuthInitializer({ children }: { children: React.
         isFirstRun.current = false;
 
         const hydrateCustomerAuth = async () => {
-            const customerToken = typeof window !== 'undefined' ? localStorage.getItem('customer_token') : null;
-            const cachedCustomerStr = typeof window !== 'undefined' ? localStorage.getItem('customer_user') : null;
+            const customerToken = typeof window !== 'undefined' ? sessionStorage.getItem('customer_token') : null;
+            const cachedCustomerStr = typeof window !== 'undefined' ? sessionStorage.getItem('customer_user') : null;
             let cachedCustomer = null;
             try {
                 if (cachedCustomerStr) cachedCustomer = JSON.parse(cachedCustomerStr);
@@ -32,13 +32,13 @@ export default function CustomerAuthInitializer({ children }: { children: React.
                     const verifiedCustomer = verifiedCustomerRes.data?.customer;
                     
                     if (verifiedCustomer) {
-                        localStorage.setItem('customer_user', JSON.stringify(verifiedCustomer));
+                        sessionStorage.setItem('customer_user', JSON.stringify(verifiedCustomer));
                         dispatch(setCustomerCredentials({ user: verifiedCustomer }));
                         
                         // Keep cookies in sync
-                        const currentToken = localStorage.getItem('customer_token');
+                        const currentToken = sessionStorage.getItem('customer_token');
                         if (currentToken) {
-                            Cookies.set('customer_token', currentToken, { expires: 7, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/' });
+                            Cookies.set('customer_token', currentToken, { secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/' });
                         }
                     } else {
                         throw new Error("Invalid customer context");
@@ -46,8 +46,12 @@ export default function CustomerAuthInitializer({ children }: { children: React.
                 } catch (error) {
                     console.log("Customer session verification failed. Logging out customer.");
                     dispatch(logOutCustomer());
+                    sessionStorage.removeItem('customer_user');
+                    sessionStorage.removeItem('customer_token');
+                    sessionStorage.removeItem('persist:customerAuth');
                     localStorage.removeItem('customer_user');
                     localStorage.removeItem('customer_token');
+                    localStorage.removeItem('persist:customerAuth');
                     Cookies.remove('customer_token', { path: '/' });
                     
                     const isProtected = typeof window !== 'undefined' && window.location.pathname.startsWith('/subscription');
@@ -59,6 +63,14 @@ export default function CustomerAuthInitializer({ children }: { children: React.
                 }
             } else {
                 dispatch(logOutCustomer());
+                sessionStorage.removeItem('customer_user');
+                sessionStorage.removeItem('customer_token');
+                sessionStorage.removeItem('persist:customerAuth');
+                localStorage.removeItem('customer_user');
+                localStorage.removeItem('customer_token');
+                localStorage.removeItem('persist:customerAuth');
+                Cookies.remove('customer_token', { path: '/' });
+                
                 const isProtected = typeof window !== 'undefined' && window.location.pathname.startsWith('/subscription');
                 if (isProtected) {
                     window.location.href = '/login?error=session_expired';

@@ -200,7 +200,39 @@ export default function AddEmployeeModal({ isOpen, onClose, onSubmit, isSubmitti
     return (
         <Modal isOpen={isOpen} onClose={handleClose} title="Add New Employee" className="max-w-3xl">
             <form onSubmit={handleSubmit} className="flex flex-col">
-                {/* Step indicator removed per design request — form still uses 3-step flow */}
+                {/* --- PROGRESS BAR --- */}
+                <div className="px-4 pt-2 pb-6">
+                    <div className="relative flex items-center justify-between w-full">
+                        {/* Background track */}
+                        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-0.5 bg-gray-200 dark:bg-gray-800 z-0 transition-colors duration-300"></div>
+
+                        {/* Active track */}
+                        <div
+                            className="absolute left-0 top-1/2 -translate-y-1/2 h-0.5 bg-blue-600 z-0 transition-all duration-300"
+                            style={{ width: step === 1 ? '0%' : step === 2 ? '50%' : '100%' }}
+                        ></div>
+
+                        {/* Steps */}
+                        {[1, 2, 3].map((num) => (
+                            <div key={num} className="relative z-10 flex flex-col items-center gap-2 bg-white dark:bg-gray-900 px-2 transition-colors duration-300">
+                                <div className={cn(
+                                    "w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-colors border-2",
+                                    step >= num
+                                        ? "bg-blue-600 border-blue-600 text-white"
+                                        : "bg-white border-gray-300 text-gray-400 dark:bg-gray-900 dark:border-gray-700 dark:text-gray-500"
+                                )}>
+                                    {step > num ? <Check size={16} /> : num}
+                                </div>
+                                <span className={cn(
+                                    "text-xs font-semibold uppercase tracking-wider",
+                                    step >= num ? "text-blue-600" : "text-gray-400 dark:text-gray-500"
+                                )}>
+                                    {num === 1 ? 'Personal Info' : num === 2 ? 'Job Details' : 'Documents'}
+                                </span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
 
                 {/* --- FORM CONTENT --- */}
                 <div className="flex-1 p-2 min-h-[250px]">

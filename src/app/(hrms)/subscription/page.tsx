@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { useAppDispatch } from '@/store/hooks';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import apiClient from '@/services/apiClient';
 import { useRouter } from 'next/navigation';
 import {
@@ -14,6 +14,7 @@ import {
 export default function SubscriptionManagementPage() {
     const dispatch = useAppDispatch();
     const router = useRouter();
+    const { user } = useAppSelector((state) => state.auth);
 
     const [customer, setCustomer] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -266,6 +267,32 @@ export default function SubscriptionManagementPage() {
                     <span className="text-sm font-bold text-gray-500 dark:text-gray-400">Loading Subscription details...</span>
                 </div>
             </div>
+        );
+    }
+
+    if (user?.role?.toLowerCase() !== 'admin') {
+        return (
+            <main className="min-h-[calc(100vh-5rem)] flex items-center justify-center bg-gray-50/30 dark:bg-gray-950/20 px-4">
+                <div className="max-w-md w-full bg-white dark:bg-gray-900 border border-gray-150 dark:border-gray-800 p-8 rounded-3xl shadow-xl shadow-gray-100/50 dark:shadow-none text-center space-y-6 animate-in fade-in zoom-in-95 duration-300">
+                    <div className="w-16 h-16 bg-red-50 dark:bg-red-950/30 text-red-500 rounded-2xl flex items-center justify-center mx-auto shadow-lg shadow-red-100/20 dark:shadow-none">
+                        <Lock className="w-8 h-8" />
+                    </div>
+                    <div className="space-y-2">
+                        <h1 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">
+                            Access Denied
+                        </h1>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 font-semibold leading-relaxed">
+                            You do not have the right to access this page.
+                        </p>
+                    </div>
+                    <button
+                        onClick={() => router.push('/dashboard')}
+                        className="w-full py-3 px-4 bg-[#6D5DFD] hover:bg-[#5b4eed] text-white font-bold text-xs rounded-xl shadow-md transition-all duration-200"
+                    >
+                        Back to Dashboard
+                    </button>
+                </div>
+            </main>
         );
     }
 

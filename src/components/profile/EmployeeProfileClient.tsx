@@ -120,7 +120,7 @@ export default function EmployeeProfileClient({ id }: EmployeeProfileClientProps
                 user?.name !== employee.name ||
                 JSON.stringify(user?.profile?.settings) !== JSON.stringify(mergedSettings)
             ) {
-                localStorage.setItem('hrms_user', JSON.stringify(updatedUser));
+                sessionStorage.setItem('hrms_user', JSON.stringify(updatedUser));
                 dispatch(setCredentials({ user: updatedUser as any }));
             }
         }
@@ -397,7 +397,8 @@ export default function EmployeeProfileClient({ id }: EmployeeProfileClientProps
                                 rawDob: personal.dob,
                                 address: personal.address || '',
                                 fathersName: personal.fathersName || '',
-                                registrationNo: employee.employeeId || 'N/A'
+                                registrationNo: employee.employeeId || 'N/A',
+                                additionalInfo: employee.profile?.additionalInfo || {}
                             }}
                             onScheduleWish={() => toast.success(`Scheduled a wish for ${employee.name}!`)}
                         />

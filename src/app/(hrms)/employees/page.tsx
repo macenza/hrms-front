@@ -9,10 +9,12 @@ import EmployeeTable, { Employee, PaginationState } from '@/components/employees
 import EmployeeDrawer from '@/components/employees/EmployeeDrawer';
 import AddEmployeeModal, { AddEmployeeSubmitMeta } from '@/components/employees/AddEmployeeModal';
 import SendCredentialsModal from '@/components/employees/SendCredentialsModal';
+import ImportEmployeesModal from '@/components/employees/ImportEmployeesModal';
 import { useEmployees, useCreateEmployee } from '@/hooks/api/useEmployees';
 import { employeeService } from '@/services/employeeService';
 import { useDebounce } from '@/hooks/useDebounce';
 import { toast } from 'sonner';
+import { useQueryClient } from '@tanstack/react-query';
 
 function resolveCreatedEmployeeId(data: unknown): string | undefined {
     if (!data || typeof data !== 'object') return undefined;
@@ -36,10 +38,12 @@ function resolveCreatedEmployeeId(data: unknown): string | undefined {
 
 export default function EmployeesPage() {
     const router = useRouter();
+    const queryClient = useQueryClient();
     
     // UI State
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
     const [credentialsModalData, setCredentialsModalData] = useState<{
         name: string;
@@ -158,6 +162,7 @@ export default function EmployeesPage() {
                         setIsModalOpen(true);
                     }} 
                     onExportClick={handleExport} 
+                    onImportClick={() => setIsImportModalOpen(true)}
                 />
                 
                 <EmployeeFilters 
@@ -205,6 +210,12 @@ export default function EmployeesPage() {
                         password={credentialsModalData.password}
                     />
                 )}
+
+                <ImportEmployeesModal
+                    isOpen={isImportModalOpen}
+                    onClose={() => setIsImportModalOpen(false)}
+                    onImportSuccess={() => queryClient.invalidateQueries({ queryKey: ['employees'] })}
+                />
             </div>
         </div>
     );

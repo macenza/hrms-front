@@ -30,8 +30,8 @@ const apiClient = axios.create({
 apiClient.interceptors.request.use(
     (config) => {
         if (typeof window !== 'undefined') {
-            const hrmsToken = localStorage.getItem('hrms_token');
-            const customerToken = localStorage.getItem('customer_token');
+            const hrmsToken = sessionStorage.getItem('hrms_token');
+            const customerToken = sessionStorage.getItem('customer_token');
             
             // Inspect Request URL directly to determine portal context strictly
             const isCustomerApi = config.url?.includes('/api/customers') || config.url?.includes('/customers');
@@ -80,6 +80,8 @@ apiClient.interceptors.response.use(
             if (isCustomerApi) {
                 if (typeof window !== 'undefined') {
                     console.log('Customer session expired. Forcing logout.');
+                    sessionStorage.removeItem('customer_user');
+                    sessionStorage.removeItem('customer_token');
                     localStorage.removeItem('customer_user');
                     localStorage.removeItem('customer_token');
                     Cookies.remove('customer_token');
@@ -96,10 +98,14 @@ apiClient.interceptors.response.use(
                 }
                 return Promise.reject(error);
             }
+
             // Prevent infinite refresh loops
             if (originalRequest.url?.includes(ENDPOINTS.AUTH.REFRESH)) {
                 if (typeof window !== 'undefined') {
                     console.log('Refresh token expired. Forcing logout.');
+                    sessionStorage.removeItem('hrms_user');
+                    sessionStorage.removeItem('hrms_token');
+                    sessionStorage.removeItem('hrms_refreshToken');
                     localStorage.removeItem('hrms_user');
                     localStorage.removeItem('hrms_token');
                     localStorage.removeItem('hrms_refreshToken');
@@ -128,15 +134,15 @@ apiClient.interceptors.response.use(
                 isRefreshing = true;
 
                 try {
-                    const localRefreshToken = typeof window !== 'undefined' ? localStorage.getItem('hrms_refreshToken') : null;
+                    const localRefreshToken = typeof window !== 'undefined' ? sessionStorage.getItem('hrms_refreshToken') : null;
                     const refreshResponse = await apiClient.post(ENDPOINTS.AUTH.REFRESH, { 
                         refreshToken: localRefreshToken 
                     });
                     
                     const newAccessToken = refreshResponse.data?.accessToken;
                     if (newAccessToken && typeof window !== 'undefined') {
-                        localStorage.setItem('hrms_token', newAccessToken);
-                        Cookies.set('hrms_token', newAccessToken, { expires: 7, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/' });
+                        sessionStorage.setItem('hrms_token', newAccessToken);
+                        Cookies.set('hrms_token', newAccessToken, { secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/' });
                     }
                     
                     processQueue(null);
@@ -145,6 +151,9 @@ apiClient.interceptors.response.use(
                     processQueue(refreshError as Error, null);
                     if (typeof window !== 'undefined') {
                         console.log('Session permanently expired. Redirecting.');
+                        sessionStorage.removeItem('hrms_user');
+                        sessionStorage.removeItem('hrms_token');
+                        sessionStorage.removeItem('hrms_refreshToken');
                         localStorage.removeItem('hrms_user');
                         localStorage.removeItem('hrms_token');
                         localStorage.removeItem('hrms_refreshToken');
