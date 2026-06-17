@@ -116,7 +116,7 @@ export default function RoleChart({
                                 cy="50%"
                                 innerRadius={55}
                                 outerRadius={75}
-                                paddingAngle={3}
+                                paddingAngle={0}
                                 startAngle={90}
                                 endAngle={-270}
                                 stroke="none"

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Upload, Settings, CheckCircle2, ArrowRight, Info, AlertTriangle, Loader2, RotateCcw, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Upload, Settings, CheckCircle2, ArrowRight, Info, AlertTriangle, Loader2, RotateCcw, ChevronRight, Download } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
@@ -71,6 +71,34 @@ const HRMS_FIELDS: HRMSField[] = [
         description: 'Purchase amount in dollars', 
         matchKeywords: ['cost', 'price', 'purchase price', 'value', 'amount', 'purchase_price'] 
     },
+    {
+        key: 'assignedTo',
+        label: 'Assigned To (Employee Email/ID)',
+        required: false,
+        description: 'Email address or Employee ID of the employee this asset is assigned to',
+        matchKeywords: ['assigned', 'assigned to', 'assignee', 'owner', 'assigned_to', 'employee', 'user', 'names assigned to', 'assigned employee']
+    },
+    {
+        key: 'status',
+        label: 'Status',
+        required: false,
+        description: 'Asset lifecycle status (e.g., Available, Assigned, In Maintenance)',
+        matchKeywords: ['status', 'asset status', 'asset_status', 'lifecycle status', 'state status']
+    },
+    {
+        key: 'assignedDate',
+        label: 'Assigned Date',
+        required: false,
+        description: 'Date the asset was assigned (defaults to importing date if empty)',
+        matchKeywords: ['assigned date', 'assign date', 'assignment date', 'date assigned', 'assigned_date', 'assignment_date']
+    },
+    { 
+        key: 'condition', 
+        label: 'Condition', 
+        required: false, 
+        description: 'Physical state of the asset (Allowed: New, Good, Fair, Poor, Broken)', 
+        matchKeywords: ['condition', 'status condition', 'physical state', 'state'] 
+    },
     { 
         key: 'notes', 
         label: 'Condition / Notes', 
@@ -100,6 +128,7 @@ export default function AssetImportPage() {
     const [validCount, setValidCount] = useState(0);
     const [invalidCount, setInvalidCount] = useState(0);
     const [validationErrors, setValidationErrors] = useState<any[]>([]);
+    const [validationWarnings, setValidationWarnings] = useState<any[]>([]);
     const [isImporting, setIsImporting] = useState(false);
     const [isExportingErrors, setIsExportingErrors] = useState(false);
 
@@ -116,6 +145,7 @@ export default function AssetImportPage() {
     const [newTemplateName, setNewTemplateName] = useState<string>('');
     const [newTemplateDesc, setNewTemplateDesc] = useState<string>('');
     const [isSavingTemplate, setIsSavingTemplate] = useState<boolean>(false);
+    const [createdTemplateIds, setCreatedTemplateIds] = useState<string[]>([]);
 
     // Fetch Saved Templates
     const fetchTemplates = async () => {
@@ -199,6 +229,7 @@ export default function AssetImportPage() {
             await fetchTemplates();
             if (res.data && res.data._id) {
                 setSelectedTemplateId(res.data._id);
+                setCreatedTemplateIds(prev => [...prev, res.data._id]);
             }
         } catch (err: any) {
             console.error("Failed to save template:", err);
@@ -415,6 +446,7 @@ export default function AssetImportPage() {
             setValidCount(valData.validCount);
             setInvalidCount(valData.invalidCount);
             setValidationErrors(valData.errors || []);
+            setValidationWarnings(valData.warnings || []);
             setStep(3);
             toast.success('Row validation completed successfully!');
         } catch (error: any) {
@@ -424,6 +456,27 @@ export default function AssetImportPage() {
             toast.error(errMsg);
         } finally {
             setIsValidating(false);
+        }
+    };
+
+    const handleDownloadTemplate = async () => {
+        try {
+            const response = await apiClient.get(ENDPOINTS.ASSET.TEMPLATE, { responseType: 'blob' });
+            const blob = new Blob([response.data], {
+                type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            });
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', 'Asset_Import_Template.xlsx');
+            document.body.appendChild(link);
+            link.click();
+            link.parentNode?.removeChild(link);
+            window.URL.revokeObjectURL(url);
+            toast.success('Template downloaded successfully!');
+        } catch (error) {
+            console.error('Failed to download template:', error);
+            toast.error('Failed to download import template.');
         }
     };
 
@@ -437,6 +490,7 @@ export default function AssetImportPage() {
                 failureCount: invalidCount
             });
             const result = response.data.data;
+            setCreatedTemplateIds([]); // Clear tracking without deleting on successful import
             toast.success(`Successfully imported ${result.count} assets in ${result.metrics.totalMs}ms!`);
             router.push('/assets');
         } catch (error: any) {
@@ -495,9 +549,23 @@ export default function AssetImportPage() {
         setValidCount(0);
         setInvalidCount(0);
         setValidationErrors([]);
+        setValidationWarnings([]);
         setValidationError('');
         setIsImporting(false);
         setIsExportingErrors(false);
+
+        // Clean up newly created templates if the user aborts/clears the import
+        if (createdTemplateIds.length > 0) {
+            createdTemplateIds.forEach(async (templateId) => {
+                try {
+                    await assetMappingTemplateService.deleteTemplate(templateId);
+                } catch (err) {
+                    console.error("Failed to delete aborted template:", templateId, err);
+                }
+            });
+            setCreatedTemplateIds([]);
+        }
+
         setStep(1);
     };
 
@@ -611,21 +679,32 @@ export default function AssetImportPage() {
                                     )}
                                 </div>
 
-                                <div className="flex justify-end gap-3 pt-4">
-                                    {selectedFile && (
-                                        <Button variant="ghost" onClick={() => setSelectedFile(null)} disabled={isUploading}>
-                                            Reset Selection
-                                        </Button>
-                                    )}
+                                <div className="flex justify-between items-center pt-4">
                                     <Button 
-                                        variant="primary" 
-                                        onClick={handleUpload}
-                                        disabled={!selectedFile || isUploading}
-                                        className="min-w-[140px] font-bold gap-2"
+                                        variant="outline" 
+                                        onClick={handleDownloadTemplate}
+                                        disabled={isUploading}
+                                        className="gap-2 font-semibold text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-900/50 hover:bg-blue-50 dark:hover:bg-blue-500/10"
                                     >
-                                        {isUploading ? <Loader2 size={16} className="animate-spin" /> : null}
-                                        {isUploading ? 'Analyzing...' : 'Upload & Match'}
+                                        <Download size={16} />
+                                        Download Template
                                     </Button>
+                                    <div className="flex gap-3">
+                                        {selectedFile && (
+                                            <Button variant="ghost" onClick={() => setSelectedFile(null)} disabled={isUploading}>
+                                                Reset Selection
+                                            </Button>
+                                        )}
+                                        <Button 
+                                            variant="primary" 
+                                            onClick={handleUpload}
+                                            disabled={!selectedFile || isUploading}
+                                            className="min-w-[140px] font-bold gap-2"
+                                        >
+                                            {isUploading ? <Loader2 size={16} className="animate-spin" /> : null}
+                                            {isUploading ? 'Analyzing...' : 'Upload & Match'}
+                                        </Button>
+                                    </div>
                                 </div>
                             </CardContent>
                         </>
@@ -812,16 +891,23 @@ export default function AssetImportPage() {
                                 </div>
 
                                 {/* Status Banner Box */}
-                                {invalidCount === 0 ? (
+                                {invalidCount === 0 && validationWarnings.length === 0 ? (
                                     <div className="p-4 rounded-xl border border-green-150 dark:border-green-900/35 bg-green-50/50 dark:bg-green-955/10 text-green-800 dark:text-green-400 text-sm flex gap-3 leading-relaxed">
                                         <CheckCircle2 size={18} className="shrink-0 mt-0.5 text-green-600" />
                                         <div>
                                             <strong>Success:</strong> All records are validated successfully! The template and asset data are fully aligned.
                                         </div>
                                     </div>
-                                ) : (
-                                    <div className="p-4 rounded-xl border border-amber-150 dark:border-amber-900/35 bg-amber-50/50 dark:bg-amber-955/10 text-amber-800 dark:text-amber-400 text-sm flex gap-3 leading-relaxed">
+                                ) : invalidCount === 0 && validationWarnings.length > 0 ? (
+                                    <div className="p-4 rounded-xl border border-amber-150 dark:border-amber-900/35 bg-amber-50/50 dark:bg-amber-955/10 text-amber-850 dark:text-amber-400 text-sm flex gap-3 leading-relaxed">
                                         <AlertTriangle size={18} className="shrink-0 mt-0.5 text-amber-600" />
+                                        <div>
+                                            <strong>Warnings Detected:</strong> {validationWarnings.length} warnings found. You can still complete the import; these assets will be marked as unassigned.
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="p-4 rounded-xl border border-red-150 dark:border-red-900/35 bg-red-50/50 dark:bg-red-955/10 text-red-800 dark:text-red-400 text-sm flex gap-3 leading-relaxed">
+                                        <AlertTriangle size={18} className="shrink-0 mt-0.5 text-red-600" />
                                         <div>
                                             <strong>Validation Flagged:</strong> {invalidCount} records fail the validation rules. Correct the issues listed below to allow imports.
                                         </div>
@@ -831,7 +917,7 @@ export default function AssetImportPage() {
                                 {/* Validation Errors Summary Table */}
                                 {validationErrors.length > 0 && (
                                     <div className="border border-red-200 dark:border-red-900/30 rounded-xl overflow-hidden shadow-sm">
-                                        <div className="px-4 py-3 bg-red-50/80 dark:bg-red-950/20 border-b border-red-100 dark:border-red-900/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                        <div className="px-4 py-3 bg-red-50/80 dark:bg-red-955/20 border-b border-red-100 dark:border-red-900/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                                             <span className="text-sm font-bold text-red-800 dark:text-red-400 flex items-center gap-2">
                                                 <AlertTriangle size={16} /> Row Validation Failure Details ({validationErrors.length})
                                             </span>
@@ -852,7 +938,7 @@ export default function AssetImportPage() {
                                                     size="sm"
                                                     onClick={() => handleExportErrors('xlsx')}
                                                     disabled={isExportingErrors}
-                                                    className="text-xs font-bold py-1 h-8 text-red-700 hover:text-red-800 border-red-200 dark:border-red-900/50 hover:bg-red-50 dark:hover:bg-red-955/20 shrink-0"
+                                                    className="text-xs font-bold py-1 h-8 text-red-700 hover:text-red-800 border-red-200 dark:border-red-900/50 hover:bg-red-55 dark:hover:bg-red-955/20 shrink-0"
                                                 >
                                                     Export Excel
                                                 </Button>
@@ -861,7 +947,7 @@ export default function AssetImportPage() {
                                         <div className="max-h-60 overflow-y-auto divide-y divide-red-100 dark:divide-red-955/20 bg-white dark:bg-gray-950/10">
                                             {validationErrors.map((err, idx) => (
                                                 <div key={idx} className="px-4 py-3 text-xs md:text-sm flex items-start gap-4 hover:bg-red-50/10 transition-colors">
-                                                    <span className="font-mono font-bold bg-red-100 dark:bg-red-950/80 text-red-750 dark:text-red-400 px-2 py-0.5 rounded shrink-0">
+                                                    <span className="font-mono font-bold bg-red-100 dark:bg-red-950/80 text-red-750 dark:text-red-450 px-2 py-0.5 rounded shrink-0">
                                                         Row {err.row}
                                                     </span>
                                                     <span className="font-bold text-gray-500 dark:text-gray-405 font-mono shrink-0 uppercase">
@@ -869,6 +955,32 @@ export default function AssetImportPage() {
                                                     </span>
                                                     <span className="text-gray-700 dark:text-gray-300">
                                                         {err.message}
+                                                    </span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Validation Warnings Summary Table */}
+                                {validationWarnings.length > 0 && (
+                                    <div className="border border-amber-205 dark:border-amber-900/30 rounded-xl overflow-hidden shadow-sm">
+                                        <div className="px-4 py-3 bg-amber-50/80 dark:bg-amber-950/20 border-b border-amber-100 dark:border-amber-900/20">
+                                            <span className="text-sm font-bold text-amber-800 dark:text-amber-400 flex items-center gap-2">
+                                                <AlertTriangle size={16} /> Row Validation Warning Details ({validationWarnings.length})
+                                            </span>
+                                        </div>
+                                        <div className="max-h-60 overflow-y-auto divide-y divide-amber-100 dark:divide-amber-955/20 bg-white dark:bg-gray-950/10">
+                                            {validationWarnings.map((warn, idx) => (
+                                                <div key={idx} className="px-4 py-3 text-xs md:text-sm flex items-start gap-4 hover:bg-amber-50/10 transition-colors">
+                                                    <span className="font-mono font-bold bg-amber-100 dark:bg-amber-950/80 text-amber-750 dark:text-amber-400 px-2 py-0.5 rounded shrink-0">
+                                                        Row {warn.row}
+                                                    </span>
+                                                    <span className="font-bold text-gray-500 dark:text-gray-405 font-mono shrink-0 uppercase">
+                                                        [{warn.field}]
+                                                    </span>
+                                                    <span className="text-gray-700 dark:text-gray-300">
+                                                        {warn.message}
                                                     </span>
                                                 </div>
                                             ))}

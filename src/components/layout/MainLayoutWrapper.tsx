@@ -9,13 +9,6 @@ export default function MainLayoutWrapper({ children }: { children: React.ReactN
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const pathname = usePathname();
 
-    if (pathname === '/change-password') {
-        return (
-            <div className="min-h-screen w-full flex items-center justify-center bg-gray-50 dark:bg-gray-950 transition-colors duration-300">
-                {children}
-            </div>
-        );
-    }
 
     return (
         <div className="flex h-screen bg-white overflow-hidden dark:bg-gray-950">

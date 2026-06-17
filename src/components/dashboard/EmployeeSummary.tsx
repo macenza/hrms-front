@@ -71,14 +71,6 @@ export default function EmployeeSummary({
 
     const getInitials = (name: string) => name ? name.charAt(0).toUpperCase() : "?";
 
-    const formatCurrency = (amount: number) => {
-        const locale = currency.toUpperCase() === 'INR' ? 'en-IN' : 'en-US';
-        return new Intl.NumberFormat(locale, {
-            style: 'currency',
-            currency: currency.toUpperCase(),
-            maximumFractionDigits: 0 
-        }).format(amount);
-    };
     // Premium Skeleton Loader
     if (isLoading && employees.length === 0) {
         return (
@@ -93,7 +85,6 @@ export default function EmployeeSummary({
                             <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-800 animate-pulse shrink-0" />
                             <div className="w-24 h-4 bg-gray-200 dark:bg-gray-800 rounded animate-pulse" />
                         </div>
-                        <div className="w-24 h-4 bg-gray-200 dark:bg-gray-800 rounded animate-pulse" />
                         <div className="w-24 h-4 bg-gray-200 dark:bg-gray-800 rounded animate-pulse" />
                     </div>
                 ))}
@@ -141,9 +132,6 @@ export default function EmployeeSummary({
                             </th>
                             <th className="text-left pb-2 pr-4 text-[11px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 transition-colors hidden sm:table-cell">
                                 Role
-                            </th>
-                            <th className="text-left pb-2 pr-4 text-[11px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 transition-colors hidden sm:table-cell">
-                                Salary
                             </th>
                             <th className="text-left pb-2 text-[11px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 transition-colors hidden sm:table-cell">
                                 Status
@@ -203,16 +191,6 @@ export default function EmployeeSummary({
                                         <td className="py-2.5 pr-4 text-sm font-medium text-gray-500 dark:text-gray-400 transition-colors hidden sm:table-cell">
                                             {emp.jobTitle || 'N/A'}
                                         </td>            
-                                        <td className="py-2.5 pr-4 font-medium text-gray-700 dark:text-gray-300 transition-colors hidden sm:table-cell">
-                                            {isAdminOrHR ? (
-                                                formatCurrency(emp.netSalary || 0)
-                                            ) : (
-                                                <div className="flex items-center gap-1.5 text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-800/50 px-2 py-1 rounded w-max transition-colors" title="Requires Admin/HR Privileges">
-                                                    <Lock className="w-3.5 h-3.5" />
-                                                    <span className="text-xs">Masked</span>
-                                                </div>
-                                            )}
-                                        </td>
                                         <td className="py-2.5 hidden sm:table-cell">
                                             <span className={cn(
                                                 "inline-flex px-2.5 py-0.5 rounded-full text-[11px] font-bold tracking-wide uppercase border transition-colors",

@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { ChevronDown, RotateCcw } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import { useAppSelector } from '@/store/hooks';
+import { useCompanySettings } from '@/hooks/api/useSettings';
 
 export interface EmployeeFilterState {
     department: string;
@@ -53,30 +54,26 @@ const FilterSelect = ({ value, onChange, options, placeholder, className }: Filt
 
 export default function EmployeeFilters({ filters, onFilterChange }: EmployeeFiltersProps) {
     const { user } = useAppSelector((state) => state.auth);
+    const { data: companySettings } = useCompanySettings();
     const [mounted, setMounted] = useState(false);
     useEffect(() => {
         setMounted(true);
     }, []);
     const isAdmin = mounted && user?.role?.toLowerCase() === 'admin';
 
-    const departments = [
-        { label: 'Engineering', value: 'Engineering' },
-        { label: 'Design', value: 'Design' },
-        { label: 'HR', value: 'HR' },
-        { label: 'Finance', value: 'Finance' },
-        { label: 'Product', value: 'Product' },
-    ];
+    const departments = (companySettings?.departments || ['HR', 'Engineering', 'Marketing', 'Sales', 'Finance']).map((d: string) => ({
+        label: d,
+        value: d
+    }));
 
-    const roles = [
-        { label: 'Frontend Developer', value: 'Frontend Developer' },
-        { label: 'Backend Developer', value: 'Backend Developer' },
-        { label: 'UX Designer', value: 'UX Designer' },
-        { label: 'QA Engineer', value: 'QA Engineer' },
-        { label: 'Product Manager', value: 'Product Manager' },
-    ];
+    const roles = (companySettings?.roles || ['employee', 'manager', 'hr', 'admin']).map((r: string) => ({
+        label: r.charAt(0).toUpperCase() + r.slice(1),
+        value: r
+    }));
 
     const statuses = [
         { label: 'Active', value: 'Active' },
+        { label: 'Pending', value: 'Pending' },
         { label: 'Inactive', value: 'Inactive' },
     ];
 

@@ -15,6 +15,7 @@ const isPublicRoute = (pathname: string): boolean => {
         '/',
         '/login',
         '/signup',
+        '/hrms-login',
         '/kiosk',
         '/privacy-policy',
         '/terms-and-conditions',
@@ -23,7 +24,11 @@ const isPublicRoute = (pathname: string): boolean => {
         '/blog',
         '/contact',
         '/features',
-        '/pricing'
+        '/pricing',
+        '/checkout-privacy',
+        '/checkout-terms',
+        '/register-company',
+        '/payment-success'
     ];
     return PUBLIC_ROUTES.includes(pathname) || pathname.startsWith('/careers');
 };
@@ -43,8 +48,9 @@ export default function AuthInitializer({ children }: { children: React.ReactNod
 
     useEffect(() => {
         if (typeof window !== 'undefined' && persistedUser?.mustChangePassword) {
-            if (window.location.pathname !== '/change-password') {
-                window.location.href = '/change-password';
+            const isOnSecuritySettings = window.location.pathname === '/settings' && window.location.search === '?tab=security';
+            if (!isOnSecuritySettings) {
+                window.location.href = '/settings?tab=security';
             }
         }
     }, [persistedUser]);
@@ -93,8 +99,9 @@ export default function AuthInitializer({ children }: { children: React.ReactNod
                     dispatch(setCredentials({ user: verifiedUser }));
 
                     if (verifiedUser?.mustChangePassword) {
-                        if (window.location.pathname !== '/change-password') {
-                            window.location.href = '/change-password';
+                        const isOnSecuritySettings = window.location.pathname === '/settings' && window.location.search === '?tab=security';
+                        if (!isOnSecuritySettings) {
+                            window.location.href = '/settings?tab=security';
                             return;
                         }
                     }
@@ -108,7 +115,7 @@ export default function AuthInitializer({ children }: { children: React.ReactNod
                         Cookies.set('hrms_role', verifiedUser.role.toLowerCase(), { secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/' });
                     }
 
-                    // Client-side automatic redirect if user is on /hrms-login with valid session
+                    // Client-side automatic redirect if user is on /login with valid session
                     const isAuthRoute = window.location.pathname.startsWith('/login');
                     if (isAuthRoute) {
                         const searchParams = new URLSearchParams(window.location.search);
@@ -128,7 +135,6 @@ export default function AuthInitializer({ children }: { children: React.ReactNod
                     localStorage.removeItem('hrms_token');
                     localStorage.removeItem('hrms_refreshToken');
                     localStorage.removeItem('persist:employeeAuth');
-                    localStorage.removeItem('persist:customerAuth');
                     Cookies.remove('hrms_token', { path: '/' });
                     Cookies.remove('hrms_role', { path: '/' });
                     
@@ -151,7 +157,6 @@ export default function AuthInitializer({ children }: { children: React.ReactNod
                 localStorage.removeItem('hrms_token');
                 localStorage.removeItem('hrms_refreshToken');
                 localStorage.removeItem('persist:employeeAuth');
-                localStorage.removeItem('persist:customerAuth');
                 Cookies.remove('hrms_token', { path: '/' });
                 Cookies.remove('hrms_role', { path: '/' });
 

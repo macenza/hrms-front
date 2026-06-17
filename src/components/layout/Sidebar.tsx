@@ -132,6 +132,8 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             Cookies.remove('hrms_token', { path: '/' });
             Cookies.remove('hrms_role', { path: '/' });
             Cookies.remove('role', { path: '/' });
+            Cookies.remove('customer_token', { path: '/' });
+            Cookies.remove('customer_refreshToken', { path: '/' });
             
             // Show premium success toast
             toast.success("You have been logged out successfully.");

@@ -47,6 +47,16 @@ export default function SettingsPage() {
     // UI State
     const [activeTab, setActiveTab] = useState<SettingsTabId>('general');
     const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
+
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const params = new URLSearchParams(window.location.search);
+            const tab = params.get('tab');
+            if (tab === 'security' || tab === 'notifications' || tab === 'payroll' || tab === 'general') {
+                setActiveTab(tab as SettingsTabId);
+            }
+        }
+    }, []);
     // Filter tabs based on role permissions (Payroll Engine is Admin/HR only)
     const visibleTabs = useMemo(() => {
         return settingsTabs.filter((tab) => {
@@ -118,22 +128,28 @@ export default function SettingsPage() {
                 } finally {
                      dispatch(logOut());
                      
-                     // Clear storage and cookies to prevent ghost sessions
-                     sessionStorage.removeItem('hrms_user');
-                     sessionStorage.removeItem('hrms_token');
-                     sessionStorage.removeItem('hrms_refreshToken');
-                     sessionStorage.removeItem('persist:employeeAuth');
-                     sessionStorage.removeItem('persist:customerAuth');
+                      // Clear storage and cookies to prevent ghost sessions
+                      sessionStorage.removeItem('hrms_user');
+                      sessionStorage.removeItem('hrms_token');
+                      sessionStorage.removeItem('hrms_refreshToken');
+                      sessionStorage.removeItem('customer_user');
+                      sessionStorage.removeItem('customer_token');
+                      sessionStorage.removeItem('persist:employeeAuth');
+                      sessionStorage.removeItem('persist:customerAuth');
 
-                     localStorage.removeItem('hrms_user');
-                     localStorage.removeItem('hrms_token');
-                     localStorage.removeItem('hrms_refreshToken');
-                     localStorage.removeItem('persist:employeeAuth');
-                     localStorage.removeItem('persist:customerAuth');
+                      localStorage.removeItem('hrms_user');
+                      localStorage.removeItem('hrms_token');
+                      localStorage.removeItem('hrms_refreshToken');
+                      localStorage.removeItem('customer_user');
+                      localStorage.removeItem('customer_token');
+                      localStorage.removeItem('persist:employeeAuth');
+                      localStorage.removeItem('persist:customerAuth');
 
-                     Cookies.remove('hrms_token', { path: '/' });
-                     Cookies.remove('hrms_role', { path: '/' });
-                     Cookies.remove('role', { path: '/' });
+                      Cookies.remove('hrms_token', { path: '/' });
+                      Cookies.remove('hrms_role', { path: '/' });
+                      Cookies.remove('role', { path: '/' });
+                      Cookies.remove('customer_token', { path: '/' });
+                      Cookies.remove('customer_refreshToken', { path: '/' });
                      
                      window.location.href = '/login';
                 }

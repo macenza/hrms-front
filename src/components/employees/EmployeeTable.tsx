@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 
 // Data Contracts
-export type EmployeeStatus = 'Active' | 'Inactive' | 'On Leave';
+export type EmployeeStatus = 'Active' | 'Inactive' | 'On Leave' | 'Pending';
 
 export interface Employee {
     id: string; 
@@ -66,6 +66,7 @@ const getAvatarColor = (name: string) => {
 const getStatusBadgeVariant = (status: EmployeeStatus) => {
     switch (status) {
         case 'Active': return 'success';
+        case 'Pending': return 'warning';
         case 'On Leave': return 'warning';
         case 'Inactive': return 'error';
         default: return 'default';
