@@ -95,19 +95,78 @@ export default function DashboardPage() {
 
     const csvContent = useMemo(() => {
         if (!stats) return null;
-        return [
-            ["Metric", "Count"],
-            ["Total Employees", stats.totalUsers],
-            ["Active Employees", stats.activeUsers],
-            ["Inactive Employees", stats.inactiveUsers],
-            ...Object.entries(stats.usersByTeam || {}).map(([team, count]) => [
-                `Team: ${team}`,
-                count,
-            ]),
-        ]
-            .map((e) => e.join(","))
+
+        const rows: any[][] = [];
+
+        // 1. Overview Cards Metrics Section
+        rows.push(["--- DASHBOARD OVERVIEW METRICS ---"]);
+        rows.push(["Metric", "Value"]);
+        rows.push(["Total Employees", stats.totalUsers ?? 0]);
+        rows.push(["Active Employees", stats.activeUsers ?? 0]);
+        rows.push(["Inactive Employees", stats.inactiveUsers ?? 0]);
+        rows.push(["New Hires (Last 30 Days)", stats.newUsers ?? 0]);
+        rows.push(["Today's Present Employees", attendanceData?.todayPresent ?? 0]);
+        rows.push(["Today's Attendance Rate", stats.totalUsers > 0 ? `${Math.round(((attendanceData?.todayPresent ?? 0) / stats.totalUsers) * 100)}%` : "0%"]);
+        rows.push(["Total Applicants", stats.totalApplicants ?? 0]);
+        rows.push(["Open Positions", stats.openPositions ?? 0]);
+        rows.push([]);
+
+        // 2. Department Breakdown Section
+        rows.push(["--- DEPARTMENT DISTRIBUTION ---"]);
+        rows.push(["Department", "Employee Count"]);
+        Object.entries(stats.usersByTeam || {}).forEach(([team, count]) => {
+            rows.push([team || "Unassigned", count]);
+        });
+        rows.push([]);
+
+        // 3. Role Breakdown Section
+        rows.push(["--- ROLE DISTRIBUTION ---"]);
+        rows.push(["Role", "Employee Count"]);
+        Object.entries(stats.usersByRole || {}).forEach(([role, count]) => {
+            const displayRole = role.charAt(0).toUpperCase() + role.slice(1);
+            rows.push([displayRole, count]);
+        });
+        rows.push([]);
+
+        // 4. Recent Hires Section
+        rows.push(["--- RECENT HIRES ---"]);
+        rows.push(["Employee ID", "Name", "Role/Designation", "Joining Date", "Status"]);
+        (stats.recentEmployees || []).forEach((emp: any) => {
+            rows.push([
+                emp.employeeId || "N/A",
+                emp.name,
+                emp.jobTitle,
+                emp.joiningDate ? new Date(emp.joiningDate).toLocaleDateString() : "N/A",
+                emp.status
+            ]);
+        });
+        rows.push([]);
+
+        // 5. Pending Leaves Section
+        rows.push(["--- PENDING LEAVE REQUESTS ---"]);
+        rows.push(["Employee Name", "Leave Type", "Duration (Days)", "Requested On"]);
+        (stats.pendingLeaves || []).forEach((leave: any) => {
+            rows.push([
+                leave.employeeName,
+                leave.leaveType,
+                leave.numberOfDays,
+                leave.createdAt ? new Date(leave.createdAt).toLocaleDateString() : "N/A"
+            ]);
+        });
+
+        // Map to standard CSV format with cell escaping
+        return rows
+            .map((row) => 
+                row.map((cell) => {
+                    const stringVal = cell === undefined || cell === null ? "" : String(cell);
+                    if (stringVal.includes(",") || stringVal.includes('"') || stringVal.includes("\n")) {
+                        return `"${stringVal.replace(/"/g, '""')}"`;
+                    }
+                    return stringVal;
+                }).join(",")
+            )
             .join("\n");
-    }, [stats]);
+    }, [stats, attendanceData]);
 
     const handleExport = () => {
         if (!csvContent) return;

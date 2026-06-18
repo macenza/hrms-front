@@ -19,6 +19,12 @@ const isPublicRoute = (pathname: string): boolean => {
         '/kiosk',
         '/privacy-policy',
         '/terms-and-conditions',
+        '/privacy',
+        '/about',
+        '/blog',
+        '/contact',
+        '/features',
+        '/pricing',
         '/checkout-privacy',
         '/checkout-terms',
         '/register-company',
@@ -42,8 +48,9 @@ export default function AuthInitializer({ children }: { children: React.ReactNod
 
     useEffect(() => {
         if (typeof window !== 'undefined' && persistedUser?.mustChangePassword) {
-            if (window.location.pathname !== '/change-password') {
-                window.location.href = '/change-password';
+            const isOnSecuritySettings = window.location.pathname === '/settings' && window.location.search === '?tab=security';
+            if (!isOnSecuritySettings) {
+                window.location.href = '/settings?tab=security';
             }
         }
     }, [persistedUser]);
@@ -92,8 +99,9 @@ export default function AuthInitializer({ children }: { children: React.ReactNod
                     dispatch(setCredentials({ user: verifiedUser }));
 
                     if (verifiedUser?.mustChangePassword) {
-                        if (window.location.pathname !== '/change-password') {
-                            window.location.href = '/change-password';
+                        const isOnSecuritySettings = window.location.pathname === '/settings' && window.location.search === '?tab=security';
+                        if (!isOnSecuritySettings) {
+                            window.location.href = '/settings?tab=security';
                             return;
                         }
                     }

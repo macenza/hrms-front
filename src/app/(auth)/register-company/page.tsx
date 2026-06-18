@@ -238,6 +238,13 @@ export default function RegisterCompanyPage() {
                     password,
                     companyName,
                     subscriptionPlan: selectedPlan,
+                    phone: companyPhone,
+                    address,
+                    country,
+                    state,
+                    district,
+                    city,
+                    zipCode,
                 });
 
                 if (data.accessToken) {
@@ -326,6 +333,13 @@ export default function RegisterCompanyPage() {
                                 password,
                                 companyName,
                                 subscriptionPlan: selectedPlan === 'Starter' ? 'Growth' : selectedPlan,
+                                phone: companyPhone,
+                                address,
+                                country,
+                                state,
+                                district,
+                                city,
+                                zipCode,
                             });
 
                             if (data.accessToken) {

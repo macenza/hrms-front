@@ -50,7 +50,21 @@ const getStatusBadgeVariant = (status: string) => {
 };
 
 // Premium Dark-Mode Compatible Skeleton
-const TableRowSkeleton = () => (
+interface TableRowSkeletonProps {
+    hasSerialNumber: boolean;
+    hasManufacturer: boolean;
+    hasModel: boolean;
+    hasCost: boolean;
+    hasCondition: boolean;
+}
+
+const TableRowSkeleton = ({
+    hasSerialNumber,
+    hasManufacturer,
+    hasModel,
+    hasCost,
+    hasCondition
+}: TableRowSkeletonProps) => (
     <tr className="animate-pulse bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800">
         <td className="px-6 py-4">
             <div className="space-y-2">
@@ -59,6 +73,11 @@ const TableRowSkeleton = () => (
             </div>
         </td>
         <td className="px-6 py-4"><div className="h-4 w-24 bg-gray-200 dark:bg-gray-800 rounded"></div></td>
+        {hasSerialNumber && <td className="px-6 py-4 hidden xl:table-cell"><div className="h-4 w-20 bg-gray-200 dark:bg-gray-800 rounded"></div></td>}
+        {hasManufacturer && <td className="px-6 py-4 hidden md:table-cell"><div className="h-4 w-20 bg-gray-200 dark:bg-gray-800 rounded"></div></td>}
+        {hasModel && <td className="px-6 py-4 hidden md:table-cell"><div className="h-4 w-20 bg-gray-200 dark:bg-gray-800 rounded"></div></td>}
+        {hasCost && <td className="px-6 py-4 hidden xl:table-cell"><div className="h-4 w-12 bg-gray-200 dark:bg-gray-800 rounded"></div></td>}
+        {hasCondition && <td className="px-6 py-4 hidden lg:table-cell"><div className="h-4 w-16 bg-gray-200 dark:bg-gray-800 rounded"></div></td>}
         <td className="px-6 py-4 hidden lg:table-cell"><div className="h-4 w-32 bg-gray-200 dark:bg-gray-800 rounded"></div></td>
         <td className="px-6 py-4 hidden lg:table-cell"><div className="h-4 w-24 bg-gray-200 dark:bg-gray-800 rounded"></div></td>
         <td className="px-6 py-4"><div className="h-6 w-20 bg-gray-200 dark:bg-gray-800 rounded-full"></div></td>
@@ -94,6 +113,21 @@ export default function AssetTable({
 }: AssetTableProps) {
     const breakpoint = useBreakpoint();
     const isMobile = breakpoint === 'mobile';
+    
+    // Dynamic column detection: hide a column if all assets in the list are empty/N/A/default
+    const hasSerialNumber = assets.some(a => a.serialNumber && a.serialNumber !== 'N/A' && a.serialNumber !== '-');
+    const hasManufacturer = assets.some(a => a.manufacturer && a.manufacturer !== 'N/A' && a.manufacturer !== '-');
+    const hasModel = assets.some(a => a.model && a.model !== 'N/A' && a.model !== '-');
+    const hasCost = assets.some(a => a.cost !== undefined && a.cost !== null && a.cost !== 0);
+    const hasCondition = assets.some(a => a.condition && a.condition !== 'New' && a.condition !== 'N/A' && a.condition !== '-');
+
+    let colSpan = 6;
+    if (hasSerialNumber) colSpan++;
+    if (hasManufacturer) colSpan++;
+    if (hasModel) colSpan++;
+    if (hasCost) colSpan++;
+    if (hasCondition) colSpan++;
+
     const isInitialLoad = isLoading && assets.length === 0;
 
     // Build action menu items for a given asset
@@ -149,7 +183,7 @@ export default function AssetTable({
                                         {record.status}
                                     </Badge>
                                 </div>
-                                <div className="flex items-center justify-between text-xs">
+                                <div className="flex items-center justify-between text-xs mb-2">
                                     <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
                                         <span className="font-medium">{record.category}</span>
                                         <span className="text-gray-300 dark:text-gray-600">•</span>
@@ -159,6 +193,35 @@ export default function AssetTable({
                                     </div>
                                     <ActionMenu items={getActionItems(record)} />
                                 </div>
+                                {(record.serialNumber || record.manufacturer || record.model || record.cost || record.condition) && (
+                                    <div className="mt-2.5 pt-2.5 border-t border-gray-150 dark:border-gray-800 grid grid-cols-2 gap-x-4 gap-y-1.5 text-[11px] text-gray-550 dark:text-gray-400 font-medium">
+                                        {record.manufacturer && (
+                                            <div>
+                                                <span className="text-gray-400 dark:text-gray-500 font-bold">Mfr:</span> {record.manufacturer}
+                                            </div>
+                                        )}
+                                        {record.model && (
+                                            <div>
+                                                <span className="text-gray-400 dark:text-gray-500 font-bold">Model:</span> {record.model}
+                                            </div>
+                                        )}
+                                        {record.serialNumber && (
+                                            <div className="col-span-2">
+                                                <span className="text-gray-400 dark:text-gray-500 font-bold">S/N:</span> <span className="font-mono">{record.serialNumber}</span>
+                                            </div>
+                                        )}
+                                        {record.cost !== undefined && record.cost !== null && (
+                                            <div>
+                                                <span className="text-gray-400 dark:text-gray-500 font-bold">Cost:</span> ${record.cost}
+                                            </div>
+                                        )}
+                                        {record.condition && (
+                                            <div>
+                                                <span className="text-gray-400 dark:text-gray-500 font-bold">Cond:</span> {record.condition}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                         ))
                     )}
@@ -171,6 +234,11 @@ export default function AssetTable({
                             <tr>
                                 <th className="px-6 py-4">Asset Details</th>
                                 <th className="px-6 py-4">Category</th>
+                                {hasSerialNumber && <th className="px-6 py-4 hidden xl:table-cell">Serial Number</th>}
+                                {hasManufacturer && <th className="px-6 py-4 hidden md:table-cell">Manufacturer</th>}
+                                {hasModel && <th className="px-6 py-4 hidden md:table-cell">Model</th>}
+                                {hasCost && <th className="px-6 py-4 hidden xl:table-cell">Cost</th>}
+                                {hasCondition && <th className="px-6 py-4 hidden lg:table-cell">Condition</th>}
                                 <th className="px-6 py-4 hidden lg:table-cell">Assigned To</th>
                                 <th className="px-6 py-4 hidden lg:table-cell">Assigned Date</th>
                                 <th className="px-6 py-4">Status</th>
@@ -179,10 +247,19 @@ export default function AssetTable({
                         </thead>
                         <tbody className="divide-y divide-gray-100 dark:divide-gray-800 bg-white dark:bg-gray-900 transition-colors">
                             {isInitialLoad ? (
-                                 Array.from({ length: 5 }).map((_, idx) => <TableRowSkeleton key={idx} />)
+                                 Array.from({ length: 5 }).map((_, idx) => (
+                                     <TableRowSkeleton 
+                                         key={idx} 
+                                         hasSerialNumber={hasSerialNumber}
+                                         hasManufacturer={hasManufacturer}
+                                         hasModel={hasModel}
+                                         hasCost={hasCost}
+                                         hasCondition={hasCondition}
+                                     />
+                                 ))
                             ) : assets.length === 0 ? (
                                 <tr>
-                                    <td colSpan={6} className="px-6 py-16 text-center text-gray-500 dark:text-gray-400 transition-colors">
+                                    <td colSpan={colSpan} className="px-6 py-16 text-center text-gray-500 dark:text-gray-400 transition-colors">
                                         <div className="flex flex-col items-center justify-center">
                                             <div className="w-12 h-12 bg-gray-50 dark:bg-gray-800 rounded-full flex items-center justify-center mb-3 transition-colors">
                                                 <PackageOpen size={24} className="text-gray-400 dark:text-gray-500" />
@@ -202,6 +279,11 @@ export default function AssetTable({
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 font-medium text-gray-600 dark:text-gray-300 transition-colors">{record.category}</td>
+                                        {hasSerialNumber && <td className="px-6 py-4 font-mono text-xs text-gray-600 dark:text-gray-300 transition-colors hidden xl:table-cell">{record.serialNumber || '-'}</td>}
+                                        {hasManufacturer && <td className="px-6 py-4 text-gray-600 dark:text-gray-300 transition-colors hidden md:table-cell">{record.manufacturer || '-'}</td>}
+                                        {hasModel && <td className="px-6 py-4 text-gray-600 dark:text-gray-300 transition-colors hidden md:table-cell">{record.model || '-'}</td>}
+                                        {hasCost && <td className="px-6 py-4 text-gray-600 dark:text-gray-300 transition-colors hidden xl:table-cell">{record.cost !== undefined && record.cost !== null ? `$${record.cost}` : '-'}</td>}
+                                        {hasCondition && <td className="px-6 py-4 text-gray-600 dark:text-gray-300 transition-colors hidden lg:table-cell">{record.condition || 'New'}</td>}
                                         <td className="px-6 py-4 hidden lg:table-cell">
                                             <span className={cn(
                                                 "font-medium transition-colors",

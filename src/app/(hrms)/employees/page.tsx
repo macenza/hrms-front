@@ -128,19 +128,65 @@ export default function EmployeesPage() {
         }
     };
 
-    const handleExport = () => {
+    const handleExport = async () => {
         if (employees.length === 0) return toast.info("No data to export");
-        const headers = ["ID", "Name", "Department", "Role", "Email", "Phone", "Status"];
-        const csvContent = [
-            headers.join(","),
-            ...employees.map(e => `"${e.empId}","${e.name}","${e.department}","${e.role}","${e.email}","${e.phone}","${e.status}"`)
-        ].join("\n");
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement("a");
-        link.href = URL.createObjectURL(blob);
-        link.download = `Employees_Export_${new Date().toLocaleDateString()}.csv`;
-        link.click();
-        toast.success('Employee list exported successfully!');
+        
+        const exportToastId = toast.loading("Preparing CSV export...");
+        try {
+            // Fetch all employees matching current filters and search (using high limit to retrieve all matching)
+            const allData = await employeeService.getAll(1, 10000, debouncedSearchTerm, filters);
+            const exportEmployees = allData?.employees || [];
+            
+            if (exportEmployees.length === 0) {
+                toast.dismiss(exportToastId);
+                return toast.info("No data to export");
+            }
+
+            const formatDate = (dateStr: string) => {
+                if (!dateStr || dateStr === 'N/A') return 'N/A';
+                const d = new Date(dateStr);
+                if (isNaN(d.getTime())) return dateStr;
+                const year = d.getFullYear();
+                const month = String(d.getMonth() + 1).padStart(2, '0');
+                const day = String(d.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            };
+            
+            const headers = ["ID", "Name", "Department", "Role", "Email", "Phone", "Joining Date", "Status"];
+            const csvRows = [
+                headers.join(","),
+                ...exportEmployees.map(e => {
+                    const row = [
+                        e.empId || 'N/A',
+                        e.name || '',
+                        e.department || '',
+                        e.role || '',
+                        e.email || '',
+                        e.phone || '',
+                        formatDate(e.joiningDate),
+                        e.status || ''
+                    ];
+                    return row.map(cell => {
+                        const stringVal = cell === undefined || cell === null ? "" : String(cell);
+                        if (stringVal.includes(",") || stringVal.includes('"') || stringVal.includes("\n")) {
+                            return `"${stringVal.replace(/"/g, '""')}"`;
+                        }
+                        return stringVal;
+                    }).join(",");
+                })
+            ];
+            
+            const csvContent = csvRows.join("\n");
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = `Employees_Export_${new Date().toLocaleDateString()}.csv`;
+            link.click();
+            toast.success('Employee list exported successfully!', { id: exportToastId });
+        } catch (error) {
+            console.error('Failed to export employee data:', error);
+            toast.error('Failed to export employee data', { id: exportToastId });
+        }
     };
 
     return (

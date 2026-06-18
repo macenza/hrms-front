@@ -19,6 +19,12 @@ export interface CompanySettings {
     lastCompanyUpdate?: string | null;
     roles?: string[];
     departments?: string[];
+    address?: string;
+    country?: string;
+    state?: string;
+    district?: string;
+    city?: string;
+    zipCode?: string;
 }
 
 interface GeneralSettingsProps {
@@ -94,6 +100,12 @@ export default function GeneralSettings({
             setLastCompanyUpdate(initialData.lastCompanyUpdate || null);
             setRoles(initialData.roles || ['employee', 'manager', 'hr', 'admin']);
             setDepartments(initialData.departments || ['HR', 'Engineering', 'Marketing', 'Sales', 'Finance']);
+            setCompanyAddress(initialData.address || '');
+            setCountry(initialData.country || '');
+            setState(initialData.state || '');
+            setDistrict(initialData.district || '');
+            setCity(initialData.city || '');
+            setZipCode(initialData.zipCode || '');
             setLogoFile(null);
 
             if (initialData.companyLogoUrl) {
@@ -238,6 +250,12 @@ export default function GeneralSettings({
         formData.append('dateFormat', dateFormat);
         formData.append('roles', JSON.stringify(roles));
         formData.append('departments', JSON.stringify(departments));
+        formData.append('address', companyAddress);
+        formData.append('country', country);
+        formData.append('state', state);
+        formData.append('district', district);
+        formData.append('city', city);
+        formData.append('zipCode', zipCode);
 
         if (logoFile) {
             formData.append('logo', logoFile);

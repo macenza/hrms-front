@@ -45,6 +45,7 @@ export const ENDPOINTS = {
         UPLOAD: '/assets/upload',
         VALIDATE: '/assets/validate',
         IMPORT: '/assets/import',
+        TEMPLATE: '/assets/import-template',
         IMPORT_HISTORY: '/assets/import-history',
         EXPORT_ERRORS: '/assets/import-errors/export',
         ASSIGN: (id: string | number) => `/assets/${id}/assign`,

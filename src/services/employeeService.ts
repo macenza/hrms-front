@@ -33,8 +33,12 @@ export const employeeService = {
                 const s = filters.status.toLowerCase();
                 if (s === 'past') {
                     params.status = 'past';
+                } else if (s === 'pending') {
+                    params.status = 'pending';
+                } else if (s === 'active') {
+                    params.status = 'active';
                 } else {
-                    params.status = s === 'active' ? 'true' : 'false';
+                    params.status = s === 'inactive' ? 'false' : s;
                 }
             }
 
@@ -64,7 +68,9 @@ export const employeeService = {
                 joiningDate: user.profile?.employment?.joiningDate
                     ? new Date(user.profile.employment.joiningDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
                     : 'N/A',
-                status: user.isActive ? 'Active' : 'Inactive',
+                status: user.isActive 
+                    ? (user.hasLoggedIn ? 'Active' : 'Pending')
+                    : 'Inactive',
                 shiftId: user.profile?.employment?.shiftId || null,
                 batchNo: user.profile?.employment?.batchNo || ''
             }));
