@@ -55,7 +55,7 @@ export default function ProjectsPage() {
 
     useEffect(() => {
         if (!isAuthenticated && typeof window !== 'undefined') {
-            router.replace('/hrms-login');
+            router.replace('/login');
         }
     }, [isAuthenticated, router]);
 

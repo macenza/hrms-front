@@ -126,5 +126,6 @@ export const ENDPOINTS = {
             STATS: '/admin/leaves/stats',
             UPCOMING: '/admin/leaves/upcoming',
         }
-    }
+    },
+    INQUIRY: '/inquiry'
 };

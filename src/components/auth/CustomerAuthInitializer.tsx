@@ -50,7 +50,7 @@ export default function CustomerAuthInitializer({ children }: { children: React.
                     localStorage.removeItem('customer_token');
                     Cookies.remove('customer_token', { path: '/' });
                     
-                    const isProtected = typeof window !== 'undefined' && window.location.pathname.startsWith('/customer-dashboard');
+                    const isProtected = typeof window !== 'undefined' && window.location.pathname.startsWith('/subscription');
                     if (isProtected) {
                         window.location.href = '/login?error=session_expired';
                     }
@@ -59,7 +59,7 @@ export default function CustomerAuthInitializer({ children }: { children: React.
                 }
             } else {
                 dispatch(logOutCustomer());
-                const isProtected = typeof window !== 'undefined' && window.location.pathname.startsWith('/customer-dashboard');
+                const isProtected = typeof window !== 'undefined' && window.location.pathname.startsWith('/subscription');
                 if (isProtected) {
                     window.location.href = '/login?error=session_expired';
                 } else {

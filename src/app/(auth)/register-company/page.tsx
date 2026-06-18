@@ -26,12 +26,19 @@ const STEPS = [
 // Plan data
 const PLANS = [
     {
-        id: 'Starter',
-        name: 'Starter',
-        price: { usd: 29, inr: 2499 },
-        employeeLimit: 25,
-        description: 'Perfect for small teams getting started.',
-        features: ['Up to 25 Employees', 'Core HR Module', 'Attendance Tracking', 'Leave Management', 'Email Support'],
+        id: 'Growth',
+        name: 'Growth',
+        price: { usd: 49, inr: 499 },
+        employeeLimit: 50,
+        description: 'Perfect for fast-growing startups and small teams.',
+        features: [
+            'Up to 50 active employees',
+            'Comprehensive directory',
+            'Automated Leave management',
+            'Basic Payroll calculations',
+            'Without AI features',
+            'Standard email support (24h)'
+        ],
         popular: false,
         gradient: 'from-blue-500/10 to-cyan-500/10',
         border: 'border-blue-200 dark:border-blue-900/50',
@@ -42,30 +49,24 @@ const PLANS = [
     {
         id: 'Professional',
         name: 'Professional',
-        price: { usd: 99, inr: 7999 },
-        employeeLimit: 100,
-        description: 'For growing companies needing advanced tools.',
-        features: ['Up to 100 Employees', 'All Starter Features', 'Payroll Engine', 'Project Management', 'Priority Support', 'Custom Reports'],
+        price: { usd: 129, inr: 1999 },
+        employeeLimit: 250,
+        description: 'Optimized for mid-market organizations and scaling companies.',
+        features: [
+            'Up to 250 active employees',
+            'Leave & Attendance check-ins',
+            'Automated Disbursement Payroll',
+            'With AI (Employees can give AI interviews)',
+            'Cloudinary excel reporting',
+            'Advanced Asset Lifecycle tracking',
+            'Dedicated account representative'
+        ],
         popular: true,
         gradient: 'from-[#6D5DFD]/10 to-purple-500/10',
         border: 'border-[#6D5DFD]/30 dark:border-[#6D5DFD]/20',
         activeBorder: 'border-[#6D5DFD] ring-2 ring-[#6D5DFD]/20',
         badge: 'bg-[#6D5DFD]/10 text-[#6D5DFD] dark:bg-[#6D5DFD]/20',
         icon: Zap,
-    },
-    {
-        id: 'Enterprise',
-        name: 'Enterprise',
-        price: { usd: 299, inr: 24999 },
-        employeeLimit: 500,
-        description: 'Full-scale enterprise HR operations.',
-        features: ['Up to 500 Employees', 'All Professional Features', 'Recruitment Module', 'Advanced Analytics', 'SSO & SAML', 'Dedicated Account Manager', 'SLA Guarantee'],
-        popular: false,
-        gradient: 'from-amber-500/10 to-orange-500/10',
-        border: 'border-amber-200 dark:border-amber-900/50',
-        activeBorder: 'border-amber-500 ring-2 ring-amber-500/20',
-        badge: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
-        icon: Crown,
     },
 ];
 
@@ -236,7 +237,7 @@ export default function RegisterCompanyPage() {
                     email: adminEmail,
                     password,
                     companyName,
-                    subscriptionPlan: selectedPlan === 'Starter' ? 'Growth' : selectedPlan,
+                    subscriptionPlan: selectedPlan,
                 });
 
                 if (data.accessToken) {
@@ -507,10 +508,10 @@ export default function RegisterCompanyPage() {
                         {/* Address */}
                         <div className="space-y-4 pt-2 border-t border-gray-100 dark:border-gray-800">
                             <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 flex items-center gap-1.5 pt-2">
-                                <MapPin size={12} /> Address
+                                <MapPin size={12} /> Company Address
                             </h3>
                             <div className="space-y-1.5">
-                                <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Street Address</label>
+                                <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Company Street Address</label>
                                 <Input type="text" placeholder="123 Main Street, Suite 200" value={address} onChange={(e) => setAddress(e.target.value)} className="text-gray-900 dark:text-gray-100" />
                             </div>
                             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">

@@ -126,7 +126,7 @@ function PaymentSuccessContent() {
                                         <Home size={16} /> Home
                                     </Button>
                                 </Link>
-                                <Link href="/login" className="w-full">
+                                <Link href="/login?registered=true" className="w-full">
                                     <Button
                                         className="w-full py-5 text-sm font-bold bg-[#6D5DFD] hover:bg-[#5b4eed] text-white flex items-center justify-center gap-2 rounded-xl shadow-lg shadow-[#6D5DFD]/20 dark:shadow-none"
                                     >
