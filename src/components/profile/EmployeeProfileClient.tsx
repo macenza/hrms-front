@@ -120,7 +120,7 @@ export default function EmployeeProfileClient({ id }: EmployeeProfileClientProps
                 user?.name !== employee.name ||
                 JSON.stringify(user?.profile?.settings) !== JSON.stringify(mergedSettings)
             ) {
-                sessionStorage.setItem('hrms_user', JSON.stringify(updatedUser));
+                localStorage.setItem('hrms_user', JSON.stringify(updatedUser));
                 dispatch(setCredentials({ user: updatedUser as any }));
             }
         }

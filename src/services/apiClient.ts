@@ -37,8 +37,8 @@ const apiClient = axios.create({
 apiClient.interceptors.request.use(
     (config) => {
         if (typeof window !== 'undefined') {
-            const hrmsToken = sessionStorage.getItem('hrms_token');
-            const customerToken = sessionStorage.getItem('customer_token');
+            const hrmsToken = localStorage.getItem('hrms_token');
+            const customerToken = localStorage.getItem('customer_token');
             
             // Inspect Request URL directly to determine portal context strictly
             const isCustomerApi = config.url?.includes('/api/customers') || config.url?.includes('/customers');
@@ -141,15 +141,15 @@ apiClient.interceptors.response.use(
                 isRefreshing = true;
 
                 try {
-                    const localRefreshToken = typeof window !== 'undefined' ? sessionStorage.getItem('hrms_refreshToken') : null;
+                    const localRefreshToken = typeof window !== 'undefined' ? localStorage.getItem('hrms_refreshToken') : null;
                     const refreshResponse = await apiClient.post(ENDPOINTS.AUTH.REFRESH, { 
                         refreshToken: localRefreshToken 
                     });
                     
                     const newAccessToken = refreshResponse.data?.accessToken;
                     if (newAccessToken && typeof window !== 'undefined') {
-                        sessionStorage.setItem('hrms_token', newAccessToken);
-                        Cookies.set('hrms_token', newAccessToken, { secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/' });
+                        localStorage.setItem('hrms_token', newAccessToken);
+                        Cookies.set('hrms_token', newAccessToken, { expires: 7, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/' });
                     }
                     
                     processQueue(null);

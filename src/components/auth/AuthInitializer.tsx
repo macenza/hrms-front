@@ -84,8 +84,8 @@ export default function AuthInitializer({ children }: { children: React.ReactNod
                 console.error("Failed to load company settings on boot:", e);
             }
 
-            const token = typeof window !== 'undefined' ? sessionStorage.getItem('hrms_token') : null;
-            const cachedUserStr = typeof window !== 'undefined' ? sessionStorage.getItem('hrms_user') : null;
+            const token = typeof window !== 'undefined' ? localStorage.getItem('hrms_token') : null;
+            const cachedUserStr = typeof window !== 'undefined' ? localStorage.getItem('hrms_user') : null;
             let cachedUser = null;
             try {
                 if (cachedUserStr) cachedUser = JSON.parse(cachedUserStr);
@@ -95,7 +95,7 @@ export default function AuthInitializer({ children }: { children: React.ReactNod
                 try {
                     // apiClient will automatically attempt a refresh if the access token is expired.
                     const verifiedUser = await fetchCurrentUser();
-                    sessionStorage.setItem('hrms_user', JSON.stringify(verifiedUser)); 
+                    localStorage.setItem('hrms_user', JSON.stringify(verifiedUser)); 
                     dispatch(setCredentials({ user: verifiedUser }));
 
                     if (verifiedUser?.mustChangePassword) {
@@ -107,12 +107,12 @@ export default function AuthInitializer({ children }: { children: React.ReactNod
                     }
 
                     // Keep cookies in sync for edge middleware
-                    const currentToken = sessionStorage.getItem('hrms_token');
+                    const currentToken = localStorage.getItem('hrms_token');
                     if (currentToken) {
-                        Cookies.set('hrms_token', currentToken, { secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/' });
+                        Cookies.set('hrms_token', currentToken, { expires: 7, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/' });
                     }
                     if (verifiedUser?.role) {
-                        Cookies.set('hrms_role', verifiedUser.role.toLowerCase(), { secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/' });
+                        Cookies.set('hrms_role', verifiedUser.role.toLowerCase(), { expires: 7, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/' });
                     }
 
                     // Client-side automatic redirect if user is on /login with valid session

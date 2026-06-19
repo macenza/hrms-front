@@ -46,14 +46,14 @@ export default function UnifiedLoginForm() {
             
             // Store tokens
             if (data.accessToken) {
-                sessionStorage.setItem('hrms_token', data.accessToken);
-                Cookies.set('hrms_token', data.accessToken, { secure: process.env.NODE_ENV === 'production', sameSite: 'lax' });
+                localStorage.setItem('hrms_token', data.accessToken);
+                Cookies.set('hrms_token', data.accessToken, { expires: 7, secure: process.env.NODE_ENV === 'production', sameSite: 'lax' });
             }
             if (data.refreshToken) {
-                sessionStorage.setItem('hrms_refreshToken', data.refreshToken);
+                localStorage.setItem('hrms_refreshToken', data.refreshToken);
             }
             if (data.user?.role) {
-                Cookies.set('hrms_role', data.user.role.toLowerCase(), { secure: process.env.NODE_ENV === 'production', sameSite: 'lax' });
+                Cookies.set('hrms_role', data.user.role.toLowerCase(), { expires: 7, secure: process.env.NODE_ENV === 'production', sameSite: 'lax' });
             }
             
             // Normalize Mongoose _id to frontend id

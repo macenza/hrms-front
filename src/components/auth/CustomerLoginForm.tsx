@@ -49,11 +49,11 @@ export default function CustomerLoginForm() {
             
             if (data.accessToken) {
                 // Set B2B Customer Edge Cookie
-                Cookies.set('customer_token', data.accessToken, { secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/' });
-                sessionStorage.setItem('customer_token', data.accessToken);
+                Cookies.set('customer_token', data.accessToken, { expires: 7, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/' });
+                localStorage.setItem('customer_token', data.accessToken);
             }
             if (data.customer) {
-                sessionStorage.setItem('customer_user', JSON.stringify(data.customer));
+                localStorage.setItem('customer_user', JSON.stringify(data.customer));
             }
             
             dispatch(setCustomerCredentials({ user: data.customer }));

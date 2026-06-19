@@ -44,7 +44,7 @@ export function useUserTheme() {
             dispatch(setCredentials({ user: updatedUser }));
 
             // Update sessionStorage
-            sessionStorage.setItem('hrms_user', JSON.stringify(updatedUser));
+            localStorage.setItem('hrms_user', JSON.stringify(updatedUser));
 
             try {
                 // Call PUT /settings/notifications to save theme settings to the backend

@@ -48,14 +48,14 @@ export default function EmployeeLoginForm() {
             
             // Store tokens for cookieless cross-domain compatibility
             if (data.accessToken) {
-                sessionStorage.setItem('hrms_token', data.accessToken);
-                Cookies.set('hrms_token', data.accessToken, { secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/' });
+                localStorage.setItem('hrms_token', data.accessToken);
+                Cookies.set('hrms_token', data.accessToken, { expires: 7, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/' });
             }
             if (data.refreshToken) {
-                sessionStorage.setItem('hrms_refreshToken', data.refreshToken);
+                localStorage.setItem('hrms_refreshToken', data.refreshToken);
             }
             if (data.user?.role) {
-                Cookies.set('hrms_role', data.user.role.toLowerCase(), { secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/' });
+                Cookies.set('hrms_role', data.user.role.toLowerCase(), { expires: 7, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/' });
             }
 
             // Immediately load and apply company branding
