@@ -91,3 +91,116 @@ body {
   overflow-x: hidden;
   -webkit-text-size-adjust: 100%;
 }
+
+/* ── react-phone-number-input HRMS Overrides ── */
+.hrms-phone-input {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.hrms-phone-input .PhoneInputCountry {
+  display: flex;
+  align-items: center;
+  padding: 0 0.5rem;
+  height: 2.5rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  background: transparent;
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.hrms-phone-input .PhoneInputCountry:focus-within {
+  outline: none;
+  ring: 2px;
+  border-color: transparent;
+  box-shadow: 0 0 0 2px #2563eb;
+}
+
+.hrms-phone-input .PhoneInputCountryIcon {
+  width: 1.25rem;
+  height: auto;
+}
+
+.hrms-phone-input .PhoneInputCountrySelectArrow {
+  margin-left: 0.25rem;
+  opacity: 0.5;
+}
+
+.hrms-phone-input .PhoneInputInput {
+  flex: 1;
+  height: 2.5rem;
+  width: 100%;
+  padding: 0 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  background: transparent;
+  font-size: 0.875rem;
+  color: #111827;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.hrms-phone-input .PhoneInputInput::placeholder {
+  color: #9ca3af;
+}
+
+.hrms-phone-input .PhoneInputInput:focus {
+  outline: none;
+  border-color: transparent;
+  box-shadow: 0 0 0 2px #2563eb;
+}
+
+/* Error state */
+.hrms-phone-input--error .PhoneInputInput {
+  border-color: #ef4444;
+}
+.hrms-phone-input--error .PhoneInputInput:focus {
+  box-shadow: 0 0 0 2px #ef4444;
+}
+
+/* Disabled state */
+.hrms-phone-input--disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.hrms-phone-input--disabled .PhoneInputInput,
+.hrms-phone-input--disabled .PhoneInputCountry {
+  cursor: not-allowed;
+}
+
+/* ── Dark mode overrides ── */
+.dark .hrms-phone-input .PhoneInputCountry {
+  border-color: #374151;
+  background: rgba(3, 7, 18, 0.5);
+}
+
+.dark .hrms-phone-input .PhoneInputCountry:focus-within {
+  box-shadow: 0 0 0 2px #3b82f6;
+}
+
+.dark .hrms-phone-input .PhoneInputInput {
+  border-color: #374151;
+  background: rgba(3, 7, 18, 0.5);
+  color: #f3f4f6;
+}
+
+.dark .hrms-phone-input .PhoneInputInput::placeholder {
+  color: #6b7280;
+}
+
+.dark .hrms-phone-input .PhoneInputInput:focus {
+  box-shadow: 0 0 0 2px #3b82f6;
+}
+
+.dark .hrms-phone-input--error .PhoneInputInput {
+  border-color: #ef4444;
+}
+
+.dark .hrms-phone-input--error .PhoneInputInput:focus {
+  box-shadow: 0 0 0 2px #ef4444;
+}
+
+.dark .hrms-phone-input .PhoneInputCountrySelectArrow {
+  color: #9ca3af;
+}

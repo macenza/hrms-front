@@ -7,10 +7,15 @@ import Link from 'next/link';
 import { Eye, EyeOff, AlertCircle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { AddressForm } from '@/components/ui/AddressForm';
+import { validatePhone } from '@/components/ui/PhoneNumberInput';
 import { registerUser } from '@/services/authService';
 import { SignupPayload } from '@/types/index';
 import { useAppDispatch } from '@/store/hooks';
 import { setCredentials } from '@/store/authSlice';
+import { getEmptyAddressFormData } from '@/types/address';
+import { validatePostalCode } from '@/utils/postalCodeValidation';
+import type { AddressFormData } from '@/types/address';
 
 export default function SignupForm() {
     const router = useRouter();
@@ -25,31 +30,69 @@ export default function SignupForm() {
         password: '',
         team: '',
         gender: 'Male',
-        profile: {
-            phone: '',
-            address: '',
-        },
+        addressData: getEmptyAddressFormData(),
     });
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
+        setError(null);
         setFormData((prev) => ({ ...prev, [name]: value }));
-    };
-
-    const handleProfileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const { name, value } = e.target;
-        setFormData((prev) => ({
-            ...prev,
-            profile: { ...prev.profile, [name]: value },
-        }));
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
         setError(null);
+
+        // Validate phone if provided
+        const ad = formData.addressData;
+        if (ad.phoneNumber && !validatePhone(ad.phoneNumber)) {
+            setError('Please enter a valid phone number');
+            setIsLoading(false);
+            return;
+        }
+        if (ad.alternatePhoneNumber && !validatePhone(ad.alternatePhoneNumber)) {
+            setError('Please enter a valid alternate phone number');
+            setIsLoading(false);
+            return;
+        }
+        // Validate postal code if provided
+        if (ad.postalCode && ad.countryCode) {
+            const postalResult = validatePostalCode(ad.postalCode, ad.countryCode);
+            if (!postalResult.valid) {
+                setError(postalResult.message);
+                setIsLoading(false);
+                return;
+            }
+        }
+
         try {
-            const data = await registerUser(formData as unknown as SignupPayload);
+            const payload = {
+                name: formData.name,
+                email: formData.email,
+                password: formData.password,
+                team: formData.team,
+                gender: formData.gender,
+                profile: {
+                    phone: ad.phoneNumber || '',
+                    phoneCountryCode: ad.phoneCountryCode || '',
+                    alternatePhone: ad.alternatePhoneNumber || '',
+                    address: {
+                        addressLine1: ad.addressLine1?.trim() || '',
+                        addressLine2: ad.addressLine2?.trim() || '',
+                        country: ad.country || '',
+                        countryCode: ad.countryCode || '',
+                        state: ad.state || '',
+                        stateCode: ad.stateCode || '',
+                        city: ad.city || '',
+                        district: ad.district?.trim() || '',
+                        postalCode: ad.postalCode?.trim() || '',
+                        landmark: ad.landmark?.trim() || '',
+                    },
+                },
+            };
+
+            const data = await registerUser(payload as unknown as SignupPayload);
             const raw = data.user;
             const user = {
                 ...raw,
@@ -80,7 +123,7 @@ export default function SignupForm() {
                 </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-5">
                 <div className="space-y-1.5">
                     <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Full Name</label>
                     <Input
@@ -107,20 +150,6 @@ export default function SignupForm() {
                         />
                     </div>
                     <div className="space-y-1.5">
-                        <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Phone Number</label>
-                        <Input
-                            type="tel"
-                            name="phone"
-                            value={formData.profile.phone}
-                            onChange={handleProfileChange}
-                            placeholder="+1 (555) 000-0000"
-                            className="text-gray-900 dark:text-gray-100"
-                        />
-                    </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
                         <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Gender</label>
                         <select
                             name="gender"
@@ -133,30 +162,33 @@ export default function SignupForm() {
                             <option value="Other">Other</option>
                         </select>
                     </div>
-                    <div className="space-y-1.5">
-                        <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Team / Department</label>
-                        <Input
-                            name="team"
-                            value={formData.team}
-                            onChange={handleChange}
-                            placeholder="e.g. Engineering"
-                            required
-                            className="text-gray-900 dark:text-gray-100"
-                        />
-                    </div>
                 </div>
 
                 <div className="space-y-1.5">
-                    <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Address</label>
+                    <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Team / Department</label>
                     <Input
-                        name="address"
-                        value={formData.profile.address}
-                        onChange={handleProfileChange}
-                        placeholder="123 Business Pkwy, Suite 100"
+                        name="team"
+                        value={formData.team}
+                        onChange={handleChange}
+                        placeholder="e.g. Engineering"
+                        required
                         className="text-gray-900 dark:text-gray-100"
                     />
                 </div>
 
+                {/* Address & Contact Details */}
+                <div className="border-t border-gray-100 dark:border-gray-800 pt-5 transition-colors">
+                    <AddressForm
+                        value={formData.addressData}
+                        onChange={(data) => {
+                            setError(null);
+                            setFormData(prev => ({ ...prev, addressData: data }));
+                        }}
+                        disabled={isLoading}
+                    />
+                </div>
+
+                {/* Password */}
                 <div className="space-y-1.5">
                     <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Password</label>
                     <div className="relative">

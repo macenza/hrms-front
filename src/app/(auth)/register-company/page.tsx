@@ -1,44 +1,60 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import {
     Eye, EyeOff, Loader2, AlertCircle, Building2, CreditCard, QrCode,
     Check, ChevronRight, ChevronLeft, Shield, Sparkles, Users, Zap,
-    Crown, CheckCircle2, ArrowRight, Globe, MapPin, Phone, Info
+    Crown, CheckCircle2, Upload, X, ImageIcon, MapPin, Phone, Info
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/Card';
+import { AddressForm } from '@/components/ui/AddressForm';
+import { validatePhone } from '@/components/ui/PhoneNumberInput';
+import { EmailVerification } from '@/components/auth/EmailVerification';
 import { useAppDispatch } from '@/store/hooks';
 import { setCustomerCredentials } from '@/store/authSlice';
 import { registerCustomer } from '@/services/authService';
 import apiClient from '@/services/apiClient';
+import { getEmptyAddressFormData } from '@/types/address';
+import { validatePostalCode } from '@/utils/postalCodeValidation';
+import type { AddressFormData } from '@/types/address';
 import Cookies from 'js-cookie';
 
-// Step indicator
+// ── Step definitions ──
 const STEPS = [
-    { id: 1, label: 'Company Info', icon: Building2 },
-    { id: 2, label: 'Select Plan', icon: CreditCard },
-    { id: 3, label: 'Payment', icon: Shield },
+    {
+        id: 1,
+        label: 'Organization Details',
+        description: 'Basic information about your organization',
+        icon: Building2,
+    },
+    {
+        id: 2,
+        label: 'Select Plan',
+        description: 'Choose the right plan for your team',
+        icon: CreditCard,
+    },
+    {
+        id: 3,
+        label: 'Payment',
+        description: 'Complete your subscription',
+        icon: Shield,
+    },
 ];
 
-// Plan data
+// ── Plan data ──
 const PLANS = [
     {
-        id: 'Growth',
-        name: 'Growth',
-        price: { usd: 49, inr: 499 },
-        employeeLimit: 50,
-        description: 'Perfect for fast-growing startups and small teams.',
-        features: [
-            'Up to 50 active employees',
-            'Comprehensive directory',
-            'Automated Leave management',
-            'Basic Payroll calculations',
-            'Without AI features',
-            'Standard email support (24h)'
-        ],
+        id: 'Starter',
+        name: 'Starter',
+        price: { usd: 29, inr: 2499 },
+        employeeLimit: 25,
+        description: 'Perfect for small teams getting started.',
+        features: ['Up to 25 Employees', 'Core HR Module', 'Attendance Tracking', 'Leave Management', 'Email Support'],
         popular: false,
         gradient: 'from-blue-500/10 to-cyan-500/10',
         border: 'border-blue-200 dark:border-blue-900/50',
@@ -49,24 +65,30 @@ const PLANS = [
     {
         id: 'Professional',
         name: 'Professional',
-        price: { usd: 129, inr: 1999 },
-        employeeLimit: 250,
-        description: 'Optimized for mid-market organizations and scaling companies.',
-        features: [
-            'Up to 250 active employees',
-            'Leave & Attendance check-ins',
-            'Automated Disbursement Payroll',
-            'With AI (Employees can give AI interviews)',
-            'Cloudinary excel reporting',
-            'Advanced Asset Lifecycle tracking',
-            'Dedicated account representative'
-        ],
+        price: { usd: 99, inr: 7999 },
+        employeeLimit: 100,
+        description: 'For growing companies needing advanced tools.',
+        features: ['Up to 100 Employees', 'All Starter Features', 'Payroll Engine', 'Project Management', 'Priority Support', 'Custom Reports'],
         popular: true,
         gradient: 'from-[#6D5DFD]/10 to-purple-500/10',
         border: 'border-[#6D5DFD]/30 dark:border-[#6D5DFD]/20',
         activeBorder: 'border-[#6D5DFD] ring-2 ring-[#6D5DFD]/20',
         badge: 'bg-[#6D5DFD]/10 text-[#6D5DFD] dark:bg-[#6D5DFD]/20',
         icon: Zap,
+    },
+    {
+        id: 'Enterprise',
+        name: 'Enterprise',
+        price: { usd: 299, inr: 24999 },
+        employeeLimit: 500,
+        description: 'Full-scale enterprise HR operations.',
+        features: ['Up to 500 Employees', 'All Professional Features', 'Recruitment Module', 'Advanced Analytics', 'SSO & SAML', 'Dedicated Account Manager', 'SLA Guarantee'],
+        popular: false,
+        gradient: 'from-amber-500/10 to-orange-500/10',
+        border: 'border-amber-200 dark:border-amber-900/50',
+        activeBorder: 'border-amber-500 ring-2 ring-amber-500/20',
+        badge: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
+        icon: Crown,
     },
 ];
 
@@ -86,34 +108,45 @@ const loadRazorpayScript = () => {
 export default function RegisterCompanyPage() {
     const router = useRouter();
     const dispatch = useAppDispatch();
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const [step, setStep] = useState(1);
 
-    // Step 1: Company Info
+    // ── Step 1 State ──
     const [companyName, setCompanyName] = useState('');
     const [companyEmail, setCompanyEmail] = useState('');
-    const [companyPhone, setCompanyPhone] = useState('');
     const [adminName, setAdminName] = useState('');
     const [adminEmail, setAdminEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
-    const [address, setAddress] = useState('');
-    const [country, setCountry] = useState('');
-    const [state, setState] = useState('');
-    const [district, setDistrict] = useState('');
-    const [city, setCity] = useState('');
-    const [zipCode, setZipCode] = useState('');
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    const [orgPrefix, setOrgPrefix] = useState('');
+    const [logo, setLogo] = useState<File | null>(null);
+    const [logoPreview, setLogoPreview] = useState<string | null>(null);
+    const [addressData, setAddressData] = useState<AddressFormData>(getEmptyAddressFormData());
 
-    // Step 2: Plan
+    // ── Email Verification State ──
+    const [orgEmailVerified, setOrgEmailVerified] = useState(false);
+    const [adminEmailVerified, setAdminEmailVerified] = useState(false);
+
+    // ── Step 2 State ──
     const [selectedPlan, setSelectedPlan] = useState('Professional');
 
-    // Step 3: Payment
+    // ── Step 3 State ──
     const [paymentMethod, setPaymentMethod] = useState<'card' | 'upi'>('card');
     const [isPaying, setIsPaying] = useState(false);
     const [paymentSuccess, setPaymentSuccess] = useState(false);
     const [agreeToTerms, setAgreeToTerms] = useState(false);
     const [showMockModal, setShowMockModal] = useState(false);
     const [mockOrderData, setMockOrderData] = useState<any>(null);
+
+    // ── General ──
+    const [error, setError] = useState<string | null>(null);
+
+    // ── Validation Highlight State ──
+    const [invalidFields, setInvalidFields] = useState<Set<string>>(new Set());
+    const validationTimerRef = useRef<NodeJS.Timeout | null>(null);
 
     // Save and load state from sessionStorage to persist checkout info & active step
     useEffect(() => {
@@ -127,18 +160,15 @@ export default function RegisterCompanyPage() {
                     const data = JSON.parse(saved);
                     if (data.companyName) setCompanyName(data.companyName);
                     if (data.companyEmail) setCompanyEmail(data.companyEmail);
-                    if (data.companyPhone) setCompanyPhone(data.companyPhone);
                     if (data.adminName) setAdminName(data.adminName);
                     if (data.adminEmail) setAdminEmail(data.adminEmail);
                     if (data.password) setPassword(data.password);
-                    if (data.address) setAddress(data.address);
-                    if (data.country) setCountry(data.country);
-                    if (data.state) setState(data.state);
-                    if (data.district) setDistrict(data.district);
-                    if (data.city) setCity(data.city);
-                    if (data.zipCode) setZipCode(data.zipCode);
+                    if (data.orgPrefix) setOrgPrefix(data.orgPrefix);
+                    if (data.addressData) setAddressData(data.addressData);
                     if (data.selectedPlan) setSelectedPlan(data.selectedPlan);
                     if (data.agreeToTerms) setAgreeToTerms(data.agreeToTerms);
+                    if (data.orgEmailVerified) setOrgEmailVerified(data.orgEmailVerified);
+                    if (data.adminEmailVerified) setAdminEmailVerified(data.adminEmailVerified);
                     
                     if (urlStep) {
                         setStep(parseInt(urlStep, 10));
@@ -157,17 +187,45 @@ export default function RegisterCompanyPage() {
     useEffect(() => {
         if (typeof window !== 'undefined') {
             const data = {
-                step, companyName, companyEmail, companyPhone, adminName, adminEmail,
-                password, address, country, state, district, city, zipCode, selectedPlan, agreeToTerms
+                step, companyName, companyEmail, adminName, adminEmail, password, orgPrefix,
+                addressData, selectedPlan, agreeToTerms, orgEmailVerified, adminEmailVerified
             };
             sessionStorage.setItem('register_company_flow', JSON.stringify(data));
         }
-    }, [step, companyName, companyEmail, companyPhone, adminName, adminEmail, password, address, country, state, district, city, zipCode, selectedPlan, agreeToTerms]);
+    }, [step, companyName, companyEmail, adminName, adminEmail, password, orgPrefix, addressData, selectedPlan, agreeToTerms, orgEmailVerified, adminEmailVerified]);
 
-    // General
-    const [error, setError] = useState<string | null>(null);
+    /** Scroll to the first invalid field and flash red borders for 3 seconds */
+    const highlightInvalidFields = useCallback((fields: string[]) => {
+        if (fields.length === 0) return;
 
-    // Password strength
+        // Clear any previous timer
+        if (validationTimerRef.current) {
+            clearTimeout(validationTimerRef.current);
+        }
+
+        setInvalidFields(new Set(fields));
+
+        // Scroll to the first invalid field
+        const firstFieldEl = document.querySelector(`[data-field="${fields[0]}"]`);
+        if (firstFieldEl) {
+            firstFieldEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        // Auto-clear red borders after 3 seconds
+        validationTimerRef.current = setTimeout(() => {
+            setInvalidFields(new Set());
+            validationTimerRef.current = null;
+        }, 3000);
+    }, []);
+
+    /** Helper: returns red border classes if field is in the invalid set */
+    const fieldErrorClass = useCallback((fieldName: string) => {
+        return invalidFields.has(fieldName)
+            ? 'border-red-500 ring-2 ring-red-500/20 dark:border-red-500 transition-all duration-300'
+            : '';
+    }, [invalidFields]);
+
+    // ── Password strength ──
     const getPasswordStrength = (pw: string) => {
         let score = 0;
         if (pw.length >= 8) score++;
@@ -181,33 +239,133 @@ export default function RegisterCompanyPage() {
     const pwStrengthLabel = ['', 'Weak', 'Fair', 'Good', 'Strong'][pwStrength] || '';
     const pwStrengthColor = ['', 'bg-red-500', 'bg-amber-500', 'bg-blue-500', 'bg-emerald-500'][pwStrength] || '';
 
-    // Step 1 validation
+    // ── Logo handling ──
+    const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        if (file.size > 2 * 1024 * 1024) {
+            setError('Logo file must be under 2MB.');
+            return;
+        }
+
+        if (!file.type.startsWith('image/')) {
+            setError('Please upload an image file.');
+            return;
+        }
+
+        setLogo(file);
+        const reader = new FileReader();
+        reader.onload = (ev) => setLogoPreview(ev.target?.result as string);
+        reader.readAsDataURL(file);
+        setError(null);
+    };
+
+    const removeLogo = () => {
+        setLogo(null);
+        setLogoPreview(null);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+    };
+
+    // ── Validation ──
     const validateStep1 = () => {
         setError(null);
-        if (!companyName.trim()) { setError('Company name is required.'); return false; }
-        if (!companyEmail.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(companyEmail)) { setError('Valid company email is required.'); return false; }
-        if (!companyPhone.trim() || !/^[\d\s\-+()]{7,15}$/.test(companyPhone)) { setError('Valid phone number is required.'); return false; }
-        if (!adminName.trim()) { setError('Admin name is required.'); return false; }
-        if (!adminEmail.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(adminEmail)) { setError('Valid admin email is required.'); return false; }
-        if (password.length < 8) { setError('Password must be at least 8 characters.'); return false; }
-        if (pwStrength < 2) { setError('Please use a stronger password (include uppercase, numbers, or symbols).'); return false; }
-        if (!country.trim()) { setError('Country is required.'); return false; }
-        if (!city.trim()) { setError('City is required.'); return false; }
+        const errors: string[] = [];
+        const messages: string[] = [];
+
+        if (!companyName.trim()) { errors.push('companyName'); messages.push('Organization name'); }
+        if (!companyEmail.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(companyEmail)) { errors.push('companyEmail'); messages.push('Organization email'); }
+        else if (!orgEmailVerified) { errors.push('companyEmail'); messages.push('Organization email verification'); }
+        if (!adminName.trim()) { errors.push('adminName'); messages.push('Admin name'); }
+        if (!adminEmail.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(adminEmail)) { errors.push('adminEmail'); messages.push('Admin email'); }
+        else if (!adminEmailVerified) { errors.push('adminEmail'); messages.push('Admin email verification'); }
+        if (password.length < 8 || pwStrength < 2) { errors.push('password'); messages.push('Password (too weak)'); }
+        else if (password !== confirmPassword) { errors.push('confirmPassword'); messages.push('Confirm password (does not match)'); }
+
+        // Address validation
+        if (!addressData.addressLine1.trim()) { errors.push('addressLine1'); messages.push('Address Line 1'); }
+        if (!addressData.countryCode.trim()) { errors.push('countryCode'); messages.push('Country'); }
+        if (!addressData.stateCode.trim()) { errors.push('stateCode'); messages.push('State'); }
+        if (!addressData.city.trim()) { errors.push('city'); messages.push('City'); }
+        if (!addressData.postalCode.trim()) { errors.push('postalCode'); messages.push('Postal Code'); }
+
+        // Validate phone
+        if (!addressData.phoneNumber) {
+            errors.push('phoneNumber'); messages.push('Phone number');
+        } else if (!validatePhone(addressData.phoneNumber)) {
+            errors.push('phoneNumber'); messages.push('Valid Phone number');
+        }
+
+        // Validate postal code format
+        if (addressData.postalCode && addressData.countryCode) {
+            const result = validatePostalCode(addressData.postalCode, addressData.countryCode);
+            if (!result.valid) { errors.push('postalCode'); messages.push('Valid Postal code'); }
+        }
+
+        if (errors.length > 0) {
+            setError(`Please fill in the required fields: ${messages.join(', ')}.`);
+            highlightInvalidFields(errors);
+            return false;
+        }
         return true;
     };
 
     const handleNextStep = () => {
         if (step === 1 && !validateStep1()) return;
         setError(null);
+        setInvalidFields(new Set());
         setStep(step + 1);
     };
 
     const handlePrevStep = () => {
         setError(null);
+        setInvalidFields(new Set());
         setStep(step - 1);
     };
 
     const selectedPlanData = PLANS.find(p => p.id === selectedPlan)!;
+
+    const executeFinalRegistration = async (razorpayPaymentId: string) => {
+        // Construct standard payload containing fields expected by backend schema
+        const registerPayload = {
+            name: adminName,
+            email: adminEmail,
+            password,
+            companyName,
+            companyEmail,
+            subscriptionPlan: selectedPlan === 'Starter' ? 'Growth' : selectedPlan,
+            phone: addressData.phoneNumber || undefined,
+            address: addressData.addressLine1 + (addressData.addressLine2 ? `, ${addressData.addressLine2}` : ''),
+            country: addressData.country,
+            state: addressData.state,
+            district: addressData.district || undefined,
+            city: addressData.city,
+            zipCode: addressData.postalCode,
+        };
+
+        const data = await registerCustomer(registerPayload);
+
+        if (data.accessToken) {
+            Cookies.set('customer_token', data.accessToken, { expires: 7, secure: process.env.NODE_ENV === 'production', sameSite: 'lax' });
+            localStorage.setItem('customer_token', data.accessToken);
+        }
+        if (data.customer) {
+            localStorage.setItem('customer_user', JSON.stringify(data.customer));
+        }
+
+        dispatch(setCustomerCredentials({ user: data.customer }));
+        if (typeof window !== 'undefined') {
+            sessionStorage.removeItem('register_company_flow');
+        }
+
+        setIsPaying(false);
+        setPaymentSuccess(true);
+
+        // Redirect to success page
+        setTimeout(() => {
+            router.push(`/payment-success?company=${encodeURIComponent(companyName)}&plan=${encodeURIComponent(selectedPlan)}&txn=${razorpayPaymentId}&amount=${selectedPlanData.price.inr}`);
+        }, 1500);
+    };
 
     const handleCompleteMockPayment = async (status: 'success' | 'fail') => {
         if (status === 'fail') {
@@ -219,54 +377,18 @@ export default function RegisterCompanyPage() {
         setIsPaying(true);
         setShowMockModal(false);
         try {
-            const amountInINR = selectedPlanData.price.inr;
             const response = {
                 razorpay_order_id: mockOrderData.id,
                 razorpay_payment_id: `pay_mock_${Math.random().toString(36).substring(2, 12)}`,
                 razorpay_signature: `sig_mock_${Math.random().toString(36).substring(2, 12)}`
             };
 
-            // 4. Verify payment signature on backend
+            // Verify payment signature on backend
             const verifyRes = await apiClient.post('/payment/verify-signature', response);
             const verifyData = verifyRes.data;
 
             if (verifyData.success) {
-                // 5. Complete workspace registration
-                const data = await registerCustomer({
-                    name: adminName,
-                    email: adminEmail,
-                    password,
-                    companyName,
-                    subscriptionPlan: selectedPlan,
-                    phone: companyPhone,
-                    address,
-                    country,
-                    state,
-                    district,
-                    city,
-                    zipCode,
-                });
-
-                if (data.accessToken) {
-                    Cookies.set('customer_token', data.accessToken, { expires: 7, secure: process.env.NODE_ENV === 'production', sameSite: 'lax' });
-                    localStorage.setItem('customer_token', data.accessToken);
-                }
-                if (data.customer) {
-                    localStorage.setItem('customer_user', JSON.stringify(data.customer));
-                }
-
-                dispatch(setCustomerCredentials({ user: data.customer }));
-                if (typeof window !== 'undefined') {
-                    sessionStorage.removeItem('register_company_flow');
-                }
-
-                setIsPaying(false);
-                setPaymentSuccess(true);
-
-                // Redirect to payment success page
-                setTimeout(() => {
-                    router.push(`/payment-success?company=${encodeURIComponent(companyName)}&plan=${encodeURIComponent(selectedPlan)}&txn=${response.razorpay_payment_id}&amount=${amountInINR}`);
-                }, 1500);
+                await executeFinalRegistration(response.razorpay_payment_id);
             } else {
                 throw new Error('Payment verification failed.');
             }
@@ -326,42 +448,7 @@ export default function RegisterCompanyPage() {
                         const verifyData = verifyRes.data;
 
                         if (verifyData.success) {
-                            // 5. Complete workspace registration
-                            const data = await registerCustomer({
-                                name: adminName,
-                                email: adminEmail,
-                                password,
-                                companyName,
-                                subscriptionPlan: selectedPlan === 'Starter' ? 'Growth' : selectedPlan,
-                                phone: companyPhone,
-                                address,
-                                country,
-                                state,
-                                district,
-                                city,
-                                zipCode,
-                            });
-
-                            if (data.accessToken) {
-                                Cookies.set('customer_token', data.accessToken, { expires: 7, secure: process.env.NODE_ENV === 'production', sameSite: 'lax' });
-                                localStorage.setItem('customer_token', data.accessToken);
-                            }
-                            if (data.customer) {
-                                localStorage.setItem('customer_user', JSON.stringify(data.customer));
-                            }
-
-                            dispatch(setCustomerCredentials({ user: data.customer }));
-                            if (typeof window !== 'undefined') {
-                                sessionStorage.removeItem('register_company_flow');
-                            }
-
-                            setIsPaying(false);
-                            setPaymentSuccess(true);
-
-                            // Redirect to payment success page
-                            setTimeout(() => {
-                                router.push(`/payment-success?company=${encodeURIComponent(companyName)}&plan=${encodeURIComponent(selectedPlan)}&txn=${response.razorpay_payment_id}&amount=${amountInINR}`);
-                            }, 1500);
+                            await executeFinalRegistration(response.razorpay_payment_id);
                         } else {
                             throw new Error('Payment verification failed.');
                         }
@@ -373,7 +460,7 @@ export default function RegisterCompanyPage() {
                 prefill: {
                     name: adminName,
                     email: adminEmail,
-                    contact: companyPhone
+                    contact: addressData.phoneNumber
                 },
                 theme: {
                     color: "#6D5DFD"
@@ -395,188 +482,387 @@ export default function RegisterCompanyPage() {
     };
 
     return (
-        <div className="w-full max-w-[720px] mx-auto">
-            {/* Step Progress */}
-            <div className="flex items-center justify-center gap-2 mb-8">
+        <div className="w-full max-w-[1100px] mx-auto px-4 py-6">
+
+            {/* ── PROGRESS BAR ── */}
+            <div className="flex items-start justify-center mb-10">
                 {STEPS.map((s, idx) => {
-                    const Icon = s.icon;
                     const isActive = step === s.id;
                     const isCompleted = step > s.id;
                     return (
                         <React.Fragment key={s.id}>
-                            <div className="flex items-center gap-2">
-                                <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300 ${
-                                    isCompleted
-                                        ? 'bg-emerald-500 text-white shadow-md shadow-emerald-200'
-                                        : isActive
-                                        ? 'bg-[#6D5DFD] text-white shadow-md shadow-[#6D5DFD]/30'
-                                        : 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500'
-                                }`}>
-                                    {isCompleted ? <Check size={16} /> : <Icon size={16} />}
+                            {/* Step circle + label */}
+                            <div className="flex flex-col items-center text-center w-44">
+                                <div
+                                    className={`w-11 h-11 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-500 mb-2 ${
+                                        isCompleted
+                                            ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-200 dark:shadow-emerald-900/30'
+                                            : isActive
+                                            ? 'bg-[#6D5DFD] text-white shadow-lg shadow-[#6D5DFD]/30 ring-4 ring-[#6D5DFD]/15'
+                                            : 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 border-2 border-gray-200 dark:border-gray-700'
+                                    }`}
+                                >
+                                    {isCompleted ? <Check size={18} /> : s.id}
                                 </div>
-                                <span className={`text-xs font-bold hidden sm:block transition-colors ${
-                                    isActive ? 'text-gray-900 dark:text-gray-100' : 'text-gray-400 dark:text-gray-500'
-                                }`}>{s.label}</span>
+                                <span
+                                    className={`text-xs font-bold transition-colors leading-tight ${
+                                        isActive
+                                            ? 'text-gray-900 dark:text-gray-100'
+                                            : isCompleted
+                                            ? 'text-emerald-600 dark:text-emerald-400'
+                                            : 'text-gray-400 dark:text-gray-500'
+                                    }`}
+                                >
+                                    {s.label}
+                                </span>
+                                <span className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5 leading-tight hidden sm:block">
+                                    {s.description}
+                                </span>
                             </div>
+                            {/* Connector line */}
                             {idx < STEPS.length - 1 && (
-                                <div className={`w-8 sm:w-12 h-0.5 rounded-full transition-colors ${
-                                    step > s.id ? 'bg-emerald-500' : 'bg-gray-200 dark:bg-gray-800'
-                                }`} />
+                                <div className="flex-1 mt-5 px-2">
+                                    <div
+                                        className={`h-0.5 w-full rounded-full transition-all duration-500 ${
+                                            step > s.id ? 'bg-emerald-500' : 'bg-gray-200 dark:bg-gray-700'
+                                        }`}
+                                    />
+                                </div>
                             )}
                         </React.Fragment>
                     );
                 })}
             </div>
 
-            {/* Card */}
-            <div className="bg-white dark:bg-gray-900 p-6 sm:p-8 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-800 animate-in fade-in zoom-in-95 duration-300">
+            {/* Error Banner */}
+            {error && (
+                <div className="mb-6 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm rounded-xl flex items-center gap-2 font-medium animate-in fade-in slide-in-from-top-2 duration-200">
+                    <AlertCircle size={18} className="shrink-0" />
+                    <span>{error}</span>
+                </div>
+            )}
 
-                {error && (
-                    <div className="mb-6 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm rounded-lg flex items-center gap-2 font-medium">
-                        <AlertCircle size={18} className="shrink-0" />
-                        <span>{error}</span>
-                    </div>
-                )}
+            {/* ── STEP 1 ── */}
+            {step === 1 && (
+                <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
 
-                {/* STEP 1: Company Information */}
-                {step === 1 && (
-                    <div className="space-y-6 animate-in slide-in-from-right-4 duration-300">
-                        <div className="text-center mb-2">
-                            <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100 tracking-tight flex items-center justify-center gap-2">
-                                <Building2 className="w-5 h-5 text-[#6D5DFD]" />
-                                Company Information
-                            </h1>
-                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 font-medium">
-                                Tell us about your organization and primary admin
-                            </p>
-                        </div>
-
-                        {/* Company Details */}
-                        <div className="space-y-4">
-                            <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 flex items-center gap-1.5">
-                                <Building2 size={12} /> Organization
-                            </h3>
+                    {/* Organization Details */}
+                    <Card className="py-6">
+                        <CardHeader className="border-b border-gray-100 dark:border-gray-800 pb-4">
+                            <div className="flex items-center gap-2.5">
+                                <div className="p-2 rounded-lg bg-[#6D5DFD]/10">
+                                    <Building2 className="w-5 h-5 text-[#6D5DFD]" />
+                                </div>
+                                <div>
+                                    <CardTitle className="text-base font-bold text-gray-900 dark:text-gray-100">
+                                        Organization Details
+                                    </CardTitle>
+                                    <CardDescription className="text-xs mt-0.5">
+                                        Basic information about your organization
+                                    </CardDescription>
+                                </div>
+                            </div>
+                        </CardHeader>
+                        <CardContent className="space-y-4 pt-4">
+                            {/* Org Name + Prefix */}
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div className="space-y-1.5">
-                                    <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Company Name *</label>
-                                    <Input type="text" placeholder="Acme Corporation" required value={companyName} onChange={(e) => setCompanyName(e.target.value)} className="text-gray-900 dark:text-gray-100" />
-                                </div>
-                                <div className="space-y-1.5">
-                                    <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Company Email *</label>
-                                    <Input type="email" placeholder="info@acme.com" required value={companyEmail} onChange={(e) => setCompanyEmail(e.target.value)} className="text-gray-900 dark:text-gray-100" />
-                                </div>
-                            </div>
-                            <div className="space-y-1.5">
-                                <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Company Phone *</label>
-                                <Input type="tel" placeholder="+91 98765 43210" required value={companyPhone} onChange={(e) => setCompanyPhone(e.target.value)} className="text-gray-900 dark:text-gray-100" />
-                            </div>
-                        </div>
-
-                        {/* Admin Details */}
-                        <div className="space-y-4 pt-2 border-t border-gray-100 dark:border-gray-800">
-                            <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 flex items-center gap-1.5 pt-2">
-                                <Shield size={12} /> Primary Administrator
-                            </h3>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div className="space-y-1.5">
-                                    <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Admin Name *</label>
-                                    <Input type="text" placeholder="John Doe" required value={adminName} onChange={(e) => setAdminName(e.target.value)} className="text-gray-900 dark:text-gray-100" />
-                                </div>
-                                <div className="space-y-1.5">
-                                    <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Admin Email *</label>
-                                    <Input type="email" placeholder="admin@acme.com" required value={adminEmail} onChange={(e) => setAdminEmail(e.target.value)} className="text-gray-900 dark:text-gray-100" />
-                                </div>
-                            </div>
-                            <div className="space-y-1.5">
-                                <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Password *</label>
-                                <div className="relative">
+                                <div className="space-y-1.5" data-field="companyName">
+                                    <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Organization Name *</label>
                                     <Input
-                                        type={showPassword ? "text" : "password"}
-                                        placeholder="••••••••"
-                                        required
-                                        value={password}
-                                        onChange={(e) => setPassword(e.target.value)}
-                                        className="pr-10 text-gray-900 dark:text-gray-100"
+                                        placeholder="Enter full organization name"
+                                        value={companyName}
+                                        onChange={(e) => { setCompanyName(e.target.value); setError(null); }}
+                                        className={`text-gray-900 dark:text-gray-100 ${fieldErrorClass('companyName')}`}
                                     />
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowPassword(!showPassword)}
-                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                                    >
-                                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                                    </button>
                                 </div>
-                                {password && (
-                                    <div className="flex items-center gap-2 mt-2">
-                                        <div className="flex gap-1 flex-1">
-                                            {[1, 2, 3, 4].map((i) => (
-                                                <div key={i} className={`h-1.5 flex-1 rounded-full transition-colors ${i <= pwStrength ? pwStrengthColor : 'bg-gray-200 dark:bg-gray-700'}`} />
-                                            ))}
-                                        </div>
-                                        <span className="text-[10px] font-bold text-gray-500">{pwStrengthLabel}</span>
+                                <div className="space-y-1.5">
+                                    <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Organization Prefix</label>
+                                    <Input
+                                        placeholder="E.G. ABC FOR ABC COMPANY"
+                                        value={orgPrefix}
+                                        onChange={(e) => setOrgPrefix(e.target.value.toUpperCase().slice(0, 5))}
+                                        maxLength={5}
+                                        className="text-gray-900 dark:text-gray-100"
+                                    />
+                                    <p className="text-[10px] text-[#6D5DFD] font-medium">Used for generating unique IDs. Maximum 5 characters.</p>
+                                </div>
+                            </div>
+
+                            {/* Org Email with OTP Verification */}
+                            <div data-field="companyEmail">
+                                <EmailVerification
+                                    email={companyEmail}
+                                    onEmailChange={(val) => { setCompanyEmail(val); setError(null); }}
+                                    onVerified={setOrgEmailVerified}
+                                    isVerified={orgEmailVerified}
+                                    label="Organization Email *"
+                                    placeholder="organization@gmail.com"
+                                    hasError={invalidFields.has('companyEmail')}
+                                />
+                            </div>
+
+                            {/* Primary Administrator */}
+                            <div className="border-t border-gray-100 dark:border-gray-800 pt-4">
+                                <h4 className="text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 flex items-center gap-1.5 mb-3">
+                                    <Shield size={12} /> Primary Administrator
+                                </h4>
+                                <div className="space-y-4">
+                                    <div className="space-y-1.5" data-field="adminName">
+                                        <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Admin Name *</label>
+                                        <Input
+                                            placeholder="John Doe"
+                                            value={adminName}
+                                            onChange={(e) => { setAdminName(e.target.value); setError(null); }}
+                                            className={`text-gray-900 dark:text-gray-100 ${fieldErrorClass('adminName')}`}
+                                        />
                                     </div>
-                                )}
+                                    <div data-field="adminEmail">
+                                        <EmailVerification
+                                            email={adminEmail}
+                                            onEmailChange={(val) => { setAdminEmail(val); setError(null); }}
+                                            onVerified={setAdminEmailVerified}
+                                            isVerified={adminEmailVerified}
+                                            label="Admin Email *"
+                                            placeholder="admin@company.com"
+                                            hasError={invalidFields.has('adminEmail')}
+                                        />
+                                    </div>
+                                </div>
                             </div>
-                        </div>
 
-                        {/* Address */}
-                        <div className="space-y-4 pt-2 border-t border-gray-100 dark:border-gray-800">
-                            <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 flex items-center gap-1.5 pt-2">
-                                <MapPin size={12} /> Company Address
-                            </h3>
-                            <div className="space-y-1.5">
-                                <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Company Street Address</label>
-                                <Input type="text" placeholder="123 Main Street, Suite 200" value={address} onChange={(e) => setAddress(e.target.value)} className="text-gray-900 dark:text-gray-100" />
-                            </div>
-                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                                <div className="space-y-1.5">
-                                    <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Country *</label>
-                                    <Input type="text" placeholder="India" required value={country} onChange={(e) => setCountry(e.target.value)} className="text-gray-900 dark:text-gray-100" />
-                                </div>
-                                <div className="space-y-1.5">
-                                    <label className="text-sm font-bold text-gray-700 dark:text-gray-300">State</label>
-                                    <Input type="text" placeholder="Maharashtra" value={state} onChange={(e) => setState(e.target.value)} className="text-gray-900 dark:text-gray-100" />
-                                </div>
-                                <div className="space-y-1.5">
-                                    <label className="text-sm font-bold text-gray-700 dark:text-gray-300">District</label>
-                                    <Input type="text" placeholder="Mumbai" value={district} onChange={(e) => setDistrict(e.target.value)} className="text-gray-900 dark:text-gray-100" />
-                                </div>
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-1.5">
-                                    <label className="text-sm font-bold text-gray-700 dark:text-gray-300">City *</label>
-                                    <Input type="text" placeholder="Mumbai" required value={city} onChange={(e) => setCity(e.target.value)} className="text-gray-900 dark:text-gray-100" />
-                                </div>
-                                <div className="space-y-1.5">
-                                    <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Zip Code</label>
-                                    <Input type="text" placeholder="400001" value={zipCode} onChange={(e) => setZipCode(e.target.value)} className="text-gray-900 dark:text-gray-100" />
-                                </div>
-                            </div>
-                        </div>
+                            {/* Password Setup */}
+                            <div className="border-t border-gray-100 dark:border-gray-800 pt-4">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div className="space-y-1.5" data-field="password">
+                                        <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Password *</label>
+                                        <div className="relative">
+                                            <Input
+                                                type={showPassword ? 'text' : 'password'}
+                                                placeholder="Min. 8 characters"
+                                                value={password}
+                                                onChange={(e) => { setPassword(e.target.value); setError(null); }}
+                                                className={`pr-10 text-gray-900 dark:text-gray-100 ${fieldErrorClass('password')}`}
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowPassword(!showPassword)}
+                                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                                            >
+                                                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                            </button>
+                                        </div>
+                                        {password && (
+                                            <div className="flex items-center gap-2 mt-2">
+                                                <div className="flex gap-1 flex-1">
+                                                    {[1, 2, 3, 4].map((i) => (
+                                                        <div key={i} className={`h-1.5 flex-1 rounded-full transition-colors ${i <= pwStrength ? pwStrengthColor : 'bg-gray-200 dark:bg-gray-700'}`} />
+                                                    ))}
+                                                </div>
+                                                <span className="text-[10px] font-bold text-gray-500">{pwStrengthLabel}</span>
+                                            </div>
+                                        )}
+                                    </div>
 
-                        <Button
-                            onClick={handleNextStep}
-                            className="w-full py-5 text-sm font-bold bg-[#6D5DFD] hover:bg-[#5b4eed] text-white flex items-center justify-center gap-2 shadow-lg shadow-[#6D5DFD]/20 dark:shadow-none rounded-xl"
-                        >
-                            Continue to Plan Selection <ChevronRight size={16} />
-                        </Button>
+                                    <div className="space-y-1.5" data-field="confirmPassword">
+                                        <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Confirm Password *</label>
+                                        <div className="relative">
+                                            <Input
+                                                type={showConfirmPassword ? 'text' : 'password'}
+                                                placeholder="Re-enter your password"
+                                                value={confirmPassword}
+                                                onChange={(e) => { setConfirmPassword(e.target.value); setError(null); }}
+                                                className={`pr-10 text-gray-900 dark:text-gray-100 ${fieldErrorClass('confirmPassword')}`}
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                                            >
+                                                {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                            </button>
+                                        </div>
+                                        {confirmPassword && password !== confirmPassword && (
+                                            <p className="text-xs font-medium text-red-500 flex items-center gap-1 mt-1">
+                                                <AlertCircle size={12} /> Passwords do not match
+                                            </p>
+                                        )}
+                                        {confirmPassword && password === confirmPassword && (
+                                            <p className="text-xs font-medium text-emerald-500 flex items-center gap-1 mt-1">
+                                                <CheckCircle2 size={12} /> Passwords match
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* Logo Upload */}
+                    <Card className="py-6">
+                        <CardHeader className="border-b border-gray-100 dark:border-gray-800 pb-4">
+                            <div className="flex items-center gap-2.5">
+                                <div className="p-2 rounded-lg bg-purple-500/10">
+                                    <ImageIcon className="w-5 h-5 text-purple-500" />
+                                </div>
+                                <div>
+                                    <CardTitle className="text-base font-bold text-gray-900 dark:text-gray-100">
+                                        Organization Logo
+                                    </CardTitle>
+                                    <CardDescription className="text-xs mt-0.5">
+                                        Upload a professional logo for your organization (optional)
+                                    </CardDescription>
+                                </div>
+                            </div>
+                        </CardHeader>
+                        <CardContent className="pt-4">
+                            <div className="flex items-center gap-5">
+                                <div className="w-20 h-20 rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-700 flex items-center justify-center bg-gray-50 dark:bg-gray-800/50 shrink-0 overflow-hidden transition-colors">
+                                    {logoPreview ? (
+                                        <Image
+                                            src={logoPreview}
+                                            alt="Logo preview"
+                                            width={80}
+                                            height={80}
+                                            className="w-full h-full object-cover rounded-lg"
+                                        />
+                                    ) : (
+                                        <Upload className="w-6 h-6 text-gray-300 dark:text-gray-600" />
+                                    )}
+                                </div>
+                                <div className="flex-1 space-y-2">
+                                    <h4 className="text-sm font-bold text-gray-700 dark:text-gray-300">Organization Logo</h4>
+                                    <div className="flex items-center gap-3">
+                                        <label className="cursor-pointer">
+                                            <span className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 text-xs font-bold hover:bg-gray-700 dark:hover:bg-gray-300 transition-colors">
+                                                <Upload size={14} />
+                                                Choose File
+                                            </span>
+                                            <input
+                                                ref={fileInputRef}
+                                                type="file"
+                                                accept="image/*"
+                                                onChange={handleLogoChange}
+                                                className="hidden"
+                                            />
+                                        </label>
+                                        {logo ? (
+                                            <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400">
+                                                <span className="font-medium truncate max-w-[180px]">{logo.name}</span>
+                                                <button onClick={removeLogo} className="text-red-400 hover:text-red-600 transition-colors">
+                                                    <X size={14} />
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <span className="text-xs text-gray-400 dark:text-gray-500">No file chosen</span>
+                                        )}
+                                    </div>
+                                    <p className="text-[10px] text-gray-400 dark:text-gray-500">Recommended: 400x400px or larger. Maximum size: 2MB</p>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* Organization Address Card */}
+                    <Card className="py-6">
+                        <CardHeader className="border-b border-gray-100 dark:border-gray-800 pb-4">
+                            <div className="flex items-center gap-2.5">
+                                <div className="p-2 rounded-lg bg-emerald-500/10">
+                                    <MapPin className="w-5 h-5 text-emerald-500" />
+                                </div>
+                                <div>
+                                    <CardTitle className="text-base font-bold text-gray-900 dark:text-gray-100">
+                                        Organization Address
+                                    </CardTitle>
+                                    <CardDescription className="text-xs mt-0.5">
+                                        Physical location of your organization
+                                    </CardDescription>
+                                </div>
+                            </div>
+                        </CardHeader>
+                        <CardContent className="pt-4">
+                            <div className="space-y-4">
+                                <div data-field="addressLine1">
+                                    <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Address Line 1 *</label>
+                                    <Input
+                                        placeholder="Street address, P.O. box"
+                                        value={addressData.addressLine1}
+                                        onChange={(val) => {
+                                            setError(null);
+                                            setAddressData({ ...addressData, addressLine1: val.target.value });
+                                        }}
+                                        className={fieldErrorClass('addressLine1')}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Address Line 2</label>
+                                    <Input
+                                        placeholder="Apartment, suite, unit, building (optional)"
+                                        value={addressData.addressLine2}
+                                        onChange={(val) => setAddressData({ ...addressData, addressLine2: val.target.value })}
+                                    />
+                                </div>
+                                <AddressForm
+                                    value={addressData}
+                                    onChange={(data) => {
+                                        setError(null);
+                                        setAddressData(data);
+                                    }}
+                                    compact
+                                    hideContact
+                                />
+                                <div className="pt-2 border-t border-gray-100 dark:border-gray-800" data-field="phoneNumber">
+                                    <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Organization Phone Number *</label>
+                                    <AddressForm
+                                        value={addressData}
+                                        onChange={(data) => {
+                                            setError(null);
+                                            setAddressData(data);
+                                        }}
+                                        compact
+                                        hideContact={false}
+                                    />
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* Continue Section */}
+                    <div className="space-y-4">
+                        <p className="text-xs text-[#6D5DFD] font-medium">
+                            Fields marked with * are required
+                        </p>
+                        <div className="flex justify-end">
+                            <Button
+                                onClick={handleNextStep}
+                                className="px-8 py-5 text-sm font-bold bg-[#6D5DFD] hover:bg-[#5b4eed] text-white flex items-center gap-2 shadow-lg shadow-[#6D5DFD]/20 dark:shadow-none rounded-xl transition-all"
+                            >
+                                Continue <ChevronRight size={16} />
+                            </Button>
+                        </div>
                     </div>
-                )}
+                </div>
+            )}
 
-                {/* STEP 2: Plan Selection */}
-                {step === 2 && (
-                    <div className="space-y-6 animate-in slide-in-from-right-4 duration-300">
-                        <div className="text-center mb-2">
-                            <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100 tracking-tight flex items-center justify-center gap-2">
-                                <Sparkles className="w-5 h-5 text-[#6D5DFD]" />
-                                Choose Your Plan
-                            </h1>
-                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 font-medium">
-                                Select the plan that fits your team size
-                            </p>
-                        </div>
-
-                        <div className="grid grid-cols-1 gap-4">
+            {/* ── STEP 2 ── */}
+            {step === 2 && (
+                <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
+                    <Card className="py-6">
+                        <CardHeader className="border-b border-gray-100 dark:border-gray-800 pb-4">
+                            <div className="flex items-center gap-2.5">
+                                <div className="p-2 rounded-lg bg-[#6D5DFD]/10">
+                                    <Sparkles className="w-5 h-5 text-[#6D5DFD]" />
+                                </div>
+                                <div>
+                                    <CardTitle className="text-base font-bold text-gray-900 dark:text-gray-100">
+                                        Choose Your Plan
+                                    </CardTitle>
+                                    <CardDescription className="text-xs mt-0.5">
+                                        Select the plan that fits your team size
+                                    </CardDescription>
+                                </div>
+                            </div>
+                        </CardHeader>
+                        <CardContent className="space-y-4 pt-4">
                             {PLANS.map((plan) => {
                                 const Icon = plan.icon;
                                 const isSelected = selectedPlan === plan.id;
@@ -584,7 +870,7 @@ export default function RegisterCompanyPage() {
                                     <button
                                         key={plan.id}
                                         onClick={() => setSelectedPlan(plan.id)}
-                                        className={`relative text-left p-5 rounded-xl border-2 transition-all duration-300 bg-gradient-to-br ${plan.gradient} group ${
+                                        className={`relative text-left w-full p-5 rounded-xl border-2 transition-all duration-300 bg-gradient-to-br ${plan.gradient} group ${
                                             isSelected ? plan.activeBorder : `${plan.border} hover:shadow-md`
                                         }`}
                                     >
@@ -629,46 +915,66 @@ export default function RegisterCompanyPage() {
                                     </button>
                                 );
                             })}
-                        </div>
+                        </CardContent>
+                    </Card>
 
-                        <div className="flex gap-3">
-                            <Button
-                                onClick={handlePrevStep}
-                                variant="outline"
-                                className="flex-1 py-5 text-sm font-bold flex items-center justify-center gap-2 rounded-xl"
-                            >
-                                <ChevronLeft size={16} /> Back
-                            </Button>
-                            <Button
-                                onClick={handleNextStep}
-                                className="flex-[2] py-5 text-sm font-bold bg-[#6D5DFD] hover:bg-[#5b4eed] text-white flex items-center justify-center gap-2 shadow-lg shadow-[#6D5DFD]/20 dark:shadow-none rounded-xl"
-                            >
-                                Continue to Payment <ChevronRight size={16} />
-                            </Button>
-                        </div>
+                    <div className="flex gap-3">
+                        <Button
+                            onClick={handlePrevStep}
+                            variant="outline"
+                            className="flex-1 py-5 text-sm font-bold flex items-center justify-center gap-2 rounded-xl"
+                        >
+                            <ChevronLeft size={16} /> Back
+                        </Button>
+                        <Button
+                            onClick={handleNextStep}
+                            className="flex-[2] py-5 text-sm font-bold bg-[#6D5DFD] hover:bg-[#5b4eed] text-white flex items-center justify-center gap-2 shadow-lg shadow-[#6D5DFD]/20 dark:shadow-none rounded-xl"
+                        >
+                            Continue to Payment <ChevronRight size={16} />
+                        </Button>
                     </div>
-                )}
+                </div>
+            )}
 
-                {/* STEP 3: Payment */}
-                {step === 3 && (
-                    <div className="space-y-6 animate-in slide-in-from-right-4 duration-300">
-                        {paymentSuccess ? (
-                            <div className="text-center py-12 animate-in zoom-in-95 duration-300">
-                                <div className="w-20 h-20 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-full flex items-center justify-center mx-auto mb-5 shadow-lg shadow-emerald-200 dark:shadow-none">
-                                    <CheckCircle2 className="w-12 h-12" />
+            {/* ── STEP 3 ── */}
+            {step === 3 && (
+                <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
+                    {paymentSuccess ? (
+                        <Card className="py-12">
+                            <CardContent>
+                                <div className="text-center animate-in zoom-in-95 duration-300">
+                                    <div className="w-20 h-20 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-full flex items-center justify-center mx-auto mb-5 shadow-lg shadow-emerald-200 dark:shadow-none">
+                                        <CheckCircle2 className="w-12 h-12" />
+                                    </div>
+                                    <h2 className="text-xl font-black text-gray-900 dark:text-gray-100">Payment Successful!</h2>
+                                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 font-medium">
+                                        Setting up your workspace. Redirecting...
+                                    </p>
+                                    <Loader2 className="w-5 h-5 animate-spin text-[#6D5DFD] mx-auto mt-4" />
                                 </div>
-                                <h2 className="text-xl font-black text-gray-900 dark:text-gray-100">Payment Successful!</h2>
-                                <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 font-medium">
-                                    Setting up your workspace. Redirecting...
-                                </p>
-                                <Loader2 className="w-5 h-5 animate-spin text-[#6D5DFD] mx-auto mt-4" />
-                            </div>
-                        ) : (
-                            <>
-                                {/* Order Summary */}
-                                <div className="bg-gray-50 dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-xl p-5 space-y-3">
-                                    <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">Order Summary</h3>
-                                    <div className="flex items-center justify-between">
+                            </CardContent>
+                        </Card>
+                    ) : (
+                        <>
+                            {/* Order Summary */}
+                            <Card className="py-6">
+                                <CardHeader className="border-b border-gray-100 dark:border-gray-800 pb-4">
+                                    <div className="flex items-center gap-2.5">
+                                        <div className="p-2 rounded-lg bg-emerald-500/10">
+                                            <Shield className="w-5 h-5 text-emerald-500" />
+                                        </div>
+                                        <div>
+                                            <CardTitle className="text-base font-bold text-gray-900 dark:text-gray-100">
+                                                Order Summary
+                                            </CardTitle>
+                                            <CardDescription className="text-xs mt-0.5">
+                                                Review your subscription details
+                                            </CardDescription>
+                                        </div>
+                                    </div>
+                                </CardHeader>
+                                <CardContent className="pt-4">
+                                    <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-950 rounded-xl border border-gray-100 dark:border-gray-800">
                                         <div>
                                             <p className="text-sm font-bold text-gray-900 dark:text-gray-100">{companyName}</p>
                                             <p className="text-xs text-gray-500 dark:text-gray-400">{selectedPlanData.name} Plan • Monthly</p>
@@ -678,11 +984,27 @@ export default function RegisterCompanyPage() {
                                             <p className="text-[10px] text-gray-400 font-bold">≈ ${selectedPlanData.price.usd}/mo</p>
                                         </div>
                                     </div>
-                                </div>
+                                </CardContent>
+                            </Card>
 
-                                {/* Payment Tabs */}
-                                <div className="space-y-4">
-                                    <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">Payment Method</h3>
+                            {/* Payment Method */}
+                            <Card className="py-6">
+                                <CardHeader className="border-b border-gray-100 dark:border-gray-800 pb-4">
+                                    <div className="flex items-center gap-2.5">
+                                        <div className="p-2 rounded-lg bg-[#6D5DFD]/10">
+                                            <CreditCard className="w-5 h-5 text-[#6D5DFD]" />
+                                        </div>
+                                        <div>
+                                            <CardTitle className="text-base font-bold text-gray-900 dark:text-gray-100">
+                                                Payment Method
+                                            </CardTitle>
+                                            <CardDescription className="text-xs mt-0.5">
+                                                Choose how you'd like to pay
+                                            </CardDescription>
+                                        </div>
+                                    </div>
+                                </CardHeader>
+                                <CardContent className="space-y-4 pt-4">
                                     <div className="grid grid-cols-2 gap-3">
                                         <button
                                             onClick={() => setPaymentMethod('card')}
@@ -732,75 +1054,78 @@ export default function RegisterCompanyPage() {
                                             <span className="text-[10px] text-gray-400 mt-0.5">UPI ID: macenza@razorpay</span>
                                         </div>
                                     )}
-                                </div>
+                                </CardContent>
+                            </Card>
 
-                                <div className="flex items-start gap-2.5 my-4">
-                                    <input
-                                        id="agree-terms"
-                                        type="checkbox"
-                                        checked={agreeToTerms}
-                                        onChange={(e) => setAgreeToTerms(e.target.checked)}
-                                        className="w-4 h-4 text-[#6D5DFD] border-gray-300 rounded focus:ring-[#6D5DFD] mt-0.5 cursor-pointer"
-                                    />
-                                    <label htmlFor="agree-terms" className="text-xs text-gray-500 dark:text-gray-400 font-medium leading-relaxed cursor-pointer select-none">
-                                        I have read and agree to the{' '}
-                                        <Link href="/checkout-terms" target="_blank" className="text-[#6D5DFD] hover:underline font-bold">
-                                            Terms & Conditions
-                                        </Link>{' '}
-                                        and{' '}
-                                        <Link href="/checkout-privacy" target="_blank" className="text-[#6D5DFD] hover:underline font-bold">
-                                            Privacy Policy
-                                        </Link>.
-                                    </label>
-                                </div>
+                            {/* Terms Agreement */}
+                            <div className="flex items-start gap-2.5 my-4">
+                                <input
+                                    id="agree-terms"
+                                    type="checkbox"
+                                    checked={agreeToTerms}
+                                    onChange={(e) => setAgreeToTerms(e.target.checked)}
+                                    className="w-4 h-4 text-[#6D5DFD] border-gray-300 rounded focus:ring-[#6D5DFD] mt-0.5 cursor-pointer"
+                                />
+                                <label htmlFor="agree-terms" className="text-xs text-gray-500 dark:text-gray-400 font-medium leading-relaxed cursor-pointer select-none">
+                                    I have read and agree to the{' '}
+                                    <Link href="/checkout-terms" target="_blank" className="text-[#6D5DFD] hover:underline font-bold">
+                                        Terms & Conditions
+                                    </Link>{' '}
+                                    and{' '}
+                                    <Link href="/checkout-privacy" target="_blank" className="text-[#6D5DFD] hover:underline font-bold">
+                                        Privacy Policy
+                                    </Link>.
+                                </label>
+                            </div>
 
-                                <div className="flex gap-3">
-                                    <Button
-                                        onClick={handlePrevStep}
-                                        variant="outline"
-                                        disabled={isPaying}
-                                        className="py-5 px-5 text-sm font-bold flex items-center justify-center gap-2 rounded-xl"
-                                    >
-                                        <ChevronLeft size={16} />
-                                    </Button>
-                                    <Button
-                                        onClick={handleCompletePayment}
-                                        disabled={isPaying || !agreeToTerms}
-                                        className="flex-1 py-5 text-sm font-black bg-[#6D5DFD] hover:bg-[#5b4eed] text-white flex items-center justify-center gap-2 shadow-lg shadow-[#6D5DFD]/20 dark:shadow-none rounded-xl"
-                                    >
-                                        {isPaying ? (
-                                            <>
-                                                <Loader2 className="w-4 h-4 animate-spin" />
-                                                <span>Processing Payment...</span>
-                                            </>
-                                        ) : (
-                                            <>
-                                                <Shield className="w-4 h-4" />
-                                                <span>Pay ₹{selectedPlanData.price.inr.toLocaleString()} Securely</span>
-                                            </>
-                                        )}
-                                    </Button>
-                                </div>
+                            <div className="flex gap-3">
+                                <Button
+                                    onClick={handlePrevStep}
+                                    variant="outline"
+                                    disabled={isPaying}
+                                    className="py-5 px-5 text-sm font-bold flex items-center justify-center gap-2 rounded-xl"
+                                >
+                                    <ChevronLeft size={16} />
+                                </Button>
+                                <Button
+                                    onClick={handleCompletePayment}
+                                    disabled={isPaying || !agreeToTerms}
+                                    className="flex-1 py-5 text-sm font-black bg-[#6D5DFD] hover:bg-[#5b4eed] text-white flex items-center justify-center gap-2 shadow-lg shadow-[#6D5DFD]/20 dark:shadow-none rounded-xl"
+                                >
+                                    {isPaying ? (
+                                        <>
+                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                            <span>Processing Payment...</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Shield className="w-4 h-4" />
+                                            <span>Pay ₹{selectedPlanData.price.inr.toLocaleString()} Securely</span>
+                                        </>
+                                    )}
+                                </Button>
+                            </div>
 
-                                <div className="flex items-center justify-center gap-1.5 text-[10px] text-gray-400 font-bold">
-                                    <Shield className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                                    <span>100% SECURE • POWERED BY RAZORPAY GATEWAY</span>
-                                </div>
-                            </>
-                        )}
-                    </div>
-                )}
-            </div>
+                            <div className="flex items-center justify-center gap-1.5 text-[10px] text-gray-400 font-bold mt-2">
+                                <Shield className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                                <span>100% SECURE • POWERED BY RAZORPAY GATEWAY</span>
+                            </div>
+                        </>
+                    )}
+                </div>
+            )}
 
             {/* Footer link */}
             {step <= 2 && (
-                <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-6 font-medium">
+                <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-8 font-medium">
                     Already have a workspace?{' '}
                     <Link href="/login" className="text-[#6D5DFD] dark:text-[#8B7BFF] font-bold hover:underline">
                         Sign In
                     </Link>
                 </p>
             )}
+
+            {/* Secure Sandbox Checkout Modal */}
             {showMockModal && mockOrderData && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
                     <div className="bg-white dark:bg-gray-950 border border-gray-150 dark:border-gray-900 rounded-3xl p-6 md:p-8 max-w-md w-full shadow-2xl space-y-6 text-center animate-in zoom-in-95 duration-200">
