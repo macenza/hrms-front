@@ -104,7 +104,9 @@ export default function RegisterCompanyPage() {
     const [adminName, setAdminName] = useState('');
     const [adminEmail, setAdminEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [orgPrefix, setOrgPrefix] = useState('');
     const [shortName, setShortName] = useState('');
     const [logo, setLogo] = useState<File | null>(null);
@@ -216,6 +218,7 @@ export default function RegisterCompanyPage() {
         if (!adminEmail.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(adminEmail)) { errors.push('adminEmail'); messages.push('Admin email'); }
         else if (!adminEmailVerified) { errors.push('adminEmail'); messages.push('Admin email verification'); }
         if (password.length < 8 || pwStrength < 2) { errors.push('password'); messages.push('Password'); }
+        else if (password !== confirmPassword) { errors.push('confirmPassword'); messages.push('Confirm password (does not match)'); }
 
         // Validate phone (only if provided)
         if (addressData.phoneNumber && !validatePhone(addressData.phoneNumber)) {
@@ -444,34 +447,68 @@ export default function RegisterCompanyPage() {
 
                             {/* Password */}
                             <div className="border-t border-gray-100 dark:border-gray-800 pt-4">
-                                <div className="max-w-md space-y-1.5" data-field="password">
-                                    <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Password *</label>
-                                    <div className="relative">
-                                        <Input
-                                            type={showPassword ? 'text' : 'password'}
-                                            placeholder="Min. 8 characters"
-                                            value={password}
-                                            onChange={(e) => { setPassword(e.target.value); setError(null); }}
-                                            className={`pr-10 text-gray-900 dark:text-gray-100 ${fieldErrorClass('password')}`}
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowPassword(!showPassword)}
-                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-                                        >
-                                            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                                        </button>
-                                    </div>
-                                    {password && (
-                                        <div className="flex items-center gap-2 mt-2">
-                                            <div className="flex gap-1 flex-1">
-                                                {[1, 2, 3, 4].map((i) => (
-                                                    <div key={i} className={`h-1.5 flex-1 rounded-full transition-colors ${i <= pwStrength ? pwStrengthColor : 'bg-gray-200 dark:bg-gray-700'}`} />
-                                                ))}
-                                            </div>
-                                            <span className="text-[10px] font-bold text-gray-500">{pwStrengthLabel}</span>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    {/* Set Password */}
+                                    <div className="space-y-1.5" data-field="password">
+                                        <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Password *</label>
+                                        <div className="relative">
+                                            <Input
+                                                type={showPassword ? 'text' : 'password'}
+                                                placeholder="Min. 8 characters"
+                                                value={password}
+                                                onChange={(e) => { setPassword(e.target.value); setError(null); }}
+                                                className={`pr-10 text-gray-900 dark:text-gray-100 ${fieldErrorClass('password')}`}
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowPassword(!showPassword)}
+                                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                                            >
+                                                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                            </button>
                                         </div>
-                                    )}
+                                        {password && (
+                                            <div className="flex items-center gap-2 mt-2">
+                                                <div className="flex gap-1 flex-1">
+                                                    {[1, 2, 3, 4].map((i) => (
+                                                        <div key={i} className={`h-1.5 flex-1 rounded-full transition-colors ${i <= pwStrength ? pwStrengthColor : 'bg-gray-200 dark:bg-gray-700'}`} />
+                                                    ))}
+                                                </div>
+                                                <span className="text-[10px] font-bold text-gray-500">{pwStrengthLabel}</span>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Confirm Password */}
+                                    <div className="space-y-1.5" data-field="confirmPassword">
+                                        <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Confirm Password *</label>
+                                        <div className="relative">
+                                            <Input
+                                                type={showConfirmPassword ? 'text' : 'password'}
+                                                placeholder="Re-enter your password"
+                                                value={confirmPassword}
+                                                onChange={(e) => { setConfirmPassword(e.target.value); setError(null); }}
+                                                className={`pr-10 text-gray-900 dark:text-gray-100 ${fieldErrorClass('confirmPassword')}`}
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                                            >
+                                                {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                            </button>
+                                        </div>
+                                        {confirmPassword && password !== confirmPassword && (
+                                            <p className="text-xs font-medium text-red-500 flex items-center gap-1 mt-1">
+                                                <AlertCircle size={12} /> Passwords do not match
+                                            </p>
+                                        )}
+                                        {confirmPassword && password === confirmPassword && (
+                                            <p className="text-xs font-medium text-emerald-500 flex items-center gap-1 mt-1">
+                                                <CheckCircle2 size={12} /> Passwords match
+                                            </p>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         </CardContent>
