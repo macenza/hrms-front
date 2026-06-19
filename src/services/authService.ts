@@ -79,6 +79,7 @@ export interface CustomerRegisterPayload {
     email: string;
     password: string;
     companyName: string;
+    companyEmail?: string;
     subscriptionPlan: string;
     phone?: string;
 }

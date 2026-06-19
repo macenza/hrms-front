@@ -4,6 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { X, Loader2, Save, User, Phone, MapPin, Briefcase, Calendar, Tag, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { AddressForm } from '@/components/ui/AddressForm';
+import { validatePhone } from '@/components/ui/PhoneNumberInput';
 import { Card, CardContent } from '@/components/ui/Card';
 import { toast } from 'sonner';
 import { employeeService } from '@/services/employeeService';
@@ -11,6 +13,9 @@ import { useCompanySettings } from '@/hooks/api/useSettings';
 import { useActiveEmployees } from '@/hooks/api/useEmployees';
 import { useShifts } from '@/hooks/api/useShifts';
 import { z } from 'zod';
+import { getEmptyAddressFormData } from '@/types/address';
+import { validatePostalCode } from '@/utils/postalCodeValidation';
+import type { AddressFormData } from '@/types/address';
 
 interface EditProfileModalProps {
     isOpen: boolean;
@@ -20,19 +25,8 @@ interface EditProfileModalProps {
     isAdminOrHR: boolean;
 }
 
-const parsePhoneNumber = (phoneStr: string) => {
-    if (!phoneStr) return { countryCode: '+91', rawPhone: '' };
-    const parts = phoneStr.trim().split(/\s+/);
-    if (parts.length > 1 && parts[0].startsWith('+')) {
-        return { countryCode: parts[0], rawPhone: parts.slice(1).join(' ') };
-    }
-    return { countryCode: '+91', rawPhone: phoneStr };
-};
-
 const profileEditSchema = z.object({
     name: z.string().trim().min(2, 'Name must be at least 2 characters'),
-    phone: z.string().trim().optional().or(z.literal('')),
-    address: z.string().trim().optional(),
     fathersName: z.string().trim().optional(),
     dob: z.string().trim().optional().or(z.literal('')),
     department: z.string().trim().optional(),
@@ -69,9 +63,7 @@ export default function EditProfileModal({
         name: '',
         role: 'employee',
         isActive: true,
-        countryCode: '+91',
-        phone: '',
-        address: '',
+        addressData: getEmptyAddressFormData(),
         fathersName: '',
         dob: '',
         department: '',
@@ -86,7 +78,26 @@ export default function EditProfileModal({
 
     useEffect(() => {
         if (employee) {
-            const { countryCode, rawPhone } = parsePhoneNumber(personal.phone);
+            // Build addressData from existing employee data
+            // Handle backward compatibility: old address might be a plain string
+            const existingAddress = personal.address;
+            const isOldFormat = typeof existingAddress === 'string';
+
+            const addressData: AddressFormData = {
+                addressLine1: isOldFormat ? (existingAddress || '') : (existingAddress?.addressLine1 || ''),
+                addressLine2: isOldFormat ? '' : (existingAddress?.addressLine2 || ''),
+                country: isOldFormat ? '' : (existingAddress?.country || ''),
+                countryCode: isOldFormat ? '' : (existingAddress?.countryCode || ''),
+                state: isOldFormat ? '' : (existingAddress?.state || ''),
+                stateCode: isOldFormat ? '' : (existingAddress?.stateCode || ''),
+                city: isOldFormat ? '' : (existingAddress?.city || ''),
+                district: isOldFormat ? '' : (existingAddress?.district || ''),
+                postalCode: isOldFormat ? '' : (existingAddress?.postalCode || ''),
+                landmark: isOldFormat ? '' : (existingAddress?.landmark || ''),
+                phoneNumber: personal.phone || '',
+                phoneCountryCode: personal.phoneCountryCode || '',
+                alternatePhoneNumber: personal.alternatePhone || '',
+            };
             
             let managerId = '';
             if (employment.reportingManager) {
@@ -99,9 +110,7 @@ export default function EditProfileModal({
                 name: employee.name || '',
                 role: employee.role || 'employee',
                 isActive: employee.isActive ?? true,
-                countryCode,
-                phone: rawPhone,
-                address: personal.address || '',
+                addressData,
                 fathersName: personal.fathersName || '',
                 dob: personal.dob ? new Date(personal.dob).toISOString().split('T')[0] : '',
                 department: employment.department || '',
@@ -132,18 +141,51 @@ export default function EditProfileModal({
             return;
         }
 
+        // Validate phone if provided
+        const ad = form.addressData;
+        if (ad.phoneNumber && !validatePhone(ad.phoneNumber)) {
+            toast.error('Please enter a valid phone number');
+            return;
+        }
+        if (ad.alternatePhoneNumber && !validatePhone(ad.alternatePhoneNumber)) {
+            toast.error('Please enter a valid alternate phone number');
+            return;
+        }
+        // Validate postal code if provided with country
+        if (ad.postalCode && ad.countryCode) {
+            const postalResult = validatePostalCode(ad.postalCode, ad.countryCode);
+            if (!postalResult.valid) {
+                toast.error(postalResult.message);
+                return;
+            }
+        }
+
         setIsSaving(true);
 
         try {
             // Reconstruct the deep schema structure for saving
+            const adData = form.addressData;
             const updatePayload: any = {
                 name: form.name,
                 profile: {
                     personal: {
-                        phone: form.phone ? `${form.countryCode} ${form.phone.trim()}` : '',
-                        address: form.address,
+                        phone: adData.phoneNumber || '',
+                        phoneCountryCode: adData.phoneCountryCode || '',
+                        alternatePhone: adData.alternatePhoneNumber || '',
                         fathersName: form.fathersName,
-                        dob: form.dob || undefined
+                        dob: form.dob || undefined,
+                        address: {
+                            addressLine1: adData.addressLine1?.trim() || '',
+                            addressLine2: adData.addressLine2?.trim() || '',
+                            country: adData.country || '',
+                            countryCode: adData.countryCode || '',
+                            state: adData.state || '',
+                            stateCode: adData.stateCode || '',
+                            city: adData.city || '',
+                            district: adData.district?.trim() || '',
+                            postalCode: adData.postalCode?.trim() || '',
+                            landmark: adData.landmark?.trim() || '',
+                        },
                     },
                     employment: {
                         department: form.department,
@@ -286,48 +328,16 @@ export default function EditProfileModal({
                         </div>
                     </div>
 
-                    {/* Section 2: Contact Info */}
+                    {/* Section 2: Address & Contact */}
                     <div className="space-y-4">
                         <h3 className="text-sm font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 border-b pb-1">
-                            Contact Details
+                            Address & Contact
                         </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="space-y-1.5">
-                                <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Phone Number</label>
-                                <div className="flex gap-2">
-                                    <select
-                                        value={form.countryCode}
-                                        onChange={(e) => setForm({ ...form, countryCode: e.target.value })}
-                                        className="w-24 h-10 px-2 rounded-lg border border-gray-200 dark:border-gray-800 text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-950 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 outline-none transition-all cursor-pointer"
-                                    >
-                                        <option value="+91">+91 (IN)</option>
-                                        <option value="+1">+1 (US)</option>
-                                        <option value="+44">+44 (UK)</option>
-                                        <option value="+61">+61 (AU)</option>
-                                        <option value="+81">+81 (JP)</option>
-                                        <option value="+49">+49 (DE)</option>
-                                        <option value="+33">+33 (FR)</option>
-                                        <option value="+971">+971 (AE)</option>
-                                    </select>
-                                    <div className="flex-1">
-                                        <Input 
-                                            value={form.phone}
-                                            onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                                            placeholder="12345 67890" 
-                                            className="w-full"
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div className="md:col-span-2">
-                                <Input
-                                    label="Current Address"
-                                    value={form.address}
-                                    onChange={(e) => setForm({ ...form, address: e.target.value })}
-                                />
-                            </div>
-                        </div>
+                        <AddressForm
+                            value={form.addressData}
+                            onChange={(data) => setForm({ ...form, addressData: data })}
+                            compact
+                        />
                     </div>
 
                     {/* Section 3: Employment Info */}

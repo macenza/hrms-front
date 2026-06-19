@@ -100,8 +100,22 @@ export interface SignupPayload {
     password: string;
     role: string;
     team: string;
+    gender: string;
     profile: {
-        phone: string;
-        address: string;
+        phone: string;              // E.164 format
+        phoneCountryCode: string;   // ISO code: "IN", "US"
+        alternatePhone: string;
+        address: {
+            addressLine1: string;
+            addressLine2: string;
+            country: string;
+            countryCode: string;
+            state: string;
+            stateCode: string;
+            city: string;
+            district: string;
+            postalCode: string;
+            landmark: string;
+        };
     };
 }

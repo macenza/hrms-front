@@ -15,7 +15,7 @@ export default function AuthLayout({
                 <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-indigo-50 dark:bg-indigo-950/40 blur-[120px]" />
             </div>
 
-            <div className="w-full max-w-[440px] relative z-10">
+            <div className="w-full max-w-7xl relative z-10">
                 {/* Branding / Logo Area */}
                 <div className="flex flex-col items-center mb-8">
                     <div className="w-12 h-12 bg-[#6D5DFD] rounded-xl flex items-center justify-center shadow-lg shadow-blue-200 dark:shadow-none mb-2 animate-pulse">

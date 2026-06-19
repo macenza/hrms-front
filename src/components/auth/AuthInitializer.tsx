@@ -95,7 +95,7 @@ export default function AuthInitializer({ children }: { children: React.ReactNod
                     Cookies.remove('hrms_token', { path: '/' });
                     Cookies.remove('hrms_role', { path: '/' });
                     
-                    const PUBLIC_ROUTES = ['/', '/login', '/signup', '/hrms-login', '/kiosk', '/privacy-policy', '/terms-and-conditions'];
+                    const PUBLIC_ROUTES = ['/', '/login', '/signup', '/hrms-login', '/register-company', '/kiosk', '/privacy-policy', '/terms-and-conditions'];
                     // CRITICAL: Prevent zombie state if we are on a protected route
                     if (typeof window !== 'undefined' && !PUBLIC_ROUTES.includes(window.location.pathname)) {
                         window.location.href = '/hrms-login?error=session_expired';
@@ -114,7 +114,7 @@ export default function AuthInitializer({ children }: { children: React.ReactNod
                 Cookies.remove('hrms_token', { path: '/' });
                 Cookies.remove('hrms_role', { path: '/' });
 
-                const PUBLIC_ROUTES = ['/', '/login', '/signup', '/hrms-login', '/kiosk', '/privacy-policy', '/terms-and-conditions'];
+                const PUBLIC_ROUTES = ['/', '/login', '/signup', '/hrms-login', '/register-company', '/kiosk', '/privacy-policy', '/terms-and-conditions'];
                 if (typeof window !== 'undefined' && !PUBLIC_ROUTES.includes(window.location.pathname)) {
                     window.location.href = '/hrms-login?error=session_expired';
                 } else {
