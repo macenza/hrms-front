@@ -780,49 +780,22 @@ export default function RegisterCompanyPage() {
                             </div>
                         </CardHeader>
                         <CardContent className="pt-4">
-                            <div className="space-y-4">
-                                <div data-field="addressLine1">
-                                    <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Address Line 1 *</label>
-                                    <Input
-                                        placeholder="Street address, P.O. box"
-                                        value={addressData.addressLine1}
-                                        onChange={(val) => {
-                                            setError(null);
-                                            setAddressData({ ...addressData, addressLine1: val.target.value });
-                                        }}
-                                        className={fieldErrorClass('addressLine1')}
-                                    />
-                                </div>
-                                <div>
-                                    <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Address Line 2</label>
-                                    <Input
-                                        placeholder="Apartment, suite, unit, building (optional)"
-                                        value={addressData.addressLine2}
-                                        onChange={(val) => setAddressData({ ...addressData, addressLine2: val.target.value })}
-                                    />
-                                </div>
-                                <AddressForm
-                                    value={addressData}
-                                    onChange={(data) => {
-                                        setError(null);
-                                        setAddressData(data);
-                                    }}
-                                    compact
-                                    hideContact
-                                />
-                                <div className="pt-2 border-t border-gray-100 dark:border-gray-800" data-field="phoneNumber">
-                                    <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Organization Phone Number *</label>
-                                    <AddressForm
-                                        value={addressData}
-                                        onChange={(data) => {
-                                            setError(null);
-                                            setAddressData(data);
-                                        }}
-                                        compact
-                                        hideContact={false}
-                                    />
-                                </div>
-                            </div>
+                            <AddressForm
+                                value={addressData}
+                                onChange={(data) => {
+                                    setError(null);
+                                    setAddressData(data);
+                                }}
+                                errors={{
+                                    addressLine1: invalidFields.has('addressLine1') ? 'Required' : undefined,
+                                    country: invalidFields.has('countryCode') ? 'Required' : undefined,
+                                    state: invalidFields.has('stateCode') ? 'Required' : undefined,
+                                    city: invalidFields.has('city') ? 'Required' : undefined,
+                                    postalCode: invalidFields.has('postalCode') ? 'Required' : undefined,
+                                    phoneNumber: invalidFields.has('phoneNumber') ? 'Required' : undefined,
+                                }}
+                                compact
+                            />
                         </CardContent>
                     </Card>
 

@@ -5,20 +5,23 @@ import { cn } from '@/utils/cn';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { AddressForm } from '@/components/ui/AddressForm';
+import { validatePhone } from '@/components/ui/PhoneNumberInput';
 import ProfilePhotoUploadStep from '@/components/employees/ProfilePhotoUploadStep';
 import { useAppSelector } from '@/store/hooks';
 import { useCompanySettings } from '@/hooks/api/useSettings';
 import { useActiveEmployees } from '@/hooks/api/useEmployees';
 import { useShifts } from '@/hooks/api/useShifts';
 import { z } from 'zod';
+import { getEmptyAddressFormData } from '@/types/address';
+import { validatePostalCode } from '@/utils/postalCodeValidation';
+import type { AddressFormData } from '@/types/address';
 
 export interface EmployeeFormData {
     firstName: string;
     lastName: string;
     email: string;
-    countryCode: string;
-    phone: string;
-    address: string;
+    addressData: AddressFormData;
     gender: 'Male' | 'Female' | 'Other';
     employeeId: string;
     department: string;
@@ -50,9 +53,7 @@ const getInitialFormState = (settings: any): EmployeeFormData => {
         firstName: '',
         lastName: '',
         email: '',
-        countryCode: '+91',
-        phone: '',
-        address: '',
+        addressData: getEmptyAddressFormData(),
         gender: 'Male',
         employeeId: `EMP-${Math.floor(1000 + Math.random() * 9000)}`,
         department: depts[0] || 'Engineering',
@@ -71,8 +72,6 @@ const step1Schema = z.object({
     firstName: z.string().trim().min(2, 'First name must be at least 2 characters'),
     lastName: z.string().trim().min(2, 'Last name must be at least 2 characters'),
     email: z.string().trim().email('Please enter a valid email address'),
-    phone: z.string().trim().optional().or(z.literal('')),
-    address: z.string().trim().optional(),
     gender: z.enum(['Male', 'Female', 'Other']),
 });
 
@@ -132,6 +131,45 @@ export default function AddEmployeeModal({ isOpen, onClose, onSubmit, isSubmitti
         try {
             if (step === 1) {
                 step1Schema.parse(formData);
+                // Validate address fields
+                const ad = formData.addressData;
+                if (!ad.addressLine1?.trim()) {
+                    setError('Address Line 1 is required');
+                    return false;
+                }
+                if (!ad.countryCode) {
+                    setError('Please select a country');
+                    return false;
+                }
+                if (!ad.stateCode) {
+                    setError('Please select a state / province');
+                    return false;
+                }
+                if (!ad.city) {
+                    setError('Please select a city');
+                    return false;
+                }
+                if (!ad.postalCode?.trim()) {
+                    setError('Postal / ZIP code is required');
+                    return false;
+                }
+                const postalResult = validatePostalCode(ad.postalCode, ad.countryCode);
+                if (!postalResult.valid) {
+                    setError(postalResult.message);
+                    return false;
+                }
+                if (!ad.phoneNumber) {
+                    setError('Phone number is required');
+                    return false;
+                }
+                if (!validatePhone(ad.phoneNumber)) {
+                    setError('Please enter a valid phone number');
+                    return false;
+                }
+                if (ad.alternatePhoneNumber && !validatePhone(ad.alternatePhoneNumber)) {
+                    setError('Please enter a valid alternate phone number');
+                    return false;
+                }
             } else if (step === 2) {
                 step2Schema.parse(formData);
             }
@@ -161,6 +199,7 @@ export default function AddEmployeeModal({ isOpen, onClose, onSubmit, isSubmitti
         const randomNum = Math.floor(1000 + Math.random() * 9000);
         const generatedPassword = `Hrms${capitalizedFirstName}@${randomNum}`;
 
+        const ad = formData.addressData;
         const apiPayload = {
             name: `${formData.firstName.trim()} ${formData.lastName.trim()}`,
             email: formData.email,
@@ -170,8 +209,21 @@ export default function AddEmployeeModal({ isOpen, onClose, onSubmit, isSubmitti
             role: formData.role.toLowerCase(),
             profile: {
                 personal: {
-                    phone: formData.phone ? `${formData.countryCode} ${formData.phone.trim()}` : '',
-                    address: formData.address,
+                    phone: ad.phoneNumber || '',
+                    phoneCountryCode: ad.phoneCountryCode || '',
+                    alternatePhone: ad.alternatePhoneNumber || '',
+                    address: {
+                        addressLine1: ad.addressLine1?.trim() || '',
+                        addressLine2: ad.addressLine2?.trim() || '',
+                        country: ad.country || '',
+                        countryCode: ad.countryCode || '',
+                        state: ad.state || '',
+                        stateCode: ad.stateCode || '',
+                        city: ad.city || '',
+                        district: ad.district?.trim() || '',
+                        postalCode: ad.postalCode?.trim() || '',
+                        landmark: ad.landmark?.trim() || '',
+                    },
                 },
                 employment: {
                     department: formData.department,
@@ -200,39 +252,7 @@ export default function AddEmployeeModal({ isOpen, onClose, onSubmit, isSubmitti
     return (
         <Modal isOpen={isOpen} onClose={handleClose} title="Add New Employee" className="max-w-3xl">
             <form onSubmit={handleSubmit} className="flex flex-col">
-                {/* --- PROGRESS BAR --- */}
-                <div className="px-4 pt-2 pb-6">
-                    <div className="relative flex items-center justify-between w-full">
-                        {/* Background track */}
-                        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-0.5 bg-gray-200 dark:bg-gray-800 z-0 transition-colors duration-300"></div>
-
-                        {/* Active track */}
-                        <div
-                            className="absolute left-0 top-1/2 -translate-y-1/2 h-0.5 bg-blue-600 z-0 transition-all duration-300"
-                            style={{ width: step === 1 ? '0%' : step === 2 ? '50%' : '100%' }}
-                        ></div>
-
-                        {/* Steps */}
-                        {[1, 2, 3].map((num) => (
-                            <div key={num} className="relative z-10 flex flex-col items-center gap-2 bg-white dark:bg-gray-900 px-2 transition-colors duration-300">
-                                <div className={cn(
-                                    "w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-colors border-2",
-                                    step >= num
-                                        ? "bg-blue-600 border-blue-600 text-white"
-                                        : "bg-white border-gray-300 text-gray-400 dark:bg-gray-900 dark:border-gray-700 dark:text-gray-500"
-                                )}>
-                                    {step > num ? <Check size={16} /> : num}
-                                </div>
-                                <span className={cn(
-                                    "text-xs font-semibold uppercase tracking-wider",
-                                    step >= num ? "text-blue-600" : "text-gray-400 dark:text-gray-500"
-                                )}>
-                                    {num === 1 ? 'Personal Info' : num === 2 ? 'Job Details' : 'Documents'}
-                                </span>
-                            </div>
-                        ))}
-                    </div>
-                </div>
+                {/* Step indicator removed per design request — form still uses 3-step flow */}
 
                 {/* --- FORM CONTENT --- */}
                 <div className="flex-1 p-2 min-h-[250px]">
@@ -243,57 +263,38 @@ export default function AddEmployeeModal({ isOpen, onClose, onSubmit, isSubmitti
                     )}
 
                     {step === 1 && (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 animate-in fade-in slide-in-from-right-4 duration-300">
-                            <Input label="First Name" name="firstName" value={formData.firstName} onChange={handleChange} placeholder="John" disabled={isSubmitting} />
-                            <Input label="Last Name" name="lastName" value={formData.lastName} onChange={handleChange} placeholder="Doe" disabled={isSubmitting} />
-                            <Input label="Email" type="email" name="email" value={formData.email} onChange={handleChange} placeholder="john@example.com" disabled={isSubmitting} />
-                            <div className="flex flex-col gap-1.5">
-                                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors">Phone Number</label>
-                                <div className="flex gap-2">
+                        <div className="space-y-5 animate-in fade-in slide-in-from-right-4 duration-300">
+                            {/* Basic Info */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                <Input label="First Name" name="firstName" value={formData.firstName} onChange={handleChange} placeholder="John" disabled={isSubmitting} />
+                                <Input label="Last Name" name="lastName" value={formData.lastName} onChange={handleChange} placeholder="Doe" disabled={isSubmitting} />
+                                <Input label="Email" type="email" name="email" value={formData.email} onChange={handleChange} placeholder="john@example.com" disabled={isSubmitting} />
+                                <div className="flex flex-col gap-1.5">
+                                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors">Gender</label>
                                     <select
                                         disabled={isSubmitting}
-                                        name="countryCode"
-                                        value={formData.countryCode}
+                                        name="gender"
+                                        value={formData.gender}
                                         onChange={handleChange}
-                                        className="w-24 h-10 px-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-600 text-sm bg-white dark:bg-gray-950 dark:border-gray-800 dark:text-gray-100 dark:focus:ring-blue-500 transition-colors"
+                                        className="h-10 px-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-600 text-sm bg-white dark:bg-gray-950 dark:border-gray-800 dark:text-gray-100 dark:focus:ring-blue-500 transition-colors"
                                     >
-                                        <option value="+91">+91 (IN)</option>
-                                        <option value="+1">+1 (US)</option>
-                                        <option value="+44">+44 (UK)</option>
-                                        <option value="+61">+61 (AU)</option>
-                                        <option value="+81">+81 (JP)</option>
-                                        <option value="+49">+49 (DE)</option>
-                                        <option value="+33">+33 (FR)</option>
-                                        <option value="+971">+971 (AE)</option>
+                                        <option value="Male">Male</option>
+                                        <option value="Female">Female</option>
+                                        <option value="Other">Other</option>
                                     </select>
-                                    <div className="flex-1">
-                                        <Input
-                                            name="phone"
-                                            value={formData.phone}
-                                            onChange={handleChange}
-                                            placeholder="12345 67890"
-                                            disabled={isSubmitting}
-                                            className="w-full"
-                                        />
-                                    </div>
                                 </div>
                             </div>
-                            <div className="flex flex-col gap-1.5 md:col-span-2">
-                                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors">Gender</label>
-                                <select
+
+                            {/* Address & Contact — using the reusable AddressForm */}
+                            <div className="border-t border-gray-100 dark:border-gray-800 pt-5 transition-colors">
+                                <AddressForm
+                                    value={formData.addressData}
+                                    onChange={(data) => {
+                                        setError('');
+                                        setFormData(prev => ({ ...prev, addressData: data }));
+                                    }}
                                     disabled={isSubmitting}
-                                    name="gender"
-                                    value={formData.gender}
-                                    onChange={handleChange}
-                                    className="h-10 px-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-600 text-sm bg-white dark:bg-gray-950 dark:border-gray-800 dark:text-gray-100 dark:focus:ring-blue-500 transition-colors"
-                                >
-                                    <option value="Male">Male</option>
-                                    <option value="Female">Female</option>
-                                    <option value="Other">Other</option>
-                                </select>
-                            </div>
-                            <div className="md:col-span-2">
-                                <Input label="Address" name="address" value={formData.address} onChange={handleChange} placeholder="123 Main St, City, Country" disabled={isSubmitting} />
+                                />
                             </div>
                         </div>
                     )}
