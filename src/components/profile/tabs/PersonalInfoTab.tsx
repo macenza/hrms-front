@@ -14,7 +14,7 @@ export interface PersonalInfoData {
     registrationNo: string;
     email: string;
     phone: string;
-    address: string;
+    address: string | any;
     rawDob?: string; // Used for accurate math calculations
     additionalInfo?: Record<string, string>;
 }
@@ -37,6 +37,35 @@ const calculateDaysToBirthday = (dobString?: string) => {
     
     const diffTime = nextBirthday.getTime() - today.getTime();
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+};
+
+const formatAddress = (address: any): string => {
+    if (!address) return '';
+    if (typeof address === 'string') return address;
+    
+    const {
+        addressLine1,
+        addressLine2,
+        landmark,
+        city,
+        district,
+        state,
+        postalCode,
+        country
+    } = address;
+
+    const parts = [
+        addressLine1,
+        addressLine2,
+        landmark,
+        city,
+        district,
+        state,
+        postalCode,
+        country
+    ].filter(part => part && typeof part === 'string' && part.trim() !== '');
+    
+    return parts.join(', ');
 };
 
 const DetailItem = ({
@@ -124,7 +153,7 @@ export default function PersonalInfoTab({
                             <div className="md:col-span-2 pt-2 border-t border-gray-100 dark:border-gray-800 transition-colors">
                                 <DetailItem 
                                     label="Current Address" 
-                                    value={data.address} 
+                                    value={formatAddress(data.address)} 
                                     icon={MapPin} 
                                     iconColor="text-red-500 dark:text-red-400" 
                                 />

@@ -13,7 +13,7 @@ import Cookies from 'js-cookie';
 import {
     LayoutDashboard, Users, CalendarCheck, CalendarDays, Briefcase,
     DollarSign, CreditCard, Package, Bell, Settings, LogOut, Sun, Moon, X, User,
-    AlertTriangle, CalendarHeart, FileText, UserPlus
+    AlertTriangle, CalendarHeart, FileText, UserPlus, Sparkles
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -76,6 +76,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     const menuItems = useMemo(() => {
         const items = [
             { id: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', show: true },
+            { id: 'AI Assistant', href: '/ai-assistant', icon: Sparkles, label: 'AI Assistant', show: true },
             // Administrative Links
             { id: 'Employees', href: '/employees', icon: Users, label: 'Employees', show: isAdminOrHR },
             { id: 'Recruitment', href: '/recruitment', icon: UserPlus, label: 'Recruitment', show: isAdminOrHR },
