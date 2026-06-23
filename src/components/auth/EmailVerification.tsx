@@ -81,9 +81,12 @@ export function EmailVerification({
         setError(null);
 
         try {
-            await apiClient.post('/auth/send-otp', { email });
+            const response = await apiClient.post('/auth/send-otp', { email });
             setState('sent');
             setCountdown(RESEND_COOLDOWN_SECONDS);
+            if (response.data && response.data.devOtp) {
+                setOtp(response.data.devOtp);
+            }
         } catch (err: any) {
             setState('error');
             setError(err.response?.data?.message || 'Failed to send OTP. Please try again.');
@@ -117,9 +120,12 @@ export function EmailVerification({
         setOtp('');
 
         try {
-            await apiClient.post('/auth/resend-otp', { email });
+            const response = await apiClient.post('/auth/resend-otp', { email });
             setState('sent');
             setCountdown(RESEND_COOLDOWN_SECONDS);
+            if (response.data && response.data.devOtp) {
+                setOtp(response.data.devOtp);
+            }
         } catch (err: any) {
             setState('sent');
             setError(err.response?.data?.message || 'Failed to resend OTP.');
