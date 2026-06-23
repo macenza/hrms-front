@@ -4,6 +4,7 @@ import { Bell, ChevronDown, Menu, User as UserIcon } from 'lucide-react';
 import { useAppSelector } from '@/store/hooks';
 import type { User } from '@/store/authSlice';
 import { getAvatarUrl } from '@/utils/avatarUtils';
+import NotificationDropdown from './NotificationDropdown';
 
 export interface UserProfile {
     name: string;
@@ -83,12 +84,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
             {/* Right Section: Notifications, Profile */}
             <div className="flex items-center gap-1 sm:gap-4 shrink-0">
 
-                <button className="relative p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors dark:hover:bg-gray-800 dark:hover:text-gray-300">
-                    <Bell size={20} />
-                    {user.unreadNotifications > 0 && (
-                        <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white dark:border-gray-950"></span>
-                    )}
-                </button>
+                <NotificationDropdown />
 
                 <div className="h-8 w-px bg-gray-200 dark:bg-gray-700 mx-1 hidden sm:block"></div>
 

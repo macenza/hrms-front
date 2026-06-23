@@ -284,24 +284,24 @@ export default function CheckoutTermsAndConditionsPage() {
                                         <tbody className="divide-y divide-gray-100 dark:divide-gray-900 bg-white dark:bg-gray-950">
                                             <tr className="hover:bg-gray-50/50 dark:hover:bg-gray-900/30 transition-colors">
                                                 <td className="px-6 py-4 font-bold text-gray-955 dark:text-white">Growth</td>
-                                                <td className="px-6 py-4 font-bold text-[#6D5DFD]">₹3,999</td>
+                                                <td className="px-6 py-4 font-bold text-[#6D5DFD]">₹499</td>
                                                 <td className="px-6 py-4 font-semibold text-gray-700 dark:text-gray-300">$49</td>
                                                 <td className="px-6 py-4 text-xs font-semibold"><span className="px-2 py-1 bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 rounded-md">50 Employees</span></td>
-                                                <td className="px-6 py-4 text-xs">Core HR, Attendance, Leave Manager</td>
+                                                <td className="px-6 py-4 text-xs">Core HR, Directory, Leave, Basic Payroll</td>
                                             </tr>
                                             <tr className="hover:bg-gray-50/50 dark:hover:bg-gray-900/30 transition-colors">
                                                 <td className="px-6 py-4 font-bold text-gray-955 dark:text-white">Professional</td>
-                                                <td className="px-6 py-4 font-bold text-[#6D5DFD]">₹9,999</td>
+                                                <td className="px-6 py-4 font-bold text-[#6D5DFD]">₹1,999</td>
                                                 <td className="px-6 py-4 font-semibold text-gray-700 dark:text-gray-300">$129</td>
                                                 <td className="px-6 py-4 text-xs font-semibold"><span className="px-2 py-1 bg-purple-50 dark:bg-purple-950/30 text-[#6D5DFD] rounded-md">250 Employees</span></td>
-                                                <td className="px-6 py-4 text-xs font-medium text-gray-600 dark:text-gray-450">Core HR, Attendance, Leave, Payroll, Asset Tracking</td>
+                                                <td className="px-6 py-4 text-xs font-medium text-gray-600 dark:text-gray-450">Advanced HR, Leave, Payroll, AI Interviews, Asset Tracking</td>
                                             </tr>
                                             <tr className="hover:bg-gray-50/50 dark:hover:bg-gray-900/30 transition-colors">
-                                                <td className="px-6 py-4 font-bold text-gray-955 dark:text-white">Enterprise</td>
-                                                <td className="px-6 py-4 font-bold text-[#6D5DFD]">₹39,999</td>
-                                                <td className="px-6 py-4 font-semibold text-gray-700 dark:text-gray-300">$499</td>
-                                                <td className="px-6 py-4 text-xs font-semibold"><span className="px-2 py-1 bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 rounded-md">9,999 Employees</span></td>
-                                                <td className="px-6 py-4 text-xs">All Modules, Dedicated Hosting, Priority SLA</td>
+                                                <td className="px-6 py-4 font-bold text-gray-955 dark:text-white">Employee Expansion Add-on</td>
+                                                <td className="px-6 py-4 font-bold text-[#6D5DFD]">Starts at ₹99</td>
+                                                <td className="px-6 py-4 font-semibold text-gray-700 dark:text-gray-300">Starts at $10</td>
+                                                <td className="px-6 py-4 text-xs font-semibold"><span className="px-2 py-1 bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 rounded-md">+10/25/50 Employees</span></td>
+                                                <td className="px-6 py-4 text-xs">Requires active Growth or Professional Plan</td>
                                             </tr>
                                         </tbody>
                                     </table>

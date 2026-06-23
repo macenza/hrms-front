@@ -133,8 +133,8 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             // Close the sidebar
             if (typeof onClose === 'function') onClose();
             
-            // Force Next.js to navigate to the login page securely
-            router.push('/login');
+            // Force browser to navigate to the login page directly with a hard reload
+            window.location.href = '/login';
         }
     };
 

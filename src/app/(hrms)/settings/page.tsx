@@ -125,8 +125,7 @@ export default function SettingsPage() {
                     Cookies.remove('hrms_token', { path: '/' });
                     Cookies.remove('hrms_role', { path: '/' });
                     Cookies.remove('role', { path: '/' });
-                    
-                    router.push('/login');
+                    window.location.href = '/login';
                 }
             }, 1500);
 
