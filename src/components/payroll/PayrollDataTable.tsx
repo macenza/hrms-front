@@ -63,6 +63,25 @@ export interface PayrollAccrualRow {
     accruedDeductions: number;
     accruedNetPay: number;
     lastCalculatedDate: string;
+
+    // Detailed day counts and breakdowns
+    totalCalendarDays?: number;
+    workingDaysCount?: number;
+    presentDays?: number;
+    absentDays?: number;
+    paidLeaveDays?: number;
+    unpaidLeaveDays?: number;
+    holidaysCount?: number;
+    weekendsCount?: number;
+    paidDays?: number;
+    preJoiningDays?: number;
+    totalDays?: number;
+    payableEarnings?: number;
+    basicSalary?: number;
+    basic?: number; // fallback
+    lwpDeduction?: number;
+    allowancesSnapshot?: { name: string; amount: number }[];
+    customDeductionsSnapshot?: { name: string; amount: number }[];
 }
 
 export interface PayrollDataTableProps {
@@ -279,11 +298,14 @@ const columns: ColumnDef<PayrollAccrualRow>[] = [
         header: ({ column }) => (
             <DataTableColumnHeader column={column} title="Deductions" className="text-red-500 dark:text-red-400" />
         ),
-        cell: ({ row }) => (
-            <span className="font-mono font-bold text-red-500 dark:text-red-400 text-sm">
-                {formatINR(row.original.accruedDeductions)}
-            </span>
-        ),
+        cell: ({ row }) => {
+            const displayDeductions = (row.original.accruedDeductions || 0) + (row.original.lwpDeduction || 0);
+            return (
+                <span className="font-mono font-bold text-red-500 dark:text-red-400 text-sm">
+                    {formatINR(displayDeductions)}
+                </span>
+            );
+        },
     },
     {
         accessorKey: 'accruedNetPay',

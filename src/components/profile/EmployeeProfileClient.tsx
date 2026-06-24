@@ -455,6 +455,7 @@ export default function EmployeeProfileClient({ id }: EmployeeProfileClientProps
                                 pfNumber: financial.pfNumber || ''
                             }}
                             salaryData={{
+                                monthlyCTC: financial.monthlyCTC || 0,
                                 basicSalary: financial.basicSalary || 0,
                                 activeAllowances: financial.activeAllowances || [],
                                 activeDeductions: financial.activeDeductions || []

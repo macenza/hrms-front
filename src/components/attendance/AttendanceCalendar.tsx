@@ -125,7 +125,7 @@ export const getAttendanceLabel = (status: string | null) => {
         case 'WORK_FROM_HOME': return 'Work From Home';
         case 'LATE': return 'Late';
         case 'MISSING_PUNCH': return 'Missing Punch';
-        default: return 'No Record';
+        default: return status === null ? 'Null' : 'No Record';
     }
 };
 
@@ -528,18 +528,24 @@ export default function AttendanceCalendar({ employeeId, onDataFetched, onLoadin
                         </div>
 
                         {/* Content */}
-                        <div className="flex flex-col gap-3 text-xs">
-                            {/* Status */}
-                            <div className="flex justify-between items-center py-1">
-                                <span className="text-slate-550 dark:text-slate-400">Status</span>
-                                <span className={cn(
-                                    "px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wide",
-                                    getAttendanceColor(selectedCell.record?.status || (selectedCell.isFuture ? null : 'ABSENT')).bg,
-                                    getAttendanceColor(selectedCell.record?.status || (selectedCell.isFuture ? null : 'ABSENT')).text
-                                )}>
-                                    {getAttendanceLabel(selectedCell.record?.status || (selectedCell.isFuture ? null : 'ABSENT'))}
-                                </span>
-                            </div>
+                        {(() => {
+                            const popoverStatus = selectedCell.record
+                                ? selectedCell.record.status
+                                : (selectedCell.isFuture ? null : 'ABSENT');
+                            const statusColors = getAttendanceColor(popoverStatus);
+                            return (
+                                <div className="flex flex-col gap-3 text-xs">
+                                    {/* Status */}
+                                    <div className="flex justify-between items-center py-1">
+                                        <span className="text-slate-550 dark:text-slate-400">Status</span>
+                                        <span className={cn(
+                                            "px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wide",
+                                            statusColors.bg,
+                                            statusColors.text
+                                        )}>
+                                            {getAttendanceLabel(popoverStatus)}
+                                        </span>
+                                    </div>
 
                             {/* Shift */}
                             <div className="flex justify-between items-start py-1">
@@ -594,7 +600,9 @@ export default function AttendanceCalendar({ employeeId, onDataFetched, onLoadin
                                     </p>
                                 </div>
                             )}
-                        </div>
+                                </div>
+                            );
+                        })()}
 
                         {/* Footer button */}
                         <button
