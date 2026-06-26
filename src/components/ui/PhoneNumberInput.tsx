@@ -9,7 +9,12 @@ import 'react-phone-number-input/style.css';
 interface PhoneNumberInputProps {
     value: string;
     onChange: (value: string) => void;
+    /** Controlled country code — updates when the parent changes it (e.g., on address country selection) */
+    country?: CountryCode;
+    /** Fallback country if `country` is not provided */
     defaultCountry?: CountryCode;
+    /** Called when user manually picks a different country from the flag dropdown */
+    onCountryChange?: (country: CountryCode) => void;
     label?: string;
     error?: string;
     disabled?: boolean;
@@ -21,11 +26,16 @@ interface PhoneNumberInputProps {
  * Enterprise-grade phone number input with country flag selector.
  * Wraps react-phone-number-input with HRMS styling.
  * Stores values in E.164 format (e.g., "+919876543210").
+ *
+ * Supports both controlled (`country`) and uncontrolled (`defaultCountry`) modes.
+ * When `country` is provided, the flag/code auto-updates when the parent changes it.
  */
 export function PhoneNumberInput({
     value,
     onChange,
+    country,
     defaultCountry = 'IN',
+    onCountryChange,
     label,
     error,
     disabled = false,
@@ -46,7 +56,9 @@ export function PhoneNumberInput({
                 id={id}
                 international
                 countryCallingCodeEditable={false}
-                defaultCountry={defaultCountry}
+                country={country || undefined}
+                defaultCountry={!country ? defaultCountry : undefined}
+                onCountryChange={(c) => onCountryChange?.(c as CountryCode)}
                 value={value}
                 onChange={(val) => onChange(val || '')}
                 disabled={disabled}
@@ -78,3 +90,4 @@ export function validatePhone(phone: string): boolean {
 }
 
 PhoneNumberInput.displayName = 'PhoneNumberInput';
+
