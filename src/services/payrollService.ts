@@ -58,5 +58,17 @@ export const payrollService = {
             responseType: 'blob'
         });
         return response.data;
+    },
+
+    downloadPayslip: async (recordId: string) => {
+        const response = await apiClient.get(`/payroll/payslip/${recordId}/download`, {
+            responseType: 'blob'
+        });
+        return response.data;
+    },
+
+    sendPayslipEmail: async (recordId: string) => {
+        const response = await apiClient.post(`/payroll/payslip/${recordId}/send-email`);
+        return response.data;
     }
 };

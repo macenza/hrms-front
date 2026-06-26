@@ -77,6 +77,7 @@ export interface PayrollAccrualRow {
     preJoiningDays?: number;
     totalDays?: number;
     payableEarnings?: number;
+    ctc?: number;
     basicSalary?: number;
     basic?: number; // fallback
     lwpDeduction?: number;

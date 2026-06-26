@@ -14,8 +14,11 @@ import {
     ChevronRight, 
     Eye,
     CheckCircle2,
-    AlertCircle
+    AlertCircle,
+    FileDown,
+    Send
 } from 'lucide-react';
+import { payrollService } from '@/services/payrollService';
 import { Button } from '@/components/ui/Button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Modal } from '@/components/ui/Modal';
@@ -58,12 +61,105 @@ export default function PayrollHistoryPage() {
     // Detail Modal Batch State
     const [selectedBatchId, setSelectedBatchId] = useState<string | null>(null);
     const selectedBatch = historyData?.data?.find((b: any) => b._id === selectedBatchId);
+    const [sendingMap, setSendingMap] = useState<Record<string, boolean>>({});
+    const [isBulkSending, setIsBulkSending] = useState(false);
+    const [bulkProgress, setBulkProgress] = useState({
+        total: 0,
+        sent: 0,
+        failed: 0,
+        remaining: 0
+    });
     
     // Batch records query
-    const { data: batchRecords, isLoading: isRecordsLoading } = useBatchRecords(
+    const { data: batchRecords, isLoading: isRecordsLoading, refetch: refetchRecords } = useBatchRecords(
         selectedBatchId,
         selectedBatch?.status === 'Processing'
     );
+
+    const handleDownloadPayslip = async (rec: any) => {
+        try {
+            toast.info(`Preparing payslip download for ${rec.employeeName}...`);
+            const blob = await payrollService.downloadPayslip(rec._id);
+            const downloadUrl = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = downloadUrl;
+            link.download = `payslip_${rec.employeeName.replace(/\s+/g, '_')}_${selectedBatch ? MONTHS.find((m) => m.value === selectedBatch.month)?.label + '_' + selectedBatch.year : ''}.pdf`;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(downloadUrl);
+            toast.success("Payslip downloaded successfully!");
+        } catch (error: any) {
+            console.error(error);
+            toast.error("Failed to download payslip.");
+        }
+    };
+
+    const handleSendPayslip = async (rec: any) => {
+        if (sendingMap[rec._id]) return;
+        setSendingMap(prev => ({ ...prev, [rec._id]: true }));
+        try {
+            await payrollService.sendPayslipEmail(rec._id);
+            toast.success(`Payslip sent to ${rec.employeeName} successfully!`);
+            refetchRecords();
+        } catch (error: any) {
+            console.error(error);
+            toast.error(error?.response?.data?.message || `Failed to send payslip to ${rec.employeeName}.`);
+        } finally {
+            setSendingMap(prev => ({ ...prev, [rec._id]: false }));
+        }
+    };
+
+    const handleSendAllPayslips = async () => {
+        if (!batchRecords || batchRecords.length === 0 || isBulkSending) return;
+        
+        if (!window.confirm(`Are you sure you want to send payslips to all ${batchRecords.length} employees?`)) {
+            return;
+        }
+
+        setIsBulkSending(true);
+        const total = batchRecords.length;
+        setBulkProgress({
+            total,
+            sent: 0,
+            failed: 0,
+            remaining: total
+        });
+
+        let sentCount = 0;
+        let failedCount = 0;
+
+        for (let i = 0; i < batchRecords.length; i++) {
+            const rec = batchRecords[i];
+            
+            setBulkProgress(prev => ({
+                ...prev,
+                remaining: total - (sentCount + failedCount)
+            }));
+
+            try {
+                setSendingMap(prev => ({ ...prev, [rec._id]: true }));
+                await payrollService.sendPayslipEmail(rec._id);
+                sentCount++;
+                refetchRecords();
+            } catch (error) {
+                console.error(`Failed to send payslip to ${rec.employeeName}:`, error);
+                failedCount++;
+            } finally {
+                setSendingMap(prev => ({ ...prev, [rec._id]: false }));
+                setBulkProgress(prev => ({
+                    ...prev,
+                    sent: sentCount,
+                    failed: failedCount,
+                    remaining: total - (sentCount + failedCount)
+                }));
+            }
+        }
+
+        setIsBulkSending(false);
+        refetchRecords();
+        alert(`Payslips sending process completed!\n\nTotal: ${total}\nSent Successfully: ${sentCount}\nFailed: ${failedCount}`);
+    };
 
     useEffect(() => {
         if (isAuthenticated && !canManagePayroll) {
@@ -109,8 +205,8 @@ export default function PayrollHistoryPage() {
     });
 
     const years = Array.from(
-        new Set((historyData?.data || []).map((b: any) => b.year.toString()))
-    ).sort((a, b) => b.localeCompare(a));
+        new Set<string>((historyData?.data || []).map((b: any) => b.year.toString()))
+    ).sort((a: string, b: string) => b.localeCompare(a));
 
     if (!isAuthenticated || !canManagePayroll) {
         return (
@@ -261,10 +357,10 @@ export default function PayrollHistoryPage() {
                                                             variant="outline"
                                                             size="sm"
                                                             onClick={() => setSelectedBatchId(batch._id)}
-                                                            className="text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 text-xs px-2.5 py-1.5 h-auto font-semibold flex items-center gap-1.5 border-blue-100 dark:border-blue-900"
+                                                            className="text-blue-650 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 text-xs px-2.5 py-1.5 h-auto font-semibold flex items-center gap-1.5 border-blue-100 dark:border-blue-900"
                                                         >
                                                             <Eye size={13} />
-                                                            <span>View Details</span>
+                                                            <span>View & Send Payslips</span>
                                                         </Button>
                                                         {batch.status === 'Completed' && batch.excelFileUrl && (
                                                             <Button
@@ -341,6 +437,8 @@ export default function PayrollHistoryPage() {
                                         <th className="px-4 py-3.5">Gross Total</th>
                                         <th className="px-4 py-3.5 text-red-500">Total Deduction</th>
                                         <th className="px-4 py-3.5 text-emerald-600">Net Payable</th>
+                                        <th className="px-4 py-3.5 text-center">Payslip</th>
+                                        <th className="px-4 py-3.5 text-center">Share</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-150 dark:divide-gray-800 font-medium">
@@ -371,20 +469,107 @@ export default function PayrollHistoryPage() {
                                                 <td className="px-4 py-3 font-medium text-gray-850 dark:text-gray-200 font-mono text-xs">₹{rec.grossTotal?.toLocaleString('en-IN')}</td>
                                                 <td className="px-4 py-3 text-red-500 dark:text-red-400 font-mono text-xs">₹{(rec.totalDeduction + (rec.fixedDeductions?.unpaidLeaveDeduction || rec.lwpDeduction || 0))?.toLocaleString('en-IN')}</td>
                                                 <td className="px-4 py-3 text-emerald-600 dark:text-emerald-400 font-bold font-mono text-xs">₹{rec.netPayable?.toLocaleString('en-IN')}</td>
+                                                <td className="px-4 py-3 text-center">
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() => handleDownloadPayslip(rec)}
+                                                        disabled={isBulkSending}
+                                                        className="text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 text-xs px-2.5 py-1.5 h-auto font-semibold flex items-center gap-1 border-blue-100 dark:border-blue-900"
+                                                    >
+                                                        <FileDown size={13} />
+                                                        <span>Download</span>
+                                                    </Button>
+                                                </td>
+                                                <td className="px-4 py-3 text-center">
+                                                    <Button
+                                                        variant={rec.payslipSent ? "ghost" : "outline"}
+                                                        size="sm"
+                                                        onClick={() => handleSendPayslip(rec)}
+                                                        disabled={sendingMap[rec._id] || isBulkSending || rec.payslipSent}
+                                                        className={cn(
+                                                            "text-xs px-2.5 py-1.5 h-auto font-semibold flex items-center gap-1.5 transition-all duration-250",
+                                                            rec.payslipSent 
+                                                                ? "text-emerald-700 dark:text-emerald-400 bg-emerald-50/70 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900/40 cursor-default opacity-85" 
+                                                                : "text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 border-emerald-100 dark:border-emerald-900"
+                                                        )}
+                                                    >
+                                                        {sendingMap[rec._id] ? (
+                                                            <Loader2 size={13} className="animate-spin" />
+                                                        ) : rec.payslipSent ? (
+                                                            <CheckCircle2 size={13} />
+                                                        ) : (
+                                                            <Send size={13} />
+                                                        )}
+                                                        <span>{rec.payslipSent ? "Sent" : "Send"}</span>
+                                                    </Button>
+                                                </td>
                                             </tr>
                                         ))
                                     )}
                                 </tbody>
                             </table>
                         </div>
-                        <div className="flex justify-end pt-2">
-                            <Button
-                                variant="outline"
-                                onClick={() => setSelectedBatchId(null)}
-                                className="h-10 px-5 font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-850"
-                            >
-                                Close
-                            </Button>
+                        {/* Bulk progress bar display */}
+                        {isBulkSending && (
+                            <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/60 p-4 rounded-xl space-y-2 animate-in fade-in duration-300">
+                                <div className="flex justify-between text-xs font-bold text-blue-700 dark:text-blue-400 uppercase tracking-wider">
+                                    <span>Sending Payslips...</span>
+                                    <span>{bulkProgress.sent + bulkProgress.failed} / {bulkProgress.total} Complete</span>
+                                </div>
+                                <div className="w-full bg-blue-100 dark:bg-blue-900/40 h-2 rounded-full overflow-hidden">
+                                    <div 
+                                        className="bg-blue-600 h-full transition-all duration-350"
+                                        style={{ width: `${((bulkProgress.sent + bulkProgress.failed) / bulkProgress.total) * 100}%` }}
+                                    />
+                                </div>
+                                <div className="flex justify-between text-xs font-semibold text-gray-600 dark:text-gray-400">
+                                    <span>Sent: <strong className="text-emerald-600">{bulkProgress.sent}</strong></span>
+                                    <span>Failed: <strong className="text-red-500">{bulkProgress.failed}</strong></span>
+                                    <span>Remaining: <strong>{bulkProgress.remaining}</strong></span>
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="flex justify-between items-center pt-2 border-t border-gray-100 dark:border-gray-800">
+                            <div>
+                                {isBulkSending && (
+                                    <div className="flex items-center gap-2 text-xs font-semibold text-blue-600 dark:text-blue-400 animate-pulse">
+                                        <Loader2 size={14} className="animate-spin" />
+                                        <span>Dispatching payslips...</span>
+                                    </div>
+                                )}
+                            </div>
+                            <div className="flex gap-2.5">
+                                <Button
+                                    variant="outline"
+                                    onClick={() => setSelectedBatchId(null)}
+                                    disabled={isBulkSending}
+                                    className="h-10 px-5 font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-850"
+                                >
+                                    Close
+                                </Button>
+                                {batchRecords && batchRecords.length > 0 && (
+                                    <Button
+                                        variant="primary"
+                                        onClick={handleSendAllPayslips}
+                                        disabled={isBulkSending}
+                                        className="h-10 px-5 font-bold bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white flex items-center gap-1.5 shadow-sm"
+                                    >
+                                        {isBulkSending ? (
+                                            <>
+                                                <Loader2 size={16} className="animate-spin" />
+                                                <span>Sending... ({bulkProgress.sent}/{bulkProgress.total})</span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Send size={16} />
+                                                <span>Send Payslips to All</span>
+                                            </>
+                                        )}
+                                    </Button>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </Modal>
