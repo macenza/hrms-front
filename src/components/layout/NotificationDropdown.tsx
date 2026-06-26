@@ -34,6 +34,29 @@ export default function NotificationDropdown() {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
+    const fetchNotifications = async () => {
+        setLoading(true);
+        try {
+            // Only fetch today's notifications for the bell icon
+            const res = await apiClient.get('/notifications?timeframe=today&limit=50');
+            const todayNotifs: Notification[] = res.data.data;
+            
+            const unreadToday = todayNotifs.filter(n => !n.isRead);
+            
+            if (unreadToday.length > 0) {
+                // If there are unread notifications, show all unread
+                setNotifications(unreadToday);
+            } else {
+                // If all are read, show max 2 recent notifications from today
+                setNotifications(todayNotifs.slice(0, 2));
+            }
+        } catch (error) {
+            console.error('Failed to fetch notifications', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     // Initialize Socket and fetch initial unread count
     useEffect(() => {
         const token = Cookies.get('hrms_token') || localStorage.getItem('hrms_token') || Cookies.get('customer_token') || localStorage.getItem('customer_token');
@@ -65,29 +88,6 @@ export default function NotificationDropdown() {
             socketRef.current?.disconnect();
         };
     }, []);
-
-    const fetchNotifications = async () => {
-        setLoading(true);
-        try {
-            // Only fetch today's notifications for the bell icon
-            const res = await apiClient.get('/notifications?timeframe=today&limit=50');
-            const todayNotifs: Notification[] = res.data.data;
-            
-            const unreadToday = todayNotifs.filter(n => !n.isRead);
-            
-            if (unreadToday.length > 0) {
-                // If there are unread notifications, show all unread
-                setNotifications(unreadToday);
-            } else {
-                // If all are read, show max 2 recent notifications from today
-                setNotifications(todayNotifs.slice(0, 2));
-            }
-        } catch (error) {
-            console.error('Failed to fetch notifications', error);
-        } finally {
-            setLoading(false);
-        }
-    };
 
     const handleToggle = () => {
         setIsOpen(!isOpen);

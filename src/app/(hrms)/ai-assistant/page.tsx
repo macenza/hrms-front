@@ -45,6 +45,30 @@ export default function AIAssistantPage() {
         return slashCommands.filter(c => c.command.startsWith(search));
     }, [inputMessage, slashCommands]);
 
+    const loadConversations = async () => {
+        try {
+            const list = await aiService.listConversations();
+            setConversations(list || []);
+            // Set the first conversation as active if none is active
+            if (list && list.length > 0 && !activeConversationId) {
+                setActiveConversationId(list[0].conversation_id);
+            }
+        } catch (error) {
+            console.error('Failed to load conversations:', error);
+            toast.error('Could not fetch conversations history');
+        }
+    };
+
+    const loadMessages = async (id: string) => {
+        try {
+            const chatHistory = await aiService.getConversationHistory(id);
+            setMessages(chatHistory || []);
+        } catch (error) {
+            console.error('Failed to load messages:', error);
+            toast.error('Could not load chat messages');
+        }
+    };
+
     // Fetch conversations list on mount
     useEffect(() => {
         loadConversations();
@@ -73,30 +97,6 @@ export default function AIAssistantPage() {
             setShowSlashCommands(false);
         }
     }, [inputMessage]);
-
-    const loadConversations = async () => {
-        try {
-            const list = await aiService.listConversations();
-            setConversations(list || []);
-            // Set the first conversation as active if none is active
-            if (list && list.length > 0 && !activeConversationId) {
-                setActiveConversationId(list[0].conversation_id);
-            }
-        } catch (error) {
-            console.error('Failed to load conversations:', error);
-            toast.error('Could not fetch conversations history');
-        }
-    };
-
-    const loadMessages = async (id: string) => {
-        try {
-            const chatHistory = await aiService.getConversationHistory(id);
-            setMessages(chatHistory || []);
-        } catch (error) {
-            console.error('Failed to load messages:', error);
-            toast.error('Could not load chat messages');
-        }
-    };
 
     const handleCreateConversation = async () => {
         try {
@@ -302,7 +302,7 @@ export default function AIAssistantPage() {
             return (
                 <div key={index} className="space-y-1.5 my-1">
                     {lines.map((line, li) => {
-                        let rendered = line;
+                        const rendered = line;
                         if (rendered.startsWith('### ')) {
                             return <h3 key={li} className="text-sm font-black text-gray-900 dark:text-gray-100 mt-4 mb-1.5 uppercase tracking-wide">{rendered.replace('### ', '')}</h3>;
                         }
