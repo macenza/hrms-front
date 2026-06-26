@@ -134,7 +134,6 @@ export default function AuthInitializer({ children }: { children: React.ReactNod
                     localStorage.removeItem('hrms_user');
                     localStorage.removeItem('hrms_token');
                     localStorage.removeItem('hrms_refreshToken');
-                    localStorage.removeItem('persist:employeeAuth');
                     Cookies.remove('hrms_token', { path: '/' });
                     Cookies.remove('hrms_role', { path: '/' });
                     
@@ -156,7 +155,6 @@ export default function AuthInitializer({ children }: { children: React.ReactNod
                 localStorage.removeItem('hrms_user');
                 localStorage.removeItem('hrms_token');
                 localStorage.removeItem('hrms_refreshToken');
-                localStorage.removeItem('persist:employeeAuth');
                 Cookies.remove('hrms_token', { path: '/' });
                 Cookies.remove('hrms_role', { path: '/' });
 

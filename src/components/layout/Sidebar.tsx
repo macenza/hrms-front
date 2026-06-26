@@ -145,7 +145,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             // Close the sidebar
             if (typeof onClose === 'function') onClose();
             
-            // Force browser to reload and navigate to the login page securely
+            // Force browser to navigate to the login page directly with a hard reload
             window.location.href = '/login';
         }
     };
@@ -211,6 +211,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                             <Link
                                 key={item.id}
                                 href={item.href}
+                                prefetch={true}
                                 onClick={() => onClose()} // Auto-close sidebar on mobile
                                 className={cn(
                                     "w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 group outline-none focus-visible:ring-2 focus-visible:ring-primary",

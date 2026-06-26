@@ -72,7 +72,7 @@ export default function EmployeeHeader({
                 {/* Primary Action */}
                 <button
                     onClick={onAddClick}
-                    className="inline-flex items-center justify-center rounded-md text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none bg-blue-600 text-white hover:bg-blue-700 focus-visible:ring-blue-600 gap-2 h-10 px-4 shadow-sm shadow-blue-500/25 dark:shadow-none ml-1 relative z-30 pointer-events-auto cursor-pointer"
+                    className="inline-flex items-center justify-center rounded-md text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none bg-blue-600 text-white hover:bg-blue-700 focus-visible:ring-blue-600 gap-2 h-10 px-4 shadow-sm shadow-blue-500/25 dark:shadow-none ml-1"
                 >
                     <Plus size={18} strokeWidth={2.5} />
                     Add Employee

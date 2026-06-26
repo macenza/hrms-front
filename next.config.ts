@@ -5,6 +5,9 @@ const nextConfig: NextConfig = {
   reactCompiler: false,
   devIndicators: false,
   allowedDevOrigins: ["192.168.1.6", "192.168.43.68", "localhost"],
+  experimental: {
+    optimizePackageImports: ["lucide-react", "recharts"]
+  }
 };
 
 export default nextConfig;

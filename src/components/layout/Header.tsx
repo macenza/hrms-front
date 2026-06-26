@@ -4,6 +4,7 @@ import { Bell, ChevronDown, Menu, User as UserIcon } from 'lucide-react';
 import { useAppSelector } from '@/store/hooks';
 import type { User } from '@/store/authSlice';
 import { getAvatarUrl } from '@/utils/avatarUtils';
+import NotificationDropdown from './NotificationDropdown';
 
 export interface UserProfile {
     name: string;
@@ -48,16 +49,15 @@ export default function Header({ onMenuClick }: HeaderProps) {
         else setGreeting('Good Evening');
     }, []);
 
-    // Render a skeleton/fallback before mounting
     if (!mounted) {
-        return <header className="h-20 bg-white/80 dark:bg-gray-950/80 border-b border-gray-200 dark:border-gray-800 sticky top-0 z-30"></header>;
+        return <header className="h-20 bg-white/80 dark:bg-gray-950/80 border-b border-gray-200 dark:border-gray-800 sticky top-0 z-40"></header>;
     }
 
     const firstName = (user.name || '').trim() ? (user.name || '').split(' ')[0] : 'there';
     const getInitials = (name: string) => (name || '').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
 
     return (
-        <header className="h-20 bg-white/80 dark:bg-gray-950/80 backdrop-blur-md flex items-center justify-between px-4 md:px-8 sticky top-0 z-30 border-b border-gray-200 dark:border-gray-800">
+        <header className="h-20 bg-white/80 dark:bg-gray-950/80 backdrop-blur-md flex items-center justify-between px-4 md:px-8 sticky top-0 z-40 border-b border-gray-200 dark:border-gray-800">
 
             {/* Left Section: Hamburger & Greeting */}
             <div className="flex items-center gap-2 sm:gap-3 min-w-0">
@@ -83,12 +83,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
             {/* Right Section: Notifications, Profile */}
             <div className="flex items-center gap-1 sm:gap-4 shrink-0">
 
-                <button className="relative p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors dark:hover:bg-gray-800 dark:hover:text-gray-300">
-                    <Bell size={20} />
-                    {user.unreadNotifications > 0 && (
-                        <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white dark:border-gray-950"></span>
-                    )}
-                </button>
+                <NotificationDropdown />
 
                 <div className="h-8 w-px bg-gray-200 dark:bg-gray-700 mx-1 hidden sm:block"></div>
 

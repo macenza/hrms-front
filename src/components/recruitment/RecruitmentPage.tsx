@@ -27,10 +27,10 @@ import {
 } from "@/hooks/api/useRecruitment";
 import dynamic from "next/dynamic";
 
-// Static Modal/Form components (Non-tab views)
-import JobOpeningForm from "./components/JobOpeningForm";
-import JobDetailsModal from "./components/JobDetailsModal";
-import CandidateDetailsModal from "./components/CandidateDetailsModal";
+// Lazy loaded Modal/Form components
+const JobOpeningForm = dynamic(() => import("./components/JobOpeningForm"), { ssr: false });
+const JobDetailsModal = dynamic(() => import("./components/JobDetailsModal"), { ssr: false });
+const CandidateDetailsModal = dynamic(() => import("./components/CandidateDetailsModal"), { ssr: false });
 
 // Types
 import { JobOpening, Applicant } from "./types";

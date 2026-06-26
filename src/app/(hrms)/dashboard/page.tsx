@@ -3,15 +3,17 @@ import React, { useMemo, useState } from "react";
 import { useRouter } from 'next/navigation';
 import { CalendarDays, Upload, Loader2, Cake } from "lucide-react";
 import dynamic from 'next/dynamic';
-import StatCard from "@/components/dashboard/StatCard";
-import EmployeeSummary from "@/components/dashboard/EmployeeSummary";
-import AttendanceList from "@/components/dashboard/AttendanceList";
+
+const StatCard = dynamic(() => import("@/components/dashboard/StatCard"), { ssr: false });
+const EmployeeSummary = dynamic(() => import("@/components/dashboard/EmployeeSummary"), { ssr: false });
+const AttendanceList = dynamic(() => import("@/components/dashboard/AttendanceList"), { ssr: false });
+const AttendanceCalendar = dynamic(() => import("@/components/attendance/AttendanceCalendar"), { ssr: false });
+
 import { STAT_CARDS } from "@/lib/data";
 import { useAppSelector } from "@/store/hooks";
 import { useDashboardStats, useDashboardAttendance } from "@/hooks/api/useDashboard";
 import { useActiveEmployees } from "@/hooks/api/useEmployees";
 import { normalizeRoleDistribution } from "@/lib/dashboard";
-import AttendanceCalendar from "@/components/attendance/AttendanceCalendar";
 
 const AttendanceChart = dynamic(
     () => import('@/components/dashboard/AttendanceChart'),

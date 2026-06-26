@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useAppSelector } from '@/store/hooks';
-import { 
-    Sparkles, Send, Trash2, Edit3, Plus, Search, Brain, 
+import {
+    Sparkles, Send, Trash2, Edit3, Plus, Search, Brain,
     Calendar, DollarSign, Package, User, Info, Check, X,
     ChevronRight, Loader2, AlertCircle
 } from 'lucide-react';
@@ -151,7 +151,7 @@ export default function AIAssistantPage() {
         if (!textToSend.trim() || isThinking) return;
 
         let convoId = activeConversationId;
-        
+
         // Auto-create conversation if none active
         if (!convoId) {
             try {
@@ -245,10 +245,10 @@ export default function AIAssistantPage() {
     // Simple parser to render markdown details
     const renderMarkdown = (text: string) => {
         if (!text) return null;
-        
+
         // Code Block Splitter
         const parts = text.split(/(```[\s\S]*?```)/g);
-        
+
         return parts.map((part, index) => {
             if (part.startsWith('```')) {
                 const lines = part.split('\n');
@@ -263,12 +263,12 @@ export default function AIAssistantPage() {
                     </pre>
                 );
             }
-            
+
             // Grid Tables
             if (part.includes('|') && part.includes('\n')) {
                 const lines = part.split('\n').filter(l => l.trim() !== '');
                 const rows = lines.map(line => line.split('|').map(cell => cell.trim()).filter((_, i, arr) => i > 0 && i < arr.length - 1));
-                
+
                 if (rows.length >= 2 && rows[1].every(cell => cell.startsWith('-') || cell.includes(':'))) {
                     const headers = rows[0];
                     const dataRows = rows.slice(2);
@@ -296,7 +296,7 @@ export default function AIAssistantPage() {
                     );
                 }
             }
-            
+
             // Normal Lines
             const lines = part.split('\n');
             return (
@@ -312,7 +312,7 @@ export default function AIAssistantPage() {
                         if (rendered.startsWith('# ')) {
                             return <h1 key={li} className="text-lg font-black text-gray-900 dark:text-gray-100 mt-6 mb-3">{rendered.replace('# ', '')}</h1>;
                         }
-                        
+
                         if (rendered.trim().startsWith('- ') || rendered.trim().startsWith('* ')) {
                             const cleanLine = rendered.trim().replace(/^[-*]\s+/, '');
                             return (
@@ -323,9 +323,9 @@ export default function AIAssistantPage() {
                                 </ul>
                             );
                         }
-                        
+
                         if (rendered.trim() === '') return <div key={li} className="h-1.5" />;
-                        
+
                         return (
                             <p key={li} className="text-xs text-gray-700 dark:text-gray-300 leading-relaxed font-medium">
                                 {parseInlineMarkdown(rendered)}
@@ -343,7 +343,7 @@ export default function AIAssistantPage() {
             if (part.startsWith('**') && part.endsWith('**')) {
                 return <strong key={index} className="font-extrabold text-gray-900 dark:text-gray-100">{part.slice(2, -2)}</strong>;
             }
-            
+
             const codeParts = part.split(/(`.*?`)/g);
             return codeParts.map((subPart, subIndex) => {
                 if (subPart.startsWith('`') && subPart.endsWith('`')) {
@@ -360,7 +360,7 @@ export default function AIAssistantPage() {
 
     return (
         <div className="flex h-[calc(100vh-5rem)] bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-850 rounded-2xl overflow-hidden shadow-sm">
-            
+
             {/* Left Panel: Conversation History */}
             <div className="w-[320px] bg-gray-50 dark:bg-gray-900 flex flex-col border-r border-gray-200 dark:border-gray-850 shrink-0">
                 <div className="p-4 border-b border-gray-200 dark:border-gray-850 flex flex-col gap-3 shrink-0">
@@ -371,7 +371,7 @@ export default function AIAssistantPage() {
                         <Plus size={16} strokeWidth={2.5} />
                         New Conversation
                     </button>
-                    
+
                     <div className="relative">
                         <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
                         <input
@@ -396,11 +396,10 @@ export default function AIAssistantPage() {
                                     <div
                                         key={convo.conversation_id}
                                         onClick={() => !isEditing && setActiveConversationId(convo.conversation_id)}
-                                        className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all group cursor-pointer ${
-                                            isActive 
-                                                ? 'bg-white dark:bg-gray-850 border border-gray-200 dark:border-gray-800 shadow-sm text-primary' 
+                                        className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all group cursor-pointer ${isActive
+                                                ? 'bg-white dark:bg-gray-850 border border-gray-200 dark:border-gray-800 shadow-sm text-primary'
                                                 : 'hover:bg-white/50 dark:hover:bg-gray-850/50 text-gray-600 dark:text-gray-400'
-                                        }`}
+                                            }`}
                                     >
                                         <div className="flex items-center gap-2.5 min-w-0 flex-1">
                                             <Brain size={16} className={isActive ? 'text-primary' : 'text-gray-450'} />
@@ -552,11 +551,10 @@ export default function AIAssistantPage() {
                                                 setShowSlashCommands(false);
                                                 inputRef.current?.focus();
                                             }}
-                                            className={`flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold cursor-pointer transition-colors ${
-                                                idx === activeCommandIndex 
-                                                    ? 'bg-primary/10 text-primary' 
+                                            className={`flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold cursor-pointer transition-colors ${idx === activeCommandIndex
+                                                    ? 'bg-primary/10 text-primary'
                                                     : 'hover:bg-gray-50 dark:hover:bg-gray-850/50 text-gray-700 dark:text-gray-300'
-                                            }`}
+                                                }`}
                                         >
                                             <span>{cmd.command}</span>
                                             <span className="text-[10px] font-semibold text-gray-400 dark:text-gray-500">{cmd.description}</span>
@@ -578,11 +576,10 @@ export default function AIAssistantPage() {
                                     />
                                     <button
                                         onClick={() => setShowSlashCommands(prev => !prev)}
-                                        className={`p-1.5 rounded-lg border transition-all text-[10px] font-black ${
-                                            inputMessage.startsWith('/') 
-                                                ? 'bg-primary/20 text-primary border-primary/20' 
+                                        className={`p-1.5 rounded-lg border transition-all text-[10px] font-black ${inputMessage.startsWith('/')
+                                                ? 'bg-primary/20 text-primary border-primary/20'
                                                 : 'hover:bg-gray-200 dark:hover:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-500'
-                                        }`}
+                                            }`}
                                         title="Trigger Quick Command Integration"
                                     >
                                         /

@@ -3,13 +3,19 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import EmployeeHeader from '@/components/employees/EmployeeHeader';
 import EmployeeFilters, { EmployeeFilterState } from '@/components/employees/EmployeeFilters';
 import EmployeeTable, { Employee, PaginationState } from '@/components/employees/EmployeeTable';
-import EmployeeDrawer from '@/components/employees/EmployeeDrawer';
-import AddEmployeeModal, { AddEmployeeSubmitMeta } from '@/components/employees/AddEmployeeModal';
-import SendCredentialsModal from '@/components/employees/SendCredentialsModal';
-import ImportEmployeesModal from '@/components/employees/ImportEmployeesModal';
+
+// Lazy load heavy components and modals to speed up initial page render and route transitions
+const EmployeeDrawer = dynamic(() => import('@/components/employees/EmployeeDrawer'), { ssr: false });
+const AddEmployeeModal = dynamic(() => import('@/components/employees/AddEmployeeModal').then(mod => mod.default), { ssr: false });
+const SendCredentialsModal = dynamic(() => import('@/components/employees/SendCredentialsModal'), { ssr: false });
+const ImportEmployeesModal = dynamic(() => import('@/components/employees/ImportEmployeesModal'), { ssr: false });
+
+import type { AddEmployeeSubmitMeta } from '@/components/employees/AddEmployeeModal';
+
 import { useEmployees, useCreateEmployee } from '@/hooks/api/useEmployees';
 import { employeeService } from '@/services/employeeService';
 import { useDebounce } from '@/hooks/useDebounce';
