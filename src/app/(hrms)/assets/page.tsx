@@ -18,6 +18,7 @@ import { assetService } from '@/services/assetService';
 import { useDebounce } from '@/hooks/useDebounce';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
+import { cn } from '@/utils/cn';
 
 const getCategoryIcon = (category: string) => {
     switch (category?.toLowerCase()) {
@@ -88,6 +89,8 @@ export default function AssetsPage() {
     const [isViewModalOpen, setIsViewModalOpen] = useState(false);
     const [selectedAssetForView, setSelectedAssetForView] = useState<Asset | null>(null);
     const [selectedAssetIdForAssign, setSelectedAssetIdForAssign] = useState<string>('');
+    const [isConfigureOpen, setIsConfigureOpen] = useState(false);
+    const [isActionsOpen, setIsActionsOpen] = useState(false);
 
     const handleAddAsset = async (payload: AddAssetPayload) => {
         try {
@@ -190,55 +193,81 @@ export default function AssetsPage() {
                     </div>
                     
                     <div className="flex flex-wrap items-center gap-3">
-                        <Button 
-                            variant="outline" 
-                            onClick={() => router.push('/assets/categories')} 
-                            disabled={isLoading} 
-                            className="gap-2 shadow-sm bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors font-semibold"
-                        >
-                            Asset Categories
-                        </Button>
-                        <Button 
-                            variant="outline" 
-                            onClick={() => router.push('/assets/statuses')} 
-                            disabled={isLoading} 
-                            className="gap-2 shadow-sm bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors font-semibold"
-                        >
-                            Asset Statuses
-                        </Button>
-                        {isManagerial && (
+                        {/* Configure Dropdown */}
+                        <div className="relative">
                             <Button 
                                 variant="outline" 
-                                onClick={handleExportInventory} 
+                                onClick={() => setIsConfigureOpen(!isConfigureOpen)}
                                 disabled={isLoading} 
-                                className="gap-2 shadow-sm bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                                className="gap-2 shadow-sm bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors font-semibold"
                             >
-                                <Download size={16} />
-                                <span className="hidden sm:inline">Export Inventory</span>
+                                <span>Configure</span>
+                                <ChevronDown size={16} className={cn("transition-transform duration-200", isConfigureOpen && "rotate-180")} />
                             </Button>
-                        )}
+                            {isConfigureOpen && (
+                                <>
+                                    <div className="fixed inset-0 z-10" onClick={() => setIsConfigureOpen(false)} />
+                                    <div className="absolute right-0 mt-2 w-48 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-lg z-20 py-1.5 animate-in fade-in slide-in-from-top-2 duration-150">
+                                        <button 
+                                            onClick={() => { setIsConfigureOpen(false); router.push('/assets/categories'); }}
+                                            className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors font-medium cursor-pointer"
+                                        >
+                                            Asset Categories
+                                        </button>
+                                        <button 
+                                            onClick={() => { setIsConfigureOpen(false); router.push('/assets/statuses'); }}
+                                            className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors font-medium cursor-pointer"
+                                        >
+                                            Asset Statuses
+                                        </button>
+                                    </div>
+                                </>
+                            )}
+                        </div>
+
+                        {/* Actions Dropdown */}
                         {isManagerial && (
-                            <div className="flex gap-2">
+                            <div className="relative">
                                 <Button 
                                     variant="outline" 
-                                    onClick={() => router.push('/assets/import/history')} 
-                                    disabled={isLoading}
-                                    className="gap-2 shadow-sm bg-white dark:bg-gray-900 font-bold text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-900/50 hover:bg-amber-50 dark:hover:bg-amber-500/10 transition-colors"
+                                    onClick={() => setIsActionsOpen(!isActionsOpen)}
+                                    disabled={isLoading} 
+                                    className="gap-2 shadow-sm bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors font-semibold"
                                 >
-                                    <History size={16} />
-                                    <span className="hidden sm:inline">Import History</span>
+                                    <span>Inventory Actions</span>
+                                    <ChevronDown size={16} className={cn("transition-transform duration-200", isActionsOpen && "rotate-180")} />
                                 </Button>
-                                <Button 
-                                    variant="outline" 
-                                    onClick={() => router.push('/assets/import')} 
-                                    disabled={isLoading}
-                                    className="gap-2 shadow-sm bg-white dark:bg-gray-900 font-bold text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-900/50 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition-colors"
-                                >
-                                    <Upload size={16} />
-                                    <span className="hidden sm:inline">Import Assets</span>
-                                </Button>
+                                {isActionsOpen && (
+                                    <>
+                                        <div className="fixed inset-0 z-10" onClick={() => setIsActionsOpen(false)} />
+                                        <div className="absolute right-0 mt-2 w-52 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-lg z-20 py-1.5 animate-in fade-in slide-in-from-top-2 duration-150">
+                                            <button 
+                                                onClick={() => { setIsActionsOpen(false); handleExportInventory(); }}
+                                                className="w-full flex items-center gap-2 text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors font-medium cursor-pointer"
+                                            >
+                                                <Download size={14} />
+                                                <span>Export Inventory</span>
+                                            </button>
+                                            <button 
+                                                onClick={() => { setIsActionsOpen(false); router.push('/assets/import'); }}
+                                                className="w-full flex items-center gap-2 text-left px-4 py-2 text-sm text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50/10 dark:hover:bg-emerald-500/10 transition-colors font-medium cursor-pointer"
+                                            >
+                                                <Upload size={14} />
+                                                <span>Import Assets</span>
+                                            </button>
+                                            <button 
+                                                onClick={() => { setIsActionsOpen(false); router.push('/assets/import/history'); }}
+                                                className="w-full flex items-center gap-2 text-left px-4 py-2 text-sm text-amber-600 dark:text-amber-400 hover:bg-amber-50/10 dark:hover:bg-amber-500/10 transition-colors font-medium cursor-pointer"
+                                            >
+                                                <History size={14} />
+                                                <span>Import History</span>
+                                            </button>
+                                        </div>
+                                    </>
+                                )}
                             </div>
                         )}
+
                         {isManagerial && (
                             <Button 
                                 variant="outline" 
@@ -255,7 +284,7 @@ export default function AssetsPage() {
                                 variant="primary" 
                                 onClick={() => { setSelectedAssetIdForAssign(''); setIsAssignModalOpen(true); }} 
                                 disabled={isLoading || isEmpLoading}
-                                className="gap-2 shadow-sm shadow-blue-500/25 dark:shadow-none font-bold ml-1"
+                                className="gap-2 shadow-sm shadow-blue-500/25 dark:shadow-none font-bold"
                             >
                                 {assignAssetMutation.isPending || isEmpLoading ? <Loader2 size={18} className="animate-spin" /> : <Plus size={18} strokeWidth={2.5} />}
                                 Assign Asset

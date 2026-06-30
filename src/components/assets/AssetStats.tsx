@@ -33,9 +33,9 @@ export default function AssetStats({ data, isLoading = false }: AssetStatsProps)
 
     if (isDataLoading) {
         return (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 animate-in fade-in duration-300">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-flow-col lg:auto-cols-fr gap-4 animate-in fade-in duration-300">
                 {[1, 2, 3, 4].map((i) => (
-                    <Card key={i} className="border-gray-200 dark:border-gray-800 shadow-sm dark:shadow-none bg-white dark:bg-gray-900 transition-colors">
+                    <Card key={i} className="border-gray-200 dark:border-gray-800 shadow-sm dark:shadow-none bg-white dark:bg-gray-900 transition-colors relative overflow-hidden">
                         <CardContent className="p-5 flex items-start justify-between">
                             <div className="space-y-3 w-full">
                                 <div className="h-4 bg-gray-200 dark:bg-gray-800 rounded w-1/2 animate-pulse" />
@@ -87,23 +87,28 @@ export default function AssetStats({ data, isLoading = false }: AssetStatsProps)
     const allCards = [totalCard, ...statusCards];
 
     return (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 animate-in fade-in duration-300">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-flow-col lg:auto-cols-fr gap-4 animate-in fade-in duration-300">
             {allCards.map((stat, index) => (
                 <Card 
                     key={index} 
-                    className="border-gray-200 dark:border-gray-800 hover:border-blue-200 dark:hover:border-blue-900/50 hover:shadow-md dark:hover:shadow-none hover:-translate-y-0.5 transition-all duration-300 bg-white dark:bg-gray-900 shadow-sm dark:shadow-none group"
+                    className="border-gray-200 dark:border-gray-800 hover:border-blue-200 dark:hover:border-blue-900/50 hover:shadow-md dark:hover:shadow-none hover:-translate-y-0.5 transition-all duration-300 bg-white dark:bg-gray-900 shadow-sm dark:shadow-none group relative overflow-hidden"
                 >
-                    <CardContent className="p-5 flex items-start justify-between">
+                    {/* Glowing status-colored background accent */}
+                    <div 
+                        className="absolute -right-6 -bottom-6 w-20 h-20 rounded-full blur-2xl opacity-15 group-hover:opacity-25 transition-opacity"
+                        style={{ backgroundColor: stat.style.color }}
+                    />
+                    <CardContent className="p-5 flex items-start justify-between relative z-10">
                         <div>
                             <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1 transition-colors">
                                 {stat.title}
                             </p>
-                            <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 tracking-tight transition-colors">
+                            <p className="text-3xl font-bold text-gray-900 dark:text-gray-100 tracking-tight transition-colors">
                                 {stat.value}
                             </p>
                         </div>
                         <div 
-                            className="p-3 rounded-xl shrink-0 shadow-sm dark:shadow-none transition-colors"
+                            className="p-3 rounded-xl shrink-0 shadow-sm dark:shadow-none transition-all duration-300 group-hover:scale-110"
                             style={stat.style}
                         >
                             {stat.icon}
