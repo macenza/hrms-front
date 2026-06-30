@@ -23,13 +23,11 @@ export default function MainLayoutWrapper({ children }: { children: React.ReactN
             <div 
                 className={cn(
                     "flex-1 flex flex-col min-w-0",
-                    isSidebarOpen ? "md:translate-x-[250px]" : "translate-x-0"
+                    isSidebarOpen ? "md:ml-[250px]" : "md:ml-0"
                 )}
                 style={{
-                    transition: isSidebarOpen 
-                        ? 'transform 280ms cubic-bezier(0.25, 1, 0.5, 1)' 
-                        : 'transform 750ms cubic-bezier(0.25, 1, 0.5, 1)',
-                    willChange: 'transform'
+                    transition: 'margin-left 280ms cubic-bezier(0.25, 1, 0.5, 1)',
+                    willChange: 'margin-left'
                 }}
             >
                 {/* Header receives the toggle function */}

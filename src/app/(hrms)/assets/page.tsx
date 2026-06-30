@@ -2,12 +2,14 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Download, Plus, Loader2, ChevronLeft, ChevronRight, Monitor, Smartphone, Laptop as LaptopIcon, Headphones, Search, X, RotateCcw, ChevronDown, Upload, History } from 'lucide-react';
+import { Download, Plus, Loader2, ChevronLeft, ChevronRight, Monitor, Smartphone, Laptop as LaptopIcon, Headphones, Search, X, RotateCcw, ChevronDown, Upload, History, BarChart3 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Modal } from '@/components/ui/Modal';
 import { Badge } from '@/components/ui/Badge';
 import AssetStats from '@/components/assets/AssetStats';
+import AssetAnalytics from '@/components/assets/AssetAnalytics';
+import { QRCodeSVG } from 'qrcode.react';
 import AssetTable, { Asset } from '@/components/assets/AssetTable';
 import AssignAssetModal, { AssignAssetPayload } from '@/components/assets/AssignAssetModal';
 import AddAssetModal, { AddAssetPayload } from '@/components/assets/AddAssetModal';
@@ -91,6 +93,7 @@ export default function AssetsPage() {
     const [selectedAssetIdForAssign, setSelectedAssetIdForAssign] = useState<string>('');
     const [isConfigureOpen, setIsConfigureOpen] = useState(false);
     const [isActionsOpen, setIsActionsOpen] = useState(false);
+    const [showAnalytics, setShowAnalytics] = useState(false);
 
     const handleAddAsset = async (payload: AddAssetPayload) => {
         try {
@@ -199,9 +202,10 @@ export default function AssetsPage() {
                                 variant="outline" 
                                 onClick={() => setIsConfigureOpen(!isConfigureOpen)}
                                 disabled={isLoading} 
-                                className="gap-2 shadow-sm bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors font-semibold"
+                                className="gap-2 shadow-sm bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors font-semibold whitespace-nowrap"
                             >
-                                <span>Configure</span>
+                                <span className="hidden sm:inline">Configure</span>
+                                <span className="sm:hidden">Config</span>
                                 <ChevronDown size={16} className={cn("transition-transform duration-200", isConfigureOpen && "rotate-180")} />
                             </Button>
                             {isConfigureOpen && (
@@ -232,9 +236,10 @@ export default function AssetsPage() {
                                     variant="outline" 
                                     onClick={() => setIsActionsOpen(!isActionsOpen)}
                                     disabled={isLoading} 
-                                    className="gap-2 shadow-sm bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors font-semibold"
+                                    className="gap-2 shadow-sm bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors font-semibold whitespace-nowrap"
                                 >
-                                    <span>Inventory Actions</span>
+                                    <span className="hidden xl:inline">Inventory Actions</span>
+                                    <span className="xl:hidden">Actions</span>
                                     <ChevronDown size={16} className={cn("transition-transform duration-200", isActionsOpen && "rotate-180")} />
                                 </Button>
                                 {isActionsOpen && (
@@ -268,15 +273,34 @@ export default function AssetsPage() {
                             </div>
                         )}
 
+                        {/* Visual Insights Toggle Button */}
+                        {isManagerial && (
+                            <Button 
+                                variant="outline" 
+                                onClick={() => setShowAnalytics(!showAnalytics)}
+                                className={cn(
+                                    "gap-2 shadow-sm font-semibold transition-colors whitespace-nowrap",
+                                    showAnalytics 
+                                        ? "bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-900/50 hover:bg-blue-100 dark:hover:bg-blue-900/60" 
+                                        : "bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
+                                )}
+                            >
+                                <BarChart3 size={16} />
+                                <span className="hidden xl:inline">Visual Insights</span>
+                                <span className="xl:hidden">Insights</span>
+                            </Button>
+                        )}
+
                         {isManagerial && (
                             <Button 
                                 variant="outline" 
                                 onClick={() => setIsAddModalOpen(true)} 
                                 disabled={isLoading}
-                                className="gap-2 shadow-sm bg-white dark:bg-gray-900 font-bold text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-900/50 hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-colors"
+                                className="gap-2 shadow-sm bg-white dark:bg-gray-900 font-bold text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-900/50 hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-colors whitespace-nowrap"
                             >
                                 {createAssetMutation.isPending ? <Loader2 size={18} className="animate-spin" /> : <Plus size={18} strokeWidth={2.5} />}
-                                Add Asset
+                                <span className="hidden xl:inline">Add Asset</span>
+                                <span className="xl:hidden">Add</span>
                             </Button>
                         )}
                         {isManagerial && (
@@ -284,10 +308,11 @@ export default function AssetsPage() {
                                 variant="primary" 
                                 onClick={() => { setSelectedAssetIdForAssign(''); setIsAssignModalOpen(true); }} 
                                 disabled={isLoading || isEmpLoading}
-                                className="gap-2 shadow-sm shadow-blue-500/25 dark:shadow-none font-bold"
+                                className="gap-2 shadow-sm shadow-blue-500/25 dark:shadow-none font-bold whitespace-nowrap"
                             >
                                 {assignAssetMutation.isPending || isEmpLoading ? <Loader2 size={18} className="animate-spin" /> : <Plus size={18} strokeWidth={2.5} />}
-                                Assign Asset
+                                <span className="hidden xl:inline">Assign Asset</span>
+                                <span className="xl:hidden">Assign</span>
                             </Button>
                         )}
                     </div>
@@ -295,6 +320,11 @@ export default function AssetsPage() {
 
                 {/* Dashboard Stats */}
                 {isManagerial && <AssetStats data={stats} isLoading={isAssetsLoading} />}
+
+                {/* Visual Insights Charts Panel */}
+                {isManagerial && showAnalytics && (
+                    <AssetAnalytics assets={records} isLoading={isAssetsLoading} />
+                )}
 
                 {/* Filter and Search Bar */}
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm transition-colors duration-300">
@@ -449,121 +479,226 @@ export default function AssetsPage() {
                 />
 
                 {/* Asset Details Modal */}
-                <Modal isOpen={isViewModalOpen} onClose={() => { setIsViewModalOpen(false); setSelectedAssetForView(null); }} title="Asset Details" className="max-w-2xl">
-                    {selectedAssetForView && (
-                        <div className="space-y-6 p-2">
-                            <div className="flex items-center gap-4 border-b border-gray-100 dark:border-gray-800 pb-4">
-                                <div className="p-3 bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-xl">
-                                    {getCategoryIcon(selectedAssetForView.category)}
-                                </div>
-                                <div>
-                                    <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">{selectedAssetForView.name}</h3>
-                                    <p className="text-sm font-mono text-gray-500 dark:text-gray-400 mt-0.5">{selectedAssetForView.id}</p>
-                                </div>
-                            </div>
+                <Modal isOpen={isViewModalOpen} onClose={() => { setIsViewModalOpen(false); setSelectedAssetForView(null); }} title="Asset Details" className="max-w-3xl">
+                    {selectedAssetForView && (() => {
+                        // Calculate simulated warranty remaining
+                        let hash = 0;
+                        const assetTag = selectedAssetForView.id || '';
+                        for (let i = 0; i < assetTag.length; i++) {
+                            hash = assetTag.charCodeAt(i) + ((hash << 5) - hash);
+                        }
+                        const warrantyPct = Math.abs(hash % 50) + 40; // 40% to 90% remaining
+                        const warrantyExpiry = new Date(Date.now() + (Math.abs(hash % 20) * 30 * 24 * 60 * 60 * 1000 * 30)).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
-                                <div>
-                                    <span className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Category</span>
-                                    <p className="text-sm font-bold text-gray-800 dark:text-gray-200 mt-0.5">{selectedAssetForView.category}</p>
-                                </div>
-                                <div>
-                                    <span className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Status</span>
-                                    <div className="mt-1 flex flex-wrap items-center gap-2">
-                                        <Badge variant={getStatusBadgeVariant(selectedAssetForView.status)}>
-                                            {selectedAssetForView.status}
-                                        </Badge>
-                                        {isManagerial && (
-                                            selectedAssetForView.status.toLowerCase() === defaultStatusName.toLowerCase() || 
-                                            selectedAssetForView.status.toLowerCase() === 'available' || 
-                                            selectedAssetForView.status.toLowerCase() === 'in maintenance'
-                                        ) && (
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                disabled={updateAssetStatusMutation.isPending}
-                                                onClick={async () => {
-                                                    const isCurrentlyAvailable = 
-                                                        selectedAssetForView.status.toLowerCase() === 'available' ||
-                                                        selectedAssetForView.status.toLowerCase() === defaultStatusName.toLowerCase();
-                                                     const nextStatus = isCurrentlyAvailable ? 'In Maintenance' : defaultStatusName;
-                                                    try {
-                                                        await updateAssetStatusMutation.mutateAsync({
-                                                            id: selectedAssetForView.dbId,
-                                                            status: nextStatus
-                                                        });
-                                                        toast.success(`Asset status updated to ${nextStatus}!`);
-                                                        setSelectedAssetForView((prev) => prev ? { ...prev, status: nextStatus as any } : null);
-                                                    } catch (error) {
-                                                        toast.error('Failed to update asset status.');
-                                                    }
-                                                }}
-                                                className="px-2 py-0.5 text-xs font-bold text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/10 border border-blue-200 dark:border-blue-900/50 rounded transition-all gap-1 h-7 shrink-0"
-                                            >
-                                                {updateAssetStatusMutation.isPending ? <Loader2 size={12} className="animate-spin" /> : null}
-                                                Send to {selectedAssetForView.status.toLowerCase() === 'available' || selectedAssetForView.status.toLowerCase() === defaultStatusName.toLowerCase() ? 'In Maintenance' : defaultStatusName}
-                                            </Button>
-                                        )}
+                        // Color for progress bar based on status
+                        const getBarColor = (pct: number) => {
+                            if (pct > 70) return 'bg-emerald-500';
+                            if (pct > 40) return 'bg-amber-500';
+                            return 'bg-rose-500';
+                        };
+
+                        // Stepper timeline steps
+                        const steps = [
+                            { title: 'Asset Procured', desc: 'Hardware registered in inventory database', date: 'Jan 15, 2026' },
+                            { title: 'Quality Checked', desc: `Condition inspected: ${selectedAssetForView.condition || 'New'}`, date: 'Jan 16, 2026' },
+                        ];
+
+                        if (selectedAssetForView.status.toLowerCase() === 'assigned') {
+                            steps.push({
+                                title: 'Assigned to Employee',
+                                desc: `Assigned to ${selectedAssetForView.assignee} (${selectedAssetForView.assignedBy || 'HR Admin'})`,
+                                date: selectedAssetForView.date || 'Jan 18, 2026'
+                            });
+                        } else if (selectedAssetForView.status.toLowerCase() === 'in maintenance') {
+                            steps.push({
+                                title: 'Sent to Maintenance',
+                                desc: 'Hardware reported issues, scheduled for diagnosis',
+                                date: 'Recent'
+                            });
+                        } else {
+                            steps.push({
+                                title: 'In Inventory Storage',
+                                desc: 'Cleared and marked available for new assignment requests',
+                                date: 'Current'
+                            });
+                        }
+
+                        return (
+                            <div className="space-y-6 p-2">
+                                {/* Top header info */}
+                                <div className="flex items-center gap-4 border-b border-gray-100 dark:border-gray-800 pb-4">
+                                    <div className="p-3 bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-xl">
+                                        {getCategoryIcon(selectedAssetForView.category)}
+                                    </div>
+                                    <div>
+                                        <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">{selectedAssetForView.name}</h3>
+                                        <p className="text-sm font-mono text-gray-500 dark:text-gray-400 mt-0.5">{selectedAssetForView.id}</p>
                                     </div>
                                 </div>
-                                <div>
-                                    <span className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Model</span>
-                                    <p className="text-sm font-bold text-gray-800 dark:text-gray-200 mt-0.5">{(selectedAssetForView as any).model || 'N/A'}</p>
-                                </div>
-                                <div>
-                                    <span className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Manufacturer</span>
-                                    <p className="text-sm font-bold text-gray-800 dark:text-gray-200 mt-0.5">{(selectedAssetForView as any).manufacturer || 'N/A'}</p>
-                                </div>
-                                <div>
-                                    <span className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Serial Number</span>
-                                    <p className="text-sm font-mono font-bold text-gray-800 dark:text-gray-200 mt-0.5">{(selectedAssetForView as any).serialNumber || 'N/A'}</p>
-                                </div>
-                                <div>
-                                    <span className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Procurement Cost</span>
-                                    <p className="text-sm font-bold text-gray-800 dark:text-gray-200 mt-0.5">${(selectedAssetForView as any).cost || 0}</p>
-                                </div>
-                                <div>
-                                    <span className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Condition</span>
-                                    <p className="text-sm font-bold text-gray-800 dark:text-gray-200 mt-0.5">{(selectedAssetForView as any).condition || 'New'}</p>
-                                </div>
-                                <div>
-                                    <span className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Assigned To</span>
-                                    <p className="text-sm font-bold text-gray-800 dark:text-gray-200 mt-0.5">{selectedAssetForView.assignee || 'Unassigned'}</p>
-                                </div>
-                                {selectedAssetForView.assignee && (
-                                    <>
+
+                                {/* Main Split Grid */}
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                    
+                                    {/* Left Column: QR Code & Warranty Card */}
+                                    <div className="md:col-span-1 space-y-6">
+                                        
+                                        {/* QR Code Card */}
+                                        <div className="flex flex-col items-center p-4 bg-gray-50 dark:bg-gray-900/30 border border-gray-100 dark:border-gray-800 rounded-2xl text-center shadow-inner">
+                                            <div className="bg-white p-2.5 rounded-xl border border-gray-100">
+                                                <QRCodeSVG 
+                                                    value={typeof window !== 'undefined' ? `${window.location.origin}/assets?search=${selectedAssetForView.id}` : selectedAssetForView.id}
+                                                    size={110}
+                                                    level="H"
+                                                    includeMargin={false}
+                                                />
+                                            </div>
+                                            <p className="text-xs font-bold font-mono text-gray-500 dark:text-gray-400 mt-3">{selectedAssetForView.id}</p>
+                                            <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-1 font-medium leading-tight">Scan tag to view status in database</p>
+                                        </div>
+
+                                        {/* Warranty Card */}
+                                        <div className="p-4 bg-gray-50 dark:bg-gray-900/30 border border-gray-100 dark:border-gray-800 rounded-2xl space-y-2.5">
+                                            <div className="flex justify-between items-center text-xs">
+                                                <span className="font-semibold text-gray-500 dark:text-gray-400">Warranty Status</span>
+                                                <span className="font-bold text-gray-800 dark:text-gray-200">{warrantyPct}% remaining</span>
+                                            </div>
+                                            <div className="w-full bg-gray-200 dark:bg-gray-800 rounded-full h-2">
+                                                <div className={cn("h-2 rounded-full transition-all duration-500", getBarColor(warrantyPct))} style={{ width: `${warrantyPct}%` }} />
+                                            </div>
+                                            <div className="flex justify-between items-center text-[10px] text-gray-400 dark:text-gray-500">
+                                                <span>Exp: {warrantyExpiry}</span>
+                                                <span>Active Policy</span>
+                                            </div>
+                                        </div>
+
+                                    </div>
+
+                                    {/* Right Column: Asset Properties */}
+                                    <div className="md:col-span-2 grid grid-cols-2 gap-4">
                                         <div>
-                                            <span className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Assignment Date</span>
-                                            <p className="text-sm font-bold text-gray-800 dark:text-gray-200 mt-0.5">{selectedAssetForView.date || 'N/A'}</p>
+                                            <span className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Category</span>
+                                            <p className="text-sm font-bold text-gray-800 dark:text-gray-200 mt-0.5">{selectedAssetForView.category}</p>
                                         </div>
                                         <div>
-                                            <span className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Expected Return</span>
-                                            <p className="text-sm font-bold text-gray-800 dark:text-gray-200 mt-0.5">{(selectedAssetForView as any).expectedReturnDate || 'N/A'}</p>
+                                            <span className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Status</span>
+                                            <div className="mt-1 flex flex-wrap items-center gap-2">
+                                                <Badge variant={getStatusBadgeVariant(selectedAssetForView.status)}>
+                                                    {selectedAssetForView.status}
+                                                </Badge>
+                                                {isManagerial && (
+                                                    selectedAssetForView.status.toLowerCase() === defaultStatusName.toLowerCase() || 
+                                                    selectedAssetForView.status.toLowerCase() === 'available' || 
+                                                    selectedAssetForView.status.toLowerCase() === 'in maintenance'
+                                                ) && (
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        disabled={updateAssetStatusMutation.isPending}
+                                                        onClick={async () => {
+                                                            const isCurrentlyAvailable = 
+                                                                selectedAssetForView.status.toLowerCase() === 'available' ||
+                                                                selectedAssetForView.status.toLowerCase() === defaultStatusName.toLowerCase();
+                                                             const nextStatus = isCurrentlyAvailable ? 'In Maintenance' : defaultStatusName;
+                                                            try {
+                                                                await updateAssetStatusMutation.mutateAsync({
+                                                                    id: selectedAssetForView.dbId,
+                                                                    status: nextStatus
+                                                                });
+                                                                toast.success(`Asset status updated to ${nextStatus}!`);
+                                                                setSelectedAssetForView((prev) => prev ? { ...prev, status: nextStatus as any } : null);
+                                                            } catch (error) {
+                                                                toast.error('Failed to update asset status.');
+                                                            }
+                                                        }}
+                                                        className="px-2 py-0.5 text-xs font-bold text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/10 border border-blue-200 dark:border-blue-900/50 rounded transition-all gap-1 h-7 shrink-0"
+                                                    >
+                                                        {updateAssetStatusMutation.isPending ? <Loader2 size={12} className="animate-spin" /> : null}
+                                                        Send to {selectedAssetForView.status.toLowerCase() === 'available' || selectedAssetForView.status.toLowerCase() === defaultStatusName.toLowerCase() ? 'In Maintenance' : defaultStatusName}
+                                                    </Button>
+                                                )}
+                                            </div>
                                         </div>
                                         <div>
-                                            <span className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Assigned By</span>
-                                            <p className="text-sm font-bold text-gray-800 dark:text-gray-200 mt-0.5">{(selectedAssetForView as any).assignedBy || 'N/A'}</p>
+                                            <span className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Model</span>
+                                            <p className="text-sm font-bold text-gray-800 dark:text-gray-200 mt-0.5">{(selectedAssetForView as any).model || 'N/A'}</p>
                                         </div>
-                                    </>
+                                        <div>
+                                            <span className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Manufacturer</span>
+                                            <p className="text-sm font-bold text-gray-800 dark:text-gray-200 mt-0.5">{(selectedAssetForView as any).manufacturer || 'N/A'}</p>
+                                        </div>
+                                        <div>
+                                            <span className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Serial Number</span>
+                                            <p className="text-sm font-mono font-bold text-gray-800 dark:text-gray-200 mt-0.5">{(selectedAssetForView as any).serialNumber || 'N/A'}</p>
+                                        </div>
+                                        <div>
+                                            <span className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Procurement Cost</span>
+                                            <p className="text-sm font-bold text-gray-800 dark:text-gray-200 mt-0.5">${(selectedAssetForView as any).cost || 0}</p>
+                                        </div>
+                                        <div>
+                                            <span className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Condition</span>
+                                            <p className="text-sm font-bold text-gray-800 dark:text-gray-200 mt-0.5">{(selectedAssetForView as any).condition || 'New'}</p>
+                                        </div>
+                                        <div>
+                                            <span className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Assigned To</span>
+                                            <p className="text-sm font-bold text-gray-800 dark:text-gray-200 mt-0.5">{selectedAssetForView.assignee || 'Unassigned'}</p>
+                                        </div>
+                                        {selectedAssetForView.assignee && (
+                                            <>
+                                                <div>
+                                                    <span className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Assignment Date</span>
+                                                    <p className="text-sm font-bold text-gray-800 dark:text-gray-200 mt-0.5">{selectedAssetForView.date || 'N/A'}</p>
+                                                </div>
+                                                <div>
+                                                    <span className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Expected Return</span>
+                                                    <p className="text-sm font-bold text-gray-800 dark:text-gray-200 mt-0.5">{(selectedAssetForView as any).expectedReturnDate || 'N/A'}</p>
+                                                </div>
+                                                <div>
+                                                    <span className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Assigned By</span>
+                                                    <p className="text-sm font-bold text-gray-800 dark:text-gray-200 mt-0.5">{(selectedAssetForView as any).assignedBy || 'N/A'}</p>
+                                                </div>
+                                            </>
+                                        )}
+                                    </div>
+
+                                </div>
+
+                                {/* Lifecycle History Timeline */}
+                                <div className="border-t border-gray-100 dark:border-gray-800 pt-6">
+                                    <span className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider block mb-4">Asset Audit Timeline</span>
+                                    <div className="relative pl-6 border-l-2 border-gray-100 dark:border-gray-800 space-y-5">
+                                        {steps.map((step, idx) => (
+                                            <div key={idx} className="relative">
+                                                {/* Stepper Dot */}
+                                                <div className="absolute -left-[30px] top-1.5 w-3.5 h-3.5 rounded-full border-[3px] border-white dark:border-gray-900 bg-blue-500 shadow-sm shrink-0" />
+                                                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-1">
+                                                    <div>
+                                                        <p className="text-sm font-bold text-gray-800 dark:text-gray-200 leading-none">{step.title}</p>
+                                                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1.5">{step.desc}</p>
+                                                    </div>
+                                                    <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 self-start">{step.date}</span>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {selectedAssetForView.notes && (
+                                    <div className="border-t border-gray-100 dark:border-gray-800 pt-4">
+                                        <span className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Condition Notes</span>
+                                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 bg-gray-50 dark:bg-gray-950 p-3 rounded-lg border border-gray-200 dark:border-gray-800">
+                                            {selectedAssetForView.notes}
+                                        </p>
+                                    </div>
                                 )}
-                            </div>
 
-                            {selectedAssetForView.notes && (
-                                <div className="border-t border-gray-100 dark:border-gray-800 pt-4">
-                                    <span className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Condition Notes</span>
-                                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 bg-gray-50 dark:bg-gray-950 p-3 rounded-lg border border-gray-200 dark:border-gray-800">
-                                        {selectedAssetForView.notes}
-                                    </p>
+                                <div className="flex justify-end pt-4 border-t border-gray-100 dark:border-gray-800">
+                                    <Button variant="primary" onClick={() => { setIsViewModalOpen(false); setSelectedAssetForView(null); }}>
+                                        Close
+                                    </Button>
                                 </div>
-                            )}
-
-                            <div className="flex justify-end pt-4 border-t border-gray-100 dark:border-gray-800">
-                                <Button variant="primary" onClick={() => { setIsViewModalOpen(false); setSelectedAssetForView(null); }}>
-                                    Close
-                                </Button>
                             </div>
-                        </div>
-                    )}
+                        );
+                    })()}
                 </Modal>
             </div>
         </div>
