@@ -12,7 +12,7 @@ import Cookies from 'js-cookie';
 
 import {
     LayoutDashboard, Users, CalendarCheck, CalendarDays, Briefcase,
-    DollarSign, CreditCard, Package, Bell, Settings, LogOut, Sun, Moon, X, User,
+    DollarSign, CreditCard, Package, Bell, Settings, LogOut, Sun, Moon, User,
     AlertTriangle, CalendarHeart, FileText, UserPlus, Sparkles
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -166,13 +166,18 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             )}
 
             {/* Sidebar Panel */}
-            <div className={cn(
-                "fixed left-0 top-0 h-full w-[250px] bg-gray-50 border-r border-gray-200 flex flex-col transition-transform duration-300 z-50 dark:bg-gray-900 dark:border-gray-800",
-                isOpen ? "translate-x-0" : "-translate-x-full",
-                "md:translate-x-0"
-            )}>
+            <div className="fixed left-0 top-0 h-full w-[250px] bg-gray-50 border-r border-gray-200 flex flex-col z-50 dark:bg-gray-900 dark:border-gray-800"
+            style={{
+                transition: isOpen 
+                    ? 'transform 280ms cubic-bezier(0.25, 1, 0.5, 1), opacity 280ms cubic-bezier(0.25, 1, 0.5, 1)' 
+                    : 'transform 750ms cubic-bezier(0.25, 1, 0.5, 1), opacity 750ms cubic-bezier(0.25, 1, 0.5, 1)',
+                willChange: 'transform, opacity',
+                backfaceVisibility: 'hidden',
+                transform: isOpen ? 'translate3d(0, 0, 0)' : 'translate3d(-250px, 0, 0)',
+                opacity: isOpen ? 1 : 0
+            }}>
 
-                {/* Logo & Close Button */}
+                {/* Logo Area */}
                 <div className="h-20 flex items-center justify-between px-6 border-b border-gray-200 dark:border-gray-800 shrink-0 gap-2 overflow-hidden">
                     <div className="flex items-center space-x-3">
                         {company?.companyLogoUrl ? (
@@ -190,18 +195,14 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                             {company?.companyName || 'MACENZA'}
                         </span>
                     </div>
-                    <button
-                        onClick={onClose}
-                        className="md:hidden p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 rounded-lg transition-colors dark:hover:bg-gray-800 dark:hover:text-gray-300 shrink-0"
-                        aria-label="Close Sidebar"
-                    >
-                        <X size={20} />
-                    </button>
                 </div>
 
                 {/* Menu */}
-                <nav className="flex-1 py-6 px-4 space-y-1.5 overflow-y-auto custom-scrollbar">
-                    {menuItems.map((item) => {
+                <nav className={cn(
+                    "flex-1 py-6 px-4 space-y-1.5 overflow-y-auto custom-scrollbar",
+                    isOpen ? "sidebar-menu-open" : "sidebar-menu-closed"
+                )}>
+                    {menuItems.map((item, index) => {
                         const Icon = item.icon;
                         const isActive = item.href === '/dashboard'
                             ? pathname === '/dashboard'
@@ -212,13 +213,15 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                                 key={item.id}
                                 href={item.href}
                                 prefetch={true}
-                                onClick={() => onClose()} // Auto-close sidebar on mobile
                                 className={cn(
-                                    "w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 group outline-none focus-visible:ring-2 focus-visible:ring-primary",
+                                    "w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 group outline-none focus-visible:ring-2 focus-visible:ring-primary sidebar-menu-item",
                                     isActive
                                         ? "bg-primary text-white shadow-md shadow-primary/20"
                                         : "text-gray-500 hover:bg-white hover:text-gray-900 hover:shadow-sm dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-100"
                                 )}
+                                style={{
+                                    '--item-index': index
+                                } as React.CSSProperties}
                             >
                                 <Icon size={20} strokeWidth={isActive ? 2.5 : 2} className={cn("transition-transform duration-200 shrink-0", !isActive && "group-hover:scale-110")} />
                                 <span className="font-semibold text-sm truncate">{item.label}</span>

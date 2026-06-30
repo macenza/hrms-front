@@ -15,6 +15,7 @@ export interface UserProfile {
 
 interface HeaderProps {
     onMenuClick: () => void;
+    isSidebarOpen: boolean;
 }
 
 function mapUserToProfile(authUser: User | null): UserProfile {
@@ -30,7 +31,7 @@ function mapUserToProfile(authUser: User | null): UserProfile {
     };
 }
 
-export default function Header({ onMenuClick }: HeaderProps) {
+export default function Header({ onMenuClick, isSidebarOpen }: HeaderProps) {
     const authUser = useAppSelector((state) => state.auth.user);
     const user = useMemo(() => mapUserToProfile(authUser), [authUser]);
     const profileHref = '/profile';
@@ -63,10 +64,10 @@ export default function Header({ onMenuClick }: HeaderProps) {
             <div className="flex items-center gap-2 sm:gap-3 min-w-0">
                 <button
                     onClick={onMenuClick}
-                    className="md:hidden p-2 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors shrink-0 dark:text-gray-400 dark:hover:bg-gray-800"
-                    aria-label="Open Sidebar"
+                    className="p-2 mr-2 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-950 dark:hover:text-white rounded-xl transition-all shadow-sm hover:shadow active:scale-95 duration-200 shrink-0"
+                    aria-label="Toggle Sidebar"
                 >
-                    <Menu size={24} />
+                    <Menu size={20} />
                 </button>
 
                 <div className="min-w-0">
