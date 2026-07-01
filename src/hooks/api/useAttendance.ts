@@ -20,8 +20,31 @@ export function useDailyAttendance(date: string, enabled: boolean) {
 
             return logs.map((log: any): AttendanceRecord => {
                 const logDate = log.date || log.checkInTime || log.dateString || new Date();
-                const minutes = log.totalWorkedMinutes || 0;
-                const hoursValue = minutes / 60;
+                
+                let hoursStr = '0.00 hrs';
+                if (log.checkInTime && log.checkOutTime) {
+                    const diffMs = new Date(log.checkOutTime).getTime() - new Date(log.checkInTime).getTime();
+                    if (diffMs > 0) {
+                        const diffSecs = Math.floor(diffMs / 1000);
+                        const diffMins = Math.floor(diffSecs / 60);
+                        const hours = Math.floor(diffMins / 60);
+                        
+                        if (hours > 0) {
+                            const hoursDecimal = diffMs / (1000 * 60 * 60);
+                            hoursStr = `${hoursDecimal.toFixed(2)} hrs`;
+                        } else if (diffMins > 0) {
+                            const mins = diffMins;
+                            const secs = diffSecs % 60;
+                            hoursStr = `${mins} mins ${secs} secs`;
+                        } else {
+                            hoursStr = `${diffSecs} secs`;
+                        }
+                    }
+                } else if (log.checkInTime && !log.checkOutTime) {
+                    hoursStr = '--';
+                } else if (!log.checkInTime) {
+                    hoursStr = '-';
+                }
 
                 return {
                     dbId: log._id,
@@ -32,7 +55,7 @@ export function useDailyAttendance(date: string, enabled: boolean) {
                     date: new Date(logDate).toLocaleDateString(),
                     checkIn: log.checkInTime ? new Date(log.checkInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : null,
                     checkOut: log.checkOutTime ? new Date(log.checkOutTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : null,
-                    hours: minutes > 0 ? `${Number(hoursValue).toFixed(1)}h` : '0h',
+                    hours: hoursStr,
                     late: log.isLate ? 'Yes' : null,
                     status: log.isLate ? 'Late' : log.status,
                     shiftId: log.user?.profile?.employment?.shiftId || null
@@ -62,5 +85,44 @@ export function useCalendarAttendance(employeeId: string, month: number, year: n
         queryFn: () => attendanceService.getCalendarAttendance(employeeId, month, year),
         enabled: !!employeeId && enabled,
         staleTime: 5 * 60 * 1000,
+    });
+}
+
+export function useMyAttendance() {
+    return useQuery({
+        queryKey: ['attendance', 'me'],
+        queryFn: () => attendanceService.getMyAttendance(),
+        staleTime: 1 * 60 * 1000, // 1 minute cache
+    });
+}
+
+export function useClockIn() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (workFormat: string = 'Office') => attendanceService.clockIn(workFormat),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['attendance'] });
+        }
+    });
+}
+
+export function useClockOut() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: () => attendanceService.clockOut(),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['attendance'] });
+        }
+    });
+}
+
+export function useResetTodayAttendance() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: () => attendanceService.resetTodayAttendance(),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['attendance'] });
+            queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+        }
     });
 }

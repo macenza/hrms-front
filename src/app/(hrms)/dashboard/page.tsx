@@ -1,19 +1,28 @@
 "use client";
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { useRouter } from 'next/navigation';
-import { CalendarDays, Upload, Loader2, Cake } from "lucide-react";
+import { CalendarDays, CalendarRange, Search, ChevronDown, Upload, Loader2, Cake, LogIn, LogOut, RotateCcw } from "lucide-react";
 import dynamic from 'next/dynamic';
 
 const StatCard = dynamic(() => import("@/components/dashboard/StatCard"), { ssr: false });
 const EmployeeSummary = dynamic(() => import("@/components/dashboard/EmployeeSummary"), { ssr: false });
 const AttendanceList = dynamic(() => import("@/components/dashboard/AttendanceList"), { ssr: false });
 const AttendanceCalendar = dynamic(() => import("@/components/attendance/AttendanceCalendar"), { ssr: false });
-
+const AttendancePunchWidget = dynamic(() => import("@/components/dashboard/AttendancePunchWidget"), { ssr: false });
 import { STAT_CARDS } from "@/lib/data";
-import { useAppSelector } from "@/store/hooks";
-import { useDashboardStats, useDashboardAttendance } from "@/hooks/api/useDashboard";
+import { useAppSelector, useAppDispatch } from "@/store/hooks";
+import { useDashboardStats, useDashboardAttendance, useDashboardAttendanceByDateRange } from "@/hooks/api/useDashboard";
 import { useActiveEmployees } from "@/hooks/api/useEmployees";
+import { useClockIn, useClockOut, useMyAttendance, useResetTodayAttendance } from "@/hooks/api/useAttendance";
 import { normalizeRoleDistribution } from "@/lib/dashboard";
+export interface DateRange {
+    from: string; // YYYY-MM-DD
+    to: string;   // YYYY-MM-DD
+}
+import { toast } from "sonner";
+import { Modal } from "@/components/ui/Modal";
+import { logOut } from "@/store/authSlice";
+import { logoutUser } from "@/services/authService";
 
 const AttendanceChart = dynamic(
     () => import('@/components/dashboard/AttendanceChart'),
@@ -57,13 +66,185 @@ export default function DashboardPage() {
     const isEmployee = role === 'employee';
     const [attendanceTimeframe, setAttendanceTimeframe] = useState<'week' | 'month'>('month');
     const activeTimeframe = isEmployee ? 'month' : attendanceTimeframe;
+    const [activeDateRange, setActiveDateRange] = useState<DateRange | null>(null);
+
+    const [colorPaletteIndex, setColorPaletteIndex] = useState(0);
+    const cycleColorPalette = () => {
+        setColorPaletteIndex(prev => (prev + 1) % 6);
+    };
+
+    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+    const [showCustomPicker, setShowCustomPicker] = useState(false);
+    const [customFrom, setCustomFrom] = useState('');
+    const [customTo, setCustomTo] = useState('');
+    const [customError, setCustomError] = useState('');
+    const dropdownRef = React.useRef<HTMLDivElement>(null);
+
+    const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
+
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                setIsDropdownOpen(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
+
+    useEffect(() => {
+        if (isDropdownOpen) {
+            if (activeDateRange) {
+                setShowCustomPicker(true);
+                setCustomFrom(activeDateRange.from);
+                setCustomTo(activeDateRange.to);
+            } else {
+                setShowCustomPicker(false);
+            }
+        }
+    }, [isDropdownOpen, activeDateRange]);
+
+    const handleApplyCustomFilter = () => {
+        setCustomError('');
+        if (!customFrom || !customTo) {
+            setCustomError('Please select both From and To dates.');
+            return;
+        }
+        if (customFrom > customTo) {
+            setCustomError('"From" date cannot be after "To" date.');
+            return;
+        }
+        setActiveDateRange({ from: customFrom, to: customTo });
+        setIsDropdownOpen(false);
+        cycleColorPalette();
+    };
+
+    const handleResetCustomFilter = () => {
+        setCustomFrom('');
+        setCustomTo('');
+        setCustomError('');
+        setActiveDateRange(null);
+        setAttendanceTimeframe('month');
+        setIsDropdownOpen(false);
+        cycleColorPalette();
+    };
+
+    const dropdownLabel = useMemo(() => {
+        if (activeDateRange) {
+            const formatDate = (dateStr: string) => {
+                const [year, month, day] = dateStr.split('-');
+                return `${day}/${month}/${year}`;
+            };
+            return `${formatDate(activeDateRange.from)} - ${formatDate(activeDateRange.to)}`;
+        }
+        return activeTimeframe === 'week' ? 'This Week' : 'This Month';
+    }, [activeDateRange, activeTimeframe]);
 
     const { data: stats, isLoading: isStatsLoading } = useDashboardStats(
         isAuthenticated && isAdminOrHR
     );
 
-    const { data: attendanceData, isLoading: isAttendanceLoading } =
+    const { data: timeframeAttendance, isLoading: isTimeframeLoading } =
         useDashboardAttendance(activeTimeframe);
+
+    const { data: rangeAttendance, isLoading: isRangeLoading } =
+        useDashboardAttendanceByDateRange(activeDateRange);
+
+    // Use range data when a filter is active, otherwise fall back to timeframe data
+    const attendanceData = activeDateRange ? rangeAttendance : timeframeAttendance;
+    const isAttendanceLoading = activeDateRange ? isRangeLoading : isTimeframeLoading;
+
+    const dispatch = useAppDispatch();
+    const { data: myAttendance, isLoading: isMyAttendanceLoading } = useMyAttendance();
+    const clockInMutation = useClockIn();
+    const clockOutMutation = useClockOut();
+
+    const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
+    const [isResetModalOpen, setIsResetModalOpen] = useState(false);
+    const resetAttendanceMutation = useResetTodayAttendance();
+
+    const handleResetAttendance = async () => {
+        setIsResetModalOpen(false);
+        try {
+            await resetAttendanceMutation.mutateAsync();
+            toast.success("Today's attendance has been reset successfully.");
+        } catch (err: any) {
+            const msg = err?.response?.data?.message || err?.message || "Reset failed";
+            toast.error(msg);
+        }
+    };
+    const [currentTime, setCurrentTime] = useState<string>('');
+
+    useEffect(() => {
+        const updateClock = () => {
+            const now = new Date();
+            setCurrentTime(now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true }));
+        };
+        updateClock();
+        const timeInterval = setInterval(updateClock, 1000);
+        return () => clearInterval(timeInterval);
+    }, []);
+
+    const todayString = useMemo(() => new Date().toLocaleString('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\//g, '-'), []);
+    const todayLog = useMemo(() => myAttendance?.logs?.find((log: any) => log.dateString === todayString), [myAttendance, todayString]);
+    
+    const isClockedIn = todayLog && !todayLog.checkOutTime;
+    const isClockedOut = todayLog && todayLog.checkOutTime;
+    
+    const isPunchPending = clockInMutation.isPending || clockOutMutation.isPending;
+
+    const handleClockIn = async () => {
+        if (isClockedIn) {
+            toast.error("You are already checked in!");
+            return;
+        }
+        if (isClockedOut) {
+            toast.error("You have already checked out for today!");
+            return;
+        }
+        try {
+            await clockInMutation.mutateAsync('Office');
+            toast.success("Checked in successfully!");
+        } catch (err: any) {
+            const msg = err?.response?.data?.message || err?.message || "Check-in failed";
+            toast.error(msg);
+        }
+    };
+
+    const handleLogoutAfterCheckout = async () => {
+        try {
+            await logoutUser();
+        } catch (err) {
+            console.error("Backend logout failed:", err);
+        } finally {
+            dispatch(logOut());
+            router.push('/login');
+        }
+    };
+
+    const handleClockOutClick = () => {
+        if (!isClockedIn) {
+            toast.error("You must check in first!");
+            return;
+        }
+        setIsCheckoutModalOpen(true);
+    };
+
+    const confirmCheckout = async (shouldLogout: boolean) => {
+        setIsCheckoutModalOpen(false);
+        try {
+            await clockOutMutation.mutateAsync();
+            toast.success("Checked out successfully!");
+            if (shouldLogout) {
+                toast.info("Logging out...");
+                await handleLogoutAfterCheckout();
+            }
+        } catch (err: any) {
+            const msg = err?.response?.data?.message || err?.message || "Check-out failed";
+            toast.error(msg);
+        }
+    };
 
     const adaptedStats = stats
         ? { ...stats, totalEmployees: stats.totalUsers, activeEmployees: stats.activeUsers }
@@ -194,31 +375,224 @@ export default function DashboardPage() {
                         )}
                     </h1>
                     <div className="flex items-center gap-3">
-                        <button
-                            type="button"
-                            onClick={() =>
-                                !isEmployee &&
-                                setAttendanceTimeframe((prev) =>
-                                    prev === 'month' ? 'week' : 'month'
-                                )
-                            }
-                            className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium capitalize transition-all border
-                                ${isEmployee ? 'cursor-default opacity-80' : 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800'}
-                                bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-800 shadow-sm dark:shadow-none
-                            `}
-                        >
-                            <CalendarDays className="w-4 h-4 text-blue-500" />
-                            This {activeTimeframe}
-                        </button>
+                        {isAuthenticated && (
+                            <div className="flex items-center gap-3.5 bg-white/70 dark:bg-gray-900/70 backdrop-blur-md px-3 py-1.5 rounded-2xl border border-gray-200/80 dark:border-gray-800/80 shadow-md transition-all duration-300">
+                                {/* Live Status Clock */}
+                                <div className="hidden xs:flex items-center gap-2 px-2 py-1 rounded-lg bg-gray-50 dark:bg-gray-950/60 border border-gray-100 dark:border-gray-800/50">
+                                    <span className={`w-2 h-2 rounded-full ${isClockedIn ? 'bg-emerald-500 animate-pulse shadow-sm shadow-emerald-500' : 'bg-rose-500 animate-pulse shadow-sm shadow-rose-500'}`} />
+                                    <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider select-none">
+                                        {isClockedIn ? 'Clocked In' : 'Clocked Out'}
+                                    </span>
+                                    <span className="text-xs font-bold text-gray-800 dark:text-gray-200 font-mono tabular-nums border-l border-gray-200 dark:border-gray-800 pl-2">
+                                        {currentTime || '00:00:00'}
+                                    </span>
+                                </div>
+
+                                <div className="flex items-center gap-1.5">
+                                    <button
+                                        type="button"
+                                        onClick={handleClockIn}
+                                        disabled={isPunchPending || isClockedIn || isClockedOut || isMyAttendanceLoading}
+                                        className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold tracking-wide transition-all duration-300 select-none group
+                                            ${isClockedIn || isClockedOut
+                                                ? 'bg-gray-100 dark:bg-gray-800/40 text-gray-400 dark:text-gray-600 cursor-not-allowed border border-transparent'
+                                                : 'bg-emerald-600 hover:bg-emerald-500 hover:shadow-lg hover:shadow-emerald-500/30 active:scale-95 text-white cursor-pointer border border-emerald-600/10 shadow-[0_0_12px_rgba(16,185,129,0.2)] animate-pulse'
+                                            }
+                                        `}
+                                    >
+                                        <LogIn className="w-3.5 h-3.5 transition-transform duration-300 group-hover:rotate-12 group-hover:-translate-x-0.5" />
+                                        {clockInMutation.isPending ? 'Checking In...' : 'Check In'}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={handleClockOutClick}
+                                        disabled={isPunchPending || !isClockedIn || isMyAttendanceLoading}
+                                        className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold tracking-wide transition-all duration-300 select-none group
+                                            ${!isClockedIn
+                                                ? 'bg-gray-100 dark:bg-gray-800/40 text-gray-400 dark:text-gray-600 cursor-not-allowed border border-transparent'
+                                                : 'bg-rose-600 hover:bg-rose-500 hover:shadow-lg hover:shadow-rose-500/30 active:scale-95 text-white cursor-pointer border border-rose-600/10 shadow-[0_0_12px_rgba(244,63,94,0.2)] animate-pulse'
+                                            }
+                                        `}
+                                    >
+                                        <LogOut className="w-3.5 h-3.5 transition-transform duration-300 group-hover:translate-x-0.5" />
+                                        {clockOutMutation.isPending ? 'Checking Out...' : 'Check Out'}
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                        {isEmployee ? (
+                            <div className="flex items-center gap-2 px-4 py-2 rounded-2xl text-xs font-bold capitalize bg-white/70 dark:bg-gray-900/70 backdrop-blur-md text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-850 shadow-md opacity-80 select-none">
+                                <CalendarDays className="w-4 h-4 text-blue-500" />
+                                This {activeTimeframe}
+                            </div>
+                        ) : (
+                            <div ref={dropdownRef} className="relative">
+                                <button
+                                    type="button"
+                                    onClick={() => setIsDropdownOpen(prev => !prev)}
+                                    className="flex items-center gap-2 px-4 py-2 rounded-2xl text-xs font-bold transition-all border bg-white/70 dark:bg-gray-900/70 backdrop-blur-md text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-850 hover:bg-white dark:hover:bg-gray-900 cursor-pointer shadow-md hover:shadow-lg hover:shadow-slate-500/5 duration-200 select-none"
+                                >
+                                    <CalendarDays className="w-4 h-4 text-blue-500" />
+                                    <span>{dropdownLabel}</span>
+                                    <ChevronDown className={`w-3.5 h-3.5 text-gray-400 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} />
+                                </button>
+
+                                {isDropdownOpen && (
+                                    <div className="absolute right-0 mt-2 w-80 rounded-2xl border bg-white dark:bg-gray-950 border-gray-200/80 dark:border-gray-800 shadow-xl dark:shadow-none p-2.5 z-50 flex flex-col gap-1.5 animate-in fade-in zoom-in-95 duration-150">
+                                        <div className="px-2 py-1.5">
+                                            <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Select Range</p>
+                                        </div>
+
+                                        {/* Option: This Month */}
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setAttendanceTimeframe('month');
+                                                setActiveDateRange(null);
+                                                setIsDropdownOpen(false);
+                                                cycleColorPalette();
+                                            }}
+                                            className={`flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-colors text-left w-full
+                                                ${activeTimeframe === 'month' && !activeDateRange
+                                                    ? 'bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 font-bold'
+                                                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-900/50'
+                                                }
+                                            `}
+                                        >
+                                            <div className="flex items-center gap-2">
+                                                <CalendarDays className="w-4 h-4" />
+                                                <span>This Month</span>
+                                            </div>
+                                            {activeTimeframe === 'month' && !activeDateRange && (
+                                                <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                                            )}
+                                        </button>
+
+                                        {/* Option: This Week */}
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setAttendanceTimeframe('week');
+                                                setActiveDateRange(null);
+                                                setIsDropdownOpen(false);
+                                                cycleColorPalette();
+                                            }}
+                                            className={`flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-colors text-left w-full
+                                                ${activeTimeframe === 'week' && !activeDateRange
+                                                    ? 'bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 font-bold'
+                                                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-900/50'
+                                                }
+                                            `}
+                                        >
+                                            <div className="flex items-center gap-2">
+                                                <CalendarDays className="w-4 h-4" />
+                                                <span>This Week</span>
+                                            </div>
+                                            {activeTimeframe === 'week' && !activeDateRange && (
+                                                <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                                            )}
+                                        </button>
+
+                                        {/* Option: Custom Range */}
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowCustomPicker(prev => !prev)}
+                                            className={`flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-colors text-left w-full
+                                                ${activeDateRange || showCustomPicker
+                                                    ? 'bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 font-bold'
+                                                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-900/50'
+                                                }
+                                            `}
+                                        >
+                                            <div className="flex items-center gap-2">
+                                                <CalendarRange className="w-4 h-4" />
+                                                <span>Custom Range</span>
+                                            </div>
+                                            {(activeDateRange || showCustomPicker) && (
+                                                <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                                            )}
+                                        </button>
+
+                                        {/* Expandable inline sub-panel */}
+                                        {showCustomPicker && (
+                                            <div className="flex flex-col gap-3 p-3 mt-1.5 border-t border-gray-150 dark:border-gray-800/80 animate-in fade-in slide-in-from-top-2 duration-200">
+                                                <div className="flex items-center justify-between gap-2.5">
+                                                    <div className="flex flex-col gap-1 flex-1">
+                                                        <label className="text-[9px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 select-none">From</label>
+                                                        <input
+                                                            type="date"
+                                                            value={customFrom}
+                                                            max={customTo || todayStr}
+                                                            onChange={(e) => { setCustomFrom(e.target.value); setCustomError(''); }}
+                                                            className="h-8 px-2 rounded-lg text-xs font-semibold text-gray-700 dark:text-gray-205 bg-gray-50 dark:bg-gray-900 border border-gray-205 dark:border-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-400 transition-all cursor-pointer"
+                                                        />
+                                                    </div>
+                                                    <span className="text-gray-300 dark:text-gray-600 text-xs mt-4 select-none">→</span>
+                                                    <div className="flex flex-col gap-1 flex-1">
+                                                        <label className="text-[9px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 select-none">To</label>
+                                                        <input
+                                                            type="date"
+                                                            value={customTo}
+                                                            min={customFrom || undefined}
+                                                            max={todayStr}
+                                                            onChange={(e) => { setCustomTo(e.target.value); setCustomError(''); }}
+                                                            className="h-8 px-2 rounded-lg text-xs font-semibold text-gray-700 dark:text-gray-205 bg-gray-50 dark:bg-gray-900 border border-gray-205 dark:border-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-400 transition-all cursor-pointer"
+                                                        />
+                                                    </div>
+                                                </div>
+                                                {customError && (
+                                                    <p className="text-[10px] font-semibold text-rose-500 dark:text-rose-400 animate-in fade-in duration-200">
+                                                        ⚠ {customError}
+                                                    </p>
+                                                )}
+                                                <div className="flex items-center gap-2 justify-end">
+                                                    <button
+                                                        type="button"
+                                                        onClick={handleApplyCustomFilter}
+                                                        className="flex items-center gap-1 h-8 px-3 rounded-lg text-xs font-bold text-white bg-blue-600 hover:bg-blue-500 active:scale-95 transition-all shadow-sm cursor-pointer"
+                                                    >
+                                                        <Search className="w-3 h-3" />
+                                                        Apply Filter
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={handleResetCustomFilter}
+                                                        disabled={!activeDateRange && !customFrom && !customTo}
+                                                        className="flex items-center gap-1 h-8 px-3 rounded-lg text-xs font-bold text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-850 hover:bg-gray-200 dark:hover:bg-gray-800 active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                                                    >
+                                                        <RotateCcw className="w-3 h-3" />
+                                                        Reset
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        )}
                         {isAdminOrHR && (
                             <button
                                 type="button"
                                 onClick={handleExport}
                                 disabled={!stats || isStatsLoading}
-                                className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all border bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 shadow-sm dark:shadow-none disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="flex items-center gap-2 px-4 py-2 rounded-2xl text-xs font-bold transition-all border bg-white/70 dark:bg-gray-900/70 backdrop-blur-md text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-850 hover:bg-white dark:hover:bg-gray-900 cursor-pointer shadow-md hover:shadow-lg hover:shadow-slate-500/5 duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 <Upload className="w-4 h-4 text-gray-400 dark:text-gray-500" />
                                 Export CSV
+                            </button>
+                        )}
+                        {isAdminOrHR && (
+                            <button
+                                type="button"
+                                onClick={() => setIsResetModalOpen(true)}
+                                disabled={resetAttendanceMutation.isPending}
+                                title="Temporary: Reset today's attendance records"
+                                className="flex items-center gap-2 px-4 py-2 rounded-2xl text-xs font-bold transition-all border bg-amber-50/80 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-500/30 hover:bg-amber-100 dark:hover:bg-amber-500/20 cursor-pointer shadow-md hover:shadow-lg duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {resetAttendanceMutation.isPending
+                                    ? <Loader2 className="w-4 h-4 animate-spin" />
+                                    : <RotateCcw className="w-4 h-4" />}
+                                Reset Attendance
                             </button>
                         )}
                     </div>
@@ -237,6 +611,7 @@ export default function DashboardPage() {
                         ))}
                     </div>
                 )}
+
 
                 {/* Upcoming Birthdays (Admin/HR only) */}
                 {isAdminOrHR && upcomingBirthdays.length > 0 && (
@@ -273,25 +648,36 @@ export default function DashboardPage() {
                 )}
 
                 <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
-                    <div className={isAdminOrHR ? "lg:col-span-3" : "lg:col-span-5"}>
-                        {isEmployee ? (
-                            <AttendanceCalendar employeeId={user?.id || user?._id || ""} />
-                        ) : (
-                            <AttendanceChart
-                                timeframe={activeTimeframe}
-                                isEmployee={isEmployee}
-                                chartData={attendanceData}
-                                isLoading={isAttendanceLoading}
-                            />
-                        )}
-                    </div>
-                    {isAdminOrHR && (
-                        <div className="lg:col-span-2">
-                            <EmployeeSummary
-                                employees={stats?.recentEmployees ?? []}
-                                isLoading={isStatsLoading}
-                            />
-                        </div>
+                    {isEmployee ? (
+                        <>
+                            <div className="lg:col-span-3">
+                                <AttendanceCalendar employeeId={user?.id || user?._id || ""} />
+                            </div>
+                            <div className="lg:col-span-2">
+                                <AttendancePunchWidget />
+                            </div>
+                        </>
+                    ) : (
+                        <>
+                            <div className={isAdminOrHR ? "lg:col-span-3" : "lg:col-span-5"}>
+                                <AttendanceChart
+                                    timeframe={activeTimeframe}
+                                    isEmployee={isEmployee}
+                                    chartData={attendanceData}
+                                    isLoading={isAttendanceLoading}
+                                    dateRange={activeDateRange}
+                                    colorPaletteIndex={colorPaletteIndex}
+                                />
+                            </div>
+                            {isAdminOrHR && (
+                                <div className="lg:col-span-2">
+                                    <EmployeeSummary
+                                        employees={stats?.recentEmployees ?? []}
+                                        isLoading={isStatsLoading}
+                                    />
+                                </div>
+                            )}
+                        </>
                     )}
                 </div>
 
@@ -307,12 +693,85 @@ export default function DashboardPage() {
                         <div className="lg:col-span-2">
                             <RoleChart
                                 roleDistribution={stats?.roleDistribution}
+                                totalEmployees={stats?.totalUsers}
                                 isLoading={isStatsLoading}
+                                disableAnimations={true}
                             />
                         </div>
                     )}
                 </div>
+
             </div>
+            {/* Reset Attendance Confirmation Modal */}
+            <Modal
+                isOpen={isResetModalOpen}
+                onClose={() => setIsResetModalOpen(false)}
+                title="Reset Today's Attendance"
+            >
+                <div className="flex flex-col gap-4">
+                    <div className="flex items-start gap-3 p-3 rounded-xl bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20">
+                        <RotateCcw className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
+                        <p className="text-xs text-amber-700 dark:text-amber-300 font-medium leading-relaxed">
+                            This will <strong>permanently delete all attendance records for today</strong> — including all check-ins and check-outs. This action cannot be undone.
+                        </p>
+                    </div>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                        This is a temporary developer utility. Use with caution.
+                    </p>
+                    <div className="flex flex-col sm:flex-row gap-2 justify-end mt-2">
+                        <button
+                            type="button"
+                            onClick={() => setIsResetModalOpen(false)}
+                            className="px-4 py-2 rounded-lg text-xs font-semibold text-gray-700 dark:text-gray-300 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 transition-all cursor-pointer"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="button"
+                            onClick={handleResetAttendance}
+                            className="px-4 py-2 rounded-lg text-xs font-semibold text-white bg-amber-500 hover:bg-amber-400 transition-all cursor-pointer"
+                        >
+                            Yes, Reset Attendance
+                        </button>
+                    </div>
+                </div>
+            </Modal>
+
+            {/* Checkout Confirmation Modal */}
+            <Modal
+                isOpen={isCheckoutModalOpen}
+                onClose={() => setIsCheckoutModalOpen(false)}
+                title="Confirm Checkout"
+            >
+                <div className="flex flex-col gap-4">
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                        You are about to check out for today. Would you like to log out of your session as well?
+                    </p>
+                    <div className="flex flex-col sm:flex-row gap-2 justify-end mt-4">
+                        <button
+                            type="button"
+                            onClick={() => setIsCheckoutModalOpen(false)}
+                            className="px-4 py-2 rounded-lg text-xs font-semibold text-gray-700 dark:text-gray-300 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 transition-all cursor-pointer"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => confirmCheckout(false)}
+                            className="px-4 py-2 rounded-lg text-xs font-semibold text-white bg-blue-600 hover:bg-blue-500 transition-all cursor-pointer"
+                        >
+                            Just Checkout
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => confirmCheckout(true)}
+                            className="px-4 py-2 rounded-lg text-xs font-semibold text-white bg-rose-600 hover:bg-rose-500 transition-all cursor-pointer"
+                        >
+                            Checkout & Logout
+                        </button>
+                    </div>
+                </div>
+            </Modal>
         </div>
     );
 }
