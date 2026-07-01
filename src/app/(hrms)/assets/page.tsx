@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Download, Plus, Loader2, ChevronLeft, ChevronRight, Monitor, Smartphone, Laptop as LaptopIcon, Headphones, Search, X, RotateCcw, ChevronDown, Upload, History, BarChart3 } from 'lucide-react';
+import { Download, Plus, Loader2, ChevronLeft, ChevronRight, Monitor, Smartphone, Laptop as LaptopIcon, Headphones, Search, X, RotateCcw, ChevronDown, Upload, History, BarChart3, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Modal } from '@/components/ui/Modal';
@@ -20,6 +20,7 @@ import { assetService } from '@/services/assetService';
 import { useDebounce } from '@/hooks/useDebounce';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
 import { cn } from '@/utils/cn';
 
 const getCategoryIcon = (category: string) => {
@@ -44,6 +45,7 @@ const getStatusBadgeVariant = (status: string) => {
 
 export default function AssetsPage() {
     const router = useRouter();
+    const queryClient = useQueryClient();
     // 1. Strict RBAC Enforcement
     const { user, isAuthenticated } = useAppSelector((state) => state.auth);
     const role = user?.role?.toLowerCase() || 'employee';
@@ -95,6 +97,8 @@ export default function AssetsPage() {
     const [isActionsOpen, setIsActionsOpen] = useState(false);
     const [showAnalytics, setShowAnalytics] = useState(false);
 
+
+
     const handleAddAsset = async (payload: AddAssetPayload) => {
         try {
             await createAssetMutation.mutateAsync(payload);
@@ -140,6 +144,8 @@ export default function AssetsPage() {
             }
         }
     };
+
+
 
     const handleExportInventory = async () => {
         try {
@@ -402,6 +408,7 @@ export default function AssetsPage() {
                             assets={records}
                             isLoading={isAssetsLoading}
                             defaultStatusName={defaultStatusName}
+                            isManagerial={isManagerial}
                             onView={(record) => {
                                 setSelectedAssetForView(record);
                                 setIsViewModalOpen(true);
@@ -700,6 +707,7 @@ export default function AssetsPage() {
                         );
                     })()}
                 </Modal>
+
             </div>
         </div>
     );

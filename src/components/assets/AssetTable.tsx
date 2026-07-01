@@ -37,6 +37,7 @@ interface AssetTableProps {
     onView?: (record: Asset) => void;
     onDelete?: (record: Asset) => void;
     defaultStatusName?: string;
+    isManagerial?: boolean;
 }
 
 const getStatusBadgeVariant = (status: string) => {
@@ -63,7 +64,7 @@ const TableRowSkeleton = ({
     hasManufacturer,
     hasModel,
     hasCost,
-    hasCondition
+    hasCondition,
 }: TableRowSkeletonProps) => (
     <tr className="animate-pulse bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800">
         <td className="px-6 py-4">
@@ -101,19 +102,20 @@ const CardSkeleton = () => (
     </div>
 );
 
-export default function AssetTable({ 
-    assets = [], 
+export default function AssetTable({
+    assets = [],
     isLoading = false,
     onEdit,
     onAssign,
     onUnassign,
     onView,
     onDelete,
-    defaultStatusName = 'Available'
+    defaultStatusName = 'Available',
+    isManagerial = false
 }: AssetTableProps) {
     const breakpoint = useBreakpoint();
     const isMobile = breakpoint === 'mobile';
-    
+
     // Dynamic column detection: hide a column if all assets in the list are empty/N/A/default
     const hasSerialNumber = assets.some(a => a.serialNumber && a.serialNumber !== 'N/A' && a.serialNumber !== '-');
     const hasManufacturer = assets.some(a => a.manufacturer && a.manufacturer !== 'N/A' && a.manufacturer !== '-');
@@ -142,11 +144,11 @@ export default function AssetTable({
 
     return (
         <div className="relative overflow-hidden border-none sm:border-solid border-gray-200 dark:border-gray-800 sm:rounded-xl bg-white dark:bg-gray-900 min-h-[400px] transition-colors duration-300">
-            
+
             {/* Soft overlay for background fetches */}
             {isLoading && !isInitialLoad && (
                 <div className="absolute inset-0 bg-white/40 dark:bg-black/20 z-10 flex items-center justify-center pointer-events-none transition-opacity duration-200 backdrop-blur-[1px]">
-                     <Loader2 className="w-6 h-6 animate-spin text-blue-600 dark:text-blue-500" />
+                    <Loader2 className="w-6 h-6 animate-spin text-blue-600 dark:text-blue-500" />
                 </div>
             )}
 
@@ -168,60 +170,62 @@ export default function AssetTable({
                             <div
                                 key={record.dbId || record.id}
                                 onClick={() => onView?.(record)}
-                                className="p-4 rounded-xl bg-gray-50/50 dark:bg-gray-800/20 border border-gray-100 dark:border-gray-800 hover:bg-gray-100 dark:hover:bg-gray-800/40 transition-colors cursor-pointer active:scale-[0.99]"
+                                className="p-4 rounded-xl bg-gray-50/50 dark:bg-gray-800/20 border border-gray-100 dark:border-gray-800 hover:bg-gray-100 dark:hover:bg-gray-800/40 transition-colors cursor-pointer active:scale-[0.99] flex items-start gap-3"
                             >
-                                <div className="flex items-start justify-between mb-2">
-                                    <div className="min-w-0 flex-1">
-                                        <p className="font-bold text-gray-900 dark:text-gray-100 truncate" title={record.name}>
-                                            {record.name}
-                                        </p>
-                                        <p className="text-xs font-mono text-gray-500 dark:text-gray-400 mt-0.5">
-                                            {record.id}
-                                        </p>
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex items-start justify-between mb-2">
+                                        <div className="min-w-0 flex-1">
+                                            <p className="font-bold text-gray-900 dark:text-gray-100 truncate" title={record.name}>
+                                                {record.name}
+                                            </p>
+                                            <p className="text-xs font-mono text-gray-500 dark:text-gray-400 mt-0.5">
+                                                {record.id}
+                                            </p>
+                                        </div>
+                                        <Badge variant={getStatusBadgeVariant(record.status)} className="shrink-0 ml-2">
+                                            {record.status}
+                                        </Badge>
                                     </div>
-                                    <Badge variant={getStatusBadgeVariant(record.status)} className="shrink-0 ml-2">
-                                        {record.status}
-                                    </Badge>
+                                    <div className="flex items-center justify-between text-xs mb-2">
+                                        <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
+                                            <span className="font-medium">{record.category}</span>
+                                            <span className="text-gray-300 dark:text-gray-600">•</span>
+                                            <span className={cn(!record.assignee && "italic text-gray-400 dark:text-gray-500")}>
+                                                {record.assignee || 'Unassigned'}
+                                            </span>
+                                        </div>
+                                        <ActionMenu items={getActionItems(record)} />
+                                    </div>
+                                    {(record.serialNumber || record.manufacturer || record.model || record.cost || record.condition) && (
+                                        <div className="mt-2.5 pt-2.5 border-t border-gray-150 dark:border-gray-800 grid grid-cols-2 gap-x-4 gap-y-1.5 text-[11px] text-gray-550 dark:text-gray-400 font-medium">
+                                            {record.manufacturer && (
+                                                <div>
+                                                    <span className="text-gray-400 dark:text-gray-500 font-bold">Mfr:</span> {record.manufacturer}
+                                                </div>
+                                            )}
+                                            {record.model && (
+                                                <div>
+                                                    <span className="text-gray-400 dark:text-gray-500 font-bold">Model:</span> {record.model}
+                                                </div>
+                                            )}
+                                            {record.serialNumber && (
+                                                <div className="col-span-2">
+                                                    <span className="text-gray-400 dark:text-gray-500 font-bold">S/N:</span> <span className="font-mono">{record.serialNumber}</span>
+                                                </div>
+                                            )}
+                                            {record.cost !== undefined && record.cost !== null && (
+                                                <div>
+                                                    <span className="text-gray-400 dark:text-gray-500 font-bold">Cost:</span> ${record.cost}
+                                                </div>
+                                            )}
+                                            {record.condition && (
+                                                <div>
+                                                    <span className="text-gray-400 dark:text-gray-500 font-bold">Cond:</span> {record.condition}
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
-                                <div className="flex items-center justify-between text-xs mb-2">
-                                    <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
-                                        <span className="font-medium">{record.category}</span>
-                                        <span className="text-gray-300 dark:text-gray-600">•</span>
-                                        <span className={cn(!record.assignee && "italic text-gray-400 dark:text-gray-500")}>
-                                            {record.assignee || 'Unassigned'}
-                                        </span>
-                                    </div>
-                                    <ActionMenu items={getActionItems(record)} />
-                                </div>
-                                {(record.serialNumber || record.manufacturer || record.model || record.cost || record.condition) && (
-                                    <div className="mt-2.5 pt-2.5 border-t border-gray-150 dark:border-gray-800 grid grid-cols-2 gap-x-4 gap-y-1.5 text-[11px] text-gray-550 dark:text-gray-400 font-medium">
-                                        {record.manufacturer && (
-                                            <div>
-                                                <span className="text-gray-400 dark:text-gray-500 font-bold">Mfr:</span> {record.manufacturer}
-                                            </div>
-                                        )}
-                                        {record.model && (
-                                            <div>
-                                                <span className="text-gray-400 dark:text-gray-500 font-bold">Model:</span> {record.model}
-                                            </div>
-                                        )}
-                                        {record.serialNumber && (
-                                            <div className="col-span-2">
-                                                <span className="text-gray-400 dark:text-gray-500 font-bold">S/N:</span> <span className="font-mono">{record.serialNumber}</span>
-                                            </div>
-                                        )}
-                                        {record.cost !== undefined && record.cost !== null && (
-                                            <div>
-                                                <span className="text-gray-400 dark:text-gray-500 font-bold">Cost:</span> ${record.cost}
-                                            </div>
-                                        )}
-                                        {record.condition && (
-                                            <div>
-                                                <span className="text-gray-400 dark:text-gray-500 font-bold">Cond:</span> {record.condition}
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
                             </div>
                         ))
                     )}
@@ -247,16 +251,16 @@ export default function AssetTable({
                         </thead>
                         <tbody className="divide-y divide-gray-100 dark:divide-gray-800 bg-white dark:bg-gray-900 transition-colors">
                             {isInitialLoad ? (
-                                 Array.from({ length: 5 }).map((_, idx) => (
-                                     <TableRowSkeleton 
-                                         key={idx} 
-                                         hasSerialNumber={hasSerialNumber}
-                                         hasManufacturer={hasManufacturer}
-                                         hasModel={hasModel}
-                                         hasCost={hasCost}
-                                         hasCondition={hasCondition}
-                                     />
-                                 ))
+                                Array.from({ length: 5 }).map((_, idx) => (
+                                    <TableRowSkeleton
+                                        key={idx}
+                                        hasSerialNumber={hasSerialNumber}
+                                        hasManufacturer={hasManufacturer}
+                                        hasModel={hasModel}
+                                        hasCost={hasCost}
+                                        hasCondition={hasCondition}
+                                    />
+                                ))
                             ) : assets.length === 0 ? (
                                 <tr>
                                     <td colSpan={colSpan} className="px-6 py-16 text-center text-gray-500 dark:text-gray-400 transition-colors">
@@ -303,10 +307,10 @@ export default function AssetTable({
                                         <td className="px-6 py-4 text-center">
                                             <div className="flex items-center justify-center gap-1">
                                                 {onView && (
-                                                    <Button 
-                                                        variant="ghost" 
-                                                        size="sm" 
-                                                        className="p-1.5 rounded-full text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-colors" 
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        className="p-1.5 rounded-full text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-colors"
                                                         title="View Details"
                                                         onClick={() => onView(record)}
                                                     >
@@ -314,11 +318,11 @@ export default function AssetTable({
                                                     </Button>
                                                 )}
                                                 {onAssign && (
-                                                    <Button 
-                                                        variant="ghost" 
-                                                        size="sm" 
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
                                                         disabled={record.status !== 'Available'}
-                                                        className="p-1.5 rounded-full text-gray-400 dark:text-gray-500 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-gray-400 dark:disabled:hover:text-gray-500 transition-colors" 
+                                                        className="p-1.5 rounded-full text-gray-400 dark:text-gray-500 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-gray-400 dark:disabled:hover:text-gray-500 transition-colors"
                                                         title={record.status === 'Available' ? 'Assign Asset' : 'Already Assigned'}
                                                         onClick={() => onAssign(record)}
                                                     >
@@ -326,11 +330,11 @@ export default function AssetTable({
                                                     </Button>
                                                 )}
                                                 {onUnassign && (
-                                                    <Button 
-                                                        variant="ghost" 
-                                                        size="sm" 
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
                                                         disabled={record.status !== 'Assigned'}
-                                                        className="p-1.5 rounded-full text-gray-400 dark:text-gray-500 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-500/10 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-gray-400 dark:disabled:hover:text-gray-500 transition-colors" 
+                                                        className="p-1.5 rounded-full text-gray-400 dark:text-gray-500 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-500/10 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-gray-400 dark:disabled:hover:text-gray-500 transition-colors"
                                                         title={record.status === 'Assigned' ? 'Unassign Asset' : 'Not Assigned'}
                                                         onClick={() => onUnassign(record)}
                                                     >
@@ -338,10 +342,10 @@ export default function AssetTable({
                                                     </Button>
                                                 )}
                                                 {onDelete && (
-                                                    <Button 
-                                                        variant="ghost" 
-                                                        size="sm" 
-                                                        className="p-1.5 rounded-full text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors" 
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        className="p-1.5 rounded-full text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
                                                         title="Delete Asset"
                                                         onClick={() => onDelete(record)}
                                                     >
