@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import {
     Eye, EyeOff, Loader2, AlertCircle, Building2, CreditCard, QrCode,
     Check, ChevronRight, ChevronLeft, Shield, Sparkles, Users, Zap,
-    Crown, CheckCircle2, Upload, X, ImageIcon, MapPin, Phone, Info
+    Crown, CheckCircle2, Upload, X, ImageIcon, MapPin, Phone, Info, ArrowLeft
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -483,6 +483,14 @@ export default function RegisterCompanyPage() {
 
     return (
         <div className="w-full max-w-[1100px] mx-auto px-4 py-6">
+            {/* Back to Home */}
+            <Link
+                href="/"
+                className="inline-flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-[#6D5DFD] transition-colors mb-6 group"
+            >
+                <ArrowLeft size={16} className="group-hover:-translate-x-0.5 transition-transform" />
+                Back to Home
+            </Link>
 
             {/* ── PROGRESS BAR ── */}
             <div className="flex items-start justify-center mb-10">

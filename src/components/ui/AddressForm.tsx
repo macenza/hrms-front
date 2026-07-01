@@ -8,6 +8,7 @@ import { CitySelect } from '@/components/ui/CitySelect';
 import { DISTRICT_COUNTRIES } from '@/types/address';
 import { getPostalCodePlaceholder } from '@/utils/postalCodeValidation';
 import type { AddressFormData } from '@/types/address';
+import type { CountryCode } from 'libphonenumber-js';
 import { MapPin, Phone } from 'lucide-react';
 
 interface AddressFormErrors {
@@ -61,6 +62,8 @@ export function AddressForm({
             ...value,
             country: country.name,
             countryCode: country.isoCode,
+            // Auto-sync phone country code to match address country
+            phoneCountryCode: country.isoCode,
             // Clear dependent fields
             state: '',
             stateCode: '',
@@ -205,6 +208,8 @@ export function AddressForm({
                             <PhoneNumberInput
                                 value={value.phoneNumber}
                                 onChange={(val) => updateField('phoneNumber', val)}
+                                country={(value.phoneCountryCode || value.countryCode || undefined) as CountryCode | undefined}
+                                onCountryChange={(c) => updateField('phoneCountryCode', c)}
                                 label="Phone Number *"
                                 error={errors.phoneNumber}
                                 disabled={disabled}

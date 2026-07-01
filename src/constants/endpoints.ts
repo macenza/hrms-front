@@ -8,6 +8,9 @@ export const ENDPOINTS = {
         SEND_OTP: '/auth/send-otp',
         VERIFY_OTP: '/auth/verify-otp',
         RESEND_OTP: '/auth/resend-otp',
+        FORGOT_PASSWORD: '/auth/forgot-password',
+        VERIFY_RESET_OTP: '/auth/verify-reset-otp',
+        RESET_PASSWORD: '/auth/reset-password',
     },
     CUSTOMERS: {
         REGISTER: '/customers/register',

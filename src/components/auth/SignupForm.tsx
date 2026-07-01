@@ -124,6 +124,7 @@ export default function SignupForm() {
             )}
 
             <form onSubmit={handleSubmit} className="space-y-5">
+                {/* Basic Details */}
                 <div className="space-y-1.5">
                     <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Full Name</label>
                     <Input
@@ -176,7 +177,7 @@ export default function SignupForm() {
                     />
                 </div>
 
-                {/* Address & Contact Details */}
+                {/* Address & Contact — using reusable AddressForm */}
                 <div className="border-t border-gray-100 dark:border-gray-800 pt-5 transition-colors">
                     <AddressForm
                         value={formData.addressData}
