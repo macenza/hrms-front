@@ -143,7 +143,7 @@ export default function AssetTable({
     };
 
     return (
-        <div className="relative overflow-hidden border-none sm:border-solid border-gray-200 dark:border-gray-800 sm:rounded-xl bg-white dark:bg-gray-900 min-h-[400px] transition-colors duration-300">
+        <div className="relative overflow-hidden border border-gray-200/80 dark:border-gray-800/60 sm:rounded-2xl bg-white/95 dark:bg-[#0a0a0a]/80 backdrop-blur-md shadow-lg shadow-gray-100/5 dark:shadow-none min-h-[400px] transition-all duration-300">
 
             {/* Soft overlay for background fetches */}
             {isLoading && !isInitialLoad && (
@@ -170,7 +170,7 @@ export default function AssetTable({
                             <div
                                 key={record.dbId || record.id}
                                 onClick={() => onView?.(record)}
-                                className="p-4 rounded-xl bg-gray-50/50 dark:bg-gray-800/20 border border-gray-100 dark:border-gray-800 hover:bg-gray-100 dark:hover:bg-gray-800/40 transition-colors cursor-pointer active:scale-[0.99] flex items-start gap-3"
+                                className="p-4 rounded-2xl bg-gray-50/50 dark:bg-gray-850/20 border border-gray-200 dark:border-gray-800/60 hover:border-blue-500/30 dark:hover:border-blue-500/20 hover:bg-white dark:hover:bg-gray-850 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 cursor-pointer active:scale-[0.99] flex items-start gap-3"
                             >
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-start justify-between mb-2">
@@ -234,7 +234,7 @@ export default function AssetTable({
                 /* Desktop / Tablet Table View */
                 <div className="overflow-x-auto">
                     <table className="w-full text-left text-sm whitespace-nowrap">
-                        <thead className="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-400 font-bold uppercase tracking-wider text-xs transition-colors">
+                        <thead className="bg-gray-50/80 dark:bg-gray-850/60 border-b border-gray-200/80 dark:border-gray-800/60 text-gray-500 dark:text-gray-400 font-extrabold uppercase tracking-wider text-xs transition-all">
                             <tr>
                                 <th className="px-6 py-4">Asset Details</th>
                                 <th className="px-6 py-4">Category</th>
@@ -273,30 +273,29 @@ export default function AssetTable({
                                         </div>
                                     </td>
                                 </tr>
-                            ) : (
-                                assets.map((record) => (
-                                    <tr key={record.dbId || record.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors group">
+                            ) : (                                assets.map((record) => (
+                                    <tr key={record.dbId || record.id} className="hover:bg-gray-50/60 dark:hover:bg-gray-800/20 hover:scale-[1.001] transition-all duration-200 group border-b border-gray-100 dark:border-gray-855/40 last:border-0">
                                         <td className="px-6 py-4">
                                             <div>
-                                                <p className="font-bold text-gray-900 dark:text-gray-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{record.name}</p>
-                                                <p className="text-xs font-mono text-gray-500 dark:text-gray-400 mt-0.5 transition-colors">{record.id}</p>
+                                                <p className="font-bold text-gray-900 dark:text-gray-100 group-hover:text-blue-600 dark:group-hover:text-blue-450 transition-colors">{record.name}</p>
+                                                <p className="text-xs font-mono text-gray-550 dark:text-gray-450 mt-0.5 transition-colors">{record.id}</p>
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4 font-medium text-gray-600 dark:text-gray-300 transition-colors">{record.category}</td>
+                                        <td className="px-6 py-4 font-semibold text-gray-650 dark:text-gray-300 transition-colors">{record.category}</td>
                                         {hasSerialNumber && <td className="px-6 py-4 font-mono text-xs text-gray-600 dark:text-gray-300 transition-colors hidden xl:table-cell">{record.serialNumber || '-'}</td>}
                                         {hasManufacturer && <td className="px-6 py-4 text-gray-600 dark:text-gray-300 transition-colors hidden md:table-cell">{record.manufacturer || '-'}</td>}
                                         {hasModel && <td className="px-6 py-4 text-gray-600 dark:text-gray-300 transition-colors hidden md:table-cell">{record.model || '-'}</td>}
                                         {hasCost && <td className="px-6 py-4 text-gray-600 dark:text-gray-300 transition-colors hidden xl:table-cell">{record.cost !== undefined && record.cost !== null ? `$${record.cost}` : '-'}</td>}
-                                        {hasCondition && <td className="px-6 py-4 text-gray-600 dark:text-gray-300 transition-colors hidden lg:table-cell">{record.condition || 'New'}</td>}
+                                        {hasCondition && <td className="px-6 py-4 text-gray-650 dark:text-gray-350 transition-colors hidden lg:table-cell">{record.condition || 'New'}</td>}
                                         <td className="px-6 py-4 hidden lg:table-cell">
                                             <span className={cn(
-                                                "font-medium transition-colors",
+                                                "font-semibold transition-colors",
                                                 !record.assignee ? "text-gray-400 dark:text-gray-500 italic" : "text-gray-900 dark:text-gray-100"
                                             )}>
                                                 {record.assignee || 'Unassigned'}
                                             </span>
                                         </td>
-                                        <td className="px-6 py-4 text-gray-600 dark:text-gray-300 font-medium transition-colors hidden lg:table-cell">
+                                        <td className="px-6 py-4 text-gray-600 dark:text-gray-300 font-semibold transition-colors hidden lg:table-cell">
                                             {record.date || '-'}
                                         </td>
                                         <td className="px-6 py-4">
@@ -310,7 +309,7 @@ export default function AssetTable({
                                                     <Button
                                                         variant="ghost"
                                                         size="sm"
-                                                        className="p-1.5 rounded-full text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-colors"
+                                                        className="p-1.5 rounded-xl text-gray-450 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-550/10 dark:hover:bg-blue-500/10 transition-all duration-200 active:scale-95"
                                                         title="View Details"
                                                         onClick={() => onView(record)}
                                                     >
@@ -322,7 +321,7 @@ export default function AssetTable({
                                                         variant="ghost"
                                                         size="sm"
                                                         disabled={record.status !== 'Available'}
-                                                        className="p-1.5 rounded-full text-gray-400 dark:text-gray-500 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-gray-400 dark:disabled:hover:text-gray-500 transition-colors"
+                                                        className="p-1.5 rounded-xl text-gray-450 dark:text-gray-500 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-550/10 dark:hover:bg-emerald-500/10 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-gray-450 dark:disabled:hover:text-gray-555 transition-all duration-200 active:scale-95"
                                                         title={record.status === 'Available' ? 'Assign Asset' : 'Already Assigned'}
                                                         onClick={() => onAssign(record)}
                                                     >
@@ -334,7 +333,7 @@ export default function AssetTable({
                                                         variant="ghost"
                                                         size="sm"
                                                         disabled={record.status !== 'Assigned'}
-                                                        className="p-1.5 rounded-full text-gray-400 dark:text-gray-500 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-500/10 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-gray-400 dark:disabled:hover:text-gray-500 transition-colors"
+                                                        className="p-1.5 rounded-xl text-gray-450 dark:text-gray-500 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-555/10 dark:hover:bg-amber-500/10 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-gray-450 dark:disabled:hover:text-gray-555 transition-all duration-200 active:scale-95"
                                                         title={record.status === 'Assigned' ? 'Unassign Asset' : 'Not Assigned'}
                                                         onClick={() => onUnassign(record)}
                                                     >
@@ -345,7 +344,7 @@ export default function AssetTable({
                                                     <Button
                                                         variant="ghost"
                                                         size="sm"
-                                                        className="p-1.5 rounded-full text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
+                                                        className="p-1.5 rounded-xl text-gray-450 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-550/10 dark:hover:bg-red-500/10 transition-all duration-200 active:scale-95"
                                                         title="Delete Asset"
                                                         onClick={() => onDelete(record)}
                                                     >

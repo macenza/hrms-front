@@ -333,9 +333,9 @@ export default function AssetsPage() {
                 )}
 
                 {/* Filter and Search Bar */}
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm transition-colors duration-300">
-                    <div className="relative w-full sm:max-w-md">
-                        <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400 dark:text-gray-500">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-2xl border border-gray-200/80 dark:border-gray-800/60 bg-white/70 dark:bg-[#0a0a0a]/60 backdrop-blur-md shadow-lg shadow-gray-100/10 dark:shadow-none transition-all duration-300">
+                    <div className="relative w-full sm:max-w-md group">
+                        <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-gray-400 dark:text-gray-500 group-focus-within:text-blue-500 transition-colors duration-200">
                             <Search size={18} />
                         </span>
                         <input
@@ -343,12 +343,12 @@ export default function AssetsPage() {
                             placeholder="Search asset, tag, category, assignee..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-10 pr-10 py-2 text-sm border border-gray-200 dark:border-gray-800 rounded-lg bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 outline-none focus:border-blue-500 dark:focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 transition-all font-medium"
+                            className="w-full pl-10 pr-10 py-2.5 text-sm border border-gray-200 dark:border-gray-800 rounded-xl bg-gray-50/50 dark:bg-gray-950/40 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 outline-none focus:border-blue-500 dark:focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:focus:ring-blue-500/5 transition-all duration-300 font-semibold shadow-inner"
                         />
                         {searchTerm && (
                             <button
                                 onClick={() => setSearchTerm('')}
-                                className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400 transition-colors"
+                                className="absolute inset-y-0 right-0 flex items-center pr-3.5 text-gray-400 dark:text-gray-500 hover:text-gray-650 dark:hover:text-gray-350 transition-colors"
                             >
                                 <X size={16} />
                             </button>
@@ -356,11 +356,11 @@ export default function AssetsPage() {
                     </div>
 
                     <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto justify-end">
-                        <div className="relative w-full sm:w-48">
+                        <div className="relative w-full sm:w-48 group">
                             <select
                                 value={statusFilter}
                                 onChange={(e) => setStatusFilter(e.target.value)}
-                                className="w-full pl-3 pr-10 py-2 text-sm border border-gray-200 dark:border-gray-800 rounded-lg bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 outline-none focus:border-blue-500 dark:focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 transition-all cursor-pointer font-medium appearance-none"
+                                className="w-full pl-4 pr-10 py-2.5 text-sm border border-gray-200 dark:border-gray-800 rounded-xl bg-gray-50/50 dark:bg-gray-950/40 text-gray-900 dark:text-gray-100 outline-none focus:border-blue-500 dark:focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:focus:ring-blue-500/5 transition-all duration-300 cursor-pointer font-semibold appearance-none shadow-inner"
                             >
                                 <option value="">All Statuses</option>
                                 {activeStatuses.length > 0 ? (
@@ -375,7 +375,7 @@ export default function AssetsPage() {
                                     </>
                                 )}
                             </select>
-                            <span className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-400 dark:text-gray-500">
+                            <span className="absolute inset-y-0 right-0 flex items-center pr-3.5 pointer-events-none text-gray-400 dark:text-gray-500 group-hover:text-gray-600 dark:group-hover:text-gray-350 transition-colors duration-200">
                                 <ChevronDown size={16} />
                             </span>
                         </div>
@@ -387,7 +387,7 @@ export default function AssetsPage() {
                                     setSearchTerm('');
                                     setStatusFilter('');
                                 }}
-                                className="w-full sm:w-auto gap-2 border-dashed border-gray-300 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-600 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors shrink-0 font-bold"
+                                className="w-full sm:w-auto gap-2 border-dashed border-gray-300 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-550 text-gray-500 dark:text-gray-450 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50/20 dark:hover:bg-blue-500/5 transition-all duration-300 shrink-0 font-bold rounded-xl"
                             >
                                 <RotateCcw size={14} />
                                 <span>Reset Filters</span>
@@ -397,7 +397,7 @@ export default function AssetsPage() {
                 </div>
 
                 {/* Data Table */}
-                <Card className="border-gray-200 dark:border-gray-800 shadow-sm bg-white dark:bg-gray-900 transition-colors duration-300 overflow-hidden">
+                <Card className="border-gray-200/80 dark:border-gray-800/60 shadow-lg shadow-gray-100/10 dark:shadow-none bg-white dark:bg-gray-900 transition-all duration-300 hover:border-gray-305 hover:border-gray-300 dark:hover:border-gray-700 rounded-2xl overflow-hidden">
                     <CardHeader className="pb-3 border-b border-gray-100 dark:border-gray-800 transition-colors">
                         <CardTitle className="text-lg text-gray-900 dark:text-gray-100 transition-colors">
                             {isManagerial ? 'Company Assets List' : 'My Assigned Assets'}
