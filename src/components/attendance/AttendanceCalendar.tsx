@@ -125,7 +125,7 @@ export const getAttendanceLabel = (status: string | null) => {
         case 'WORK_FROM_HOME': return 'Work From Home';
         case 'LATE': return 'Late';
         case 'MISSING_PUNCH': return 'Missing Punch';
-        default: return 'No Record';
+        default: return status === null ? 'Null' : 'No Record';
     }
 };
 
@@ -453,6 +453,14 @@ export default function AttendanceCalendar({ employeeId, onDataFetched, onLoadin
                                         )}
                                     </div>
 
+                                    {/* Joined Company Indicator */}
+                                    {cell.isCurrentMonth && (data as any)?.joiningDate && cell.dateString === (data as any).joiningDate && (
+                                        <span className="inline-flex items-center gap-1 text-[8px] sm:text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950/40 text-indigo-650 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-900/30 mt-1 w-fit leading-none shrink-0">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse shrink-0" />
+                                            Joined
+                                        </span>
+                                    )}
+
                                     {/* Check-In time (Desktop & Tablet) */}
                                     {cell.isCurrentMonth && cell.record && cell.record.checkIn !== '--' && (
                                         <div className="hidden sm:block text-[10px] text-slate-550 dark:text-slate-400 font-medium truncate mt-1">
@@ -528,18 +536,24 @@ export default function AttendanceCalendar({ employeeId, onDataFetched, onLoadin
                         </div>
 
                         {/* Content */}
-                        <div className="flex flex-col gap-3 text-xs">
-                            {/* Status */}
-                            <div className="flex justify-between items-center py-1">
-                                <span className="text-slate-550 dark:text-slate-400">Status</span>
-                                <span className={cn(
-                                    "px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wide",
-                                    getAttendanceColor(selectedCell.record?.status || (selectedCell.isFuture ? null : 'ABSENT')).bg,
-                                    getAttendanceColor(selectedCell.record?.status || (selectedCell.isFuture ? null : 'ABSENT')).text
-                                )}>
-                                    {getAttendanceLabel(selectedCell.record?.status || (selectedCell.isFuture ? null : 'ABSENT'))}
-                                </span>
-                            </div>
+                        {(() => {
+                            const popoverStatus = selectedCell.record
+                                ? selectedCell.record.status
+                                : (selectedCell.isFuture ? null : 'ABSENT');
+                            const statusColors = getAttendanceColor(popoverStatus);
+                            return (
+                                <div className="flex flex-col gap-3 text-xs">
+                                    {/* Status */}
+                                    <div className="flex justify-between items-center py-1">
+                                        <span className="text-slate-550 dark:text-slate-400">Status</span>
+                                        <span className={cn(
+                                            "px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wide",
+                                            statusColors.bg,
+                                            statusColors.text
+                                        )}>
+                                            {getAttendanceLabel(popoverStatus)}
+                                        </span>
+                                    </div>
 
                             {/* Shift */}
                             <div className="flex justify-between items-start py-1">
@@ -585,6 +599,19 @@ export default function AttendanceCalendar({ employeeId, onDataFetched, onLoadin
                                 </div>
                             )}
 
+                            {/* Joining Date Indicator */}
+                            {(data as any)?.joiningDate && selectedCell.dateString === (data as any).joiningDate && (
+                                <div className="flex justify-between items-center py-1.5 border-t border-dashed border-indigo-150 dark:border-indigo-900/40 pt-2.5 mt-1">
+                                    <span className="text-indigo-600 dark:text-indigo-400 font-extrabold flex items-center gap-1.5 uppercase text-[9px] tracking-wider">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse shrink-0" />
+                                        Joining Day
+                                    </span>
+                                    <span className="font-extrabold text-indigo-700 dark:text-indigo-400">
+                                        Joined the Company!
+                                    </span>
+                                </div>
+                            )}
+
                             {/* Remarks */}
                             {selectedCell.record?.notes && (
                                 <div className="flex flex-col gap-1.5 border-t border-slate-100 dark:border-slate-800 pt-3.5 mt-1">
@@ -594,7 +621,9 @@ export default function AttendanceCalendar({ employeeId, onDataFetched, onLoadin
                                     </p>
                                 </div>
                             )}
-                        </div>
+                                </div>
+                            );
+                        })()}
 
                         {/* Footer button */}
                         <button

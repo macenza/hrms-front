@@ -17,21 +17,25 @@ import {
     IndianRupee,
     ChevronLeft,
     ChevronRight,
-    RefreshCw
+    RefreshCw,
+    Settings as SettingsIcon
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Modal } from '@/components/ui/Modal';
 import { Badge } from '@/components/ui/Badge';
 import { useAppSelector } from '@/store/hooks';
+import { payrollService } from '@/services/payrollService';
 import { 
     useRealTimeAccrual, 
-    usePayrollHistory, 
     useFinalizeMonth, 
     usePayrollBatches, 
     useRunPayroll, 
-    useBatchRecords 
+    useBatchRecords,
+    usePayrollBatchByPeriod
 } from '@/hooks/api/usePayroll';
+import { useCompanySettings, useUpdateCompanySettings } from '@/hooks/api/useSettings';
+import PayrollSettings from '@/components/settings/PayrollSettings';
 import { cn } from '@/utils/cn';
 import { toast } from 'sonner';
 import PayrollSummaryCards from '@/components/payroll/PayrollSummaryCards';
@@ -90,15 +94,6 @@ export default function PayrollDashboard() {
     const [limit, setLimit] = useState(10);
     const [payrollSearch, setPayrollSearch] = useState('');
 
-    // Pagination for History Snapshot Table inside modal
-    const [historyPage, setHistoryPage] = useState(1);
-    const [historyLimit, setHistoryLimit] = useState(5);
-
-    // Modals visibility
-    const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
-    const [isFinalizeModalOpen, setIsFinalizeModalOpen] = useState(false);
-    const [isRunModalOpen, setIsRunModalOpen] = useState(false);
-
     // Employee details drawer
     const [selectedEmployee, setSelectedEmployee] = useState<PayrollAccrualRow | null>(null);
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -108,60 +103,184 @@ export default function PayrollDashboard() {
         setIsDrawerOpen(true);
     };
 
-    // History Modal Tab: 'batches' | 'snapshots'
-    const [activeHistoryTab, setActiveHistoryTab] = useState<'batches' | 'snapshots'>('batches');
-
-    // Run batch inputs
-    const [runMonth, setRunMonth] = useState<number>(new Date().getMonth() + 1);
-    const [runYear, setRunYear] = useState<number>(new Date().getFullYear());
-
-    // Finalize Snapshot inputs
-    const [finalizeMonthVal, setFinalizeMonthVal] = useState<number>(new Date().getMonth() + 1);
-    const [finalizeYearVal, setFinalizeYearVal] = useState<number>(new Date().getFullYear());
+    const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth() + 1);
+    const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
 
     // Queries & Mutations
-    const { data: accrualData, isLoading: isAccrualLoading, isError: isAccrualError, refetch: refetchAccrual } = useRealTimeAccrual(page, limit);
-    const { data: historyData, isLoading: isHistoryLoading, isError: isHistoryError, refetch: refetchHistory } = usePayrollHistory(historyPage, historyLimit);
+    const { data: periodData, isLoading: isPeriodLoading, isError: isPeriodError } = usePayrollBatchByPeriod(selectedMonth, selectedYear);
     const { data: batches, isLoading: isBatchesLoading } = usePayrollBatches(isAuthenticated && canManagePayroll);
     
     const runPayrollMutation = useRunPayroll();
     const finalizeMonthMutation = useFinalizeMonth();
 
-    // Accruals Pagination variables
-    const accruals = accrualData?.data || [];
-    const accrualsTotal = accrualData?.totalCount || accrualData?.meta?.totalCount || 0;
-    const accrualsPages = Math.ceil(accrualsTotal / limit) || 1;
+    // Payroll Engine Config State & Hooks
+    const { data: companyData, refetch: refetchCompany } = useCompanySettings();
+    const updateCompanyMutation = useUpdateCompanySettings();
+    const [isPayrollConfigOpen, setIsPayrollConfigOpen] = useState(false);
 
-    // Summary card data computed from current page accruals
-    const summaryData = useMemo(() => ({
-        totalEmployees: accrualsTotal,
-        totalGrossAccrued: accruals.reduce((sum: number, a: any) => sum + (a.accruedGross || 0), 0),
-        totalDeductions: accruals.reduce((sum: number, a: any) => sum + (a.accruedDeductions || 0), 0),
-        totalNetPayroll: accruals.reduce((sum: number, a: any) => sum + (a.accruedNetPay || 0), 0),
-    }), [accruals, accrualsTotal]);
-
-    // History Pagination variables
-    const historyBatches = historyData?.data || [];
-    const historyTotal = historyData?.totalCount || 0;
-    const historyPages = Math.ceil(historyTotal / historyLimit) || 1;
-
-    const availablePeriods = Array.from({ length: 6 }, (_, i) => {
-        const d = new Date();
-        d.setMonth(d.getMonth() - i);
-        return { month: d.getMonth() + 1, year: d.getFullYear() };
-    });
-
-    const availableYears = Array.from(new Set(availablePeriods.map(p => p.year)));
-    const availableMonths = MONTHS.filter(m => availablePeriods.some(p => p.month === m.value && p.year === runYear));
-
-    const currentYear = new Date().getFullYear();
-    const currentMonth = new Date().getMonth() + 1;
-
-    useEffect(() => {
-        if (runYear === currentYear && runMonth > currentMonth) {
-            setRunMonth(currentMonth);
+    const handleSaveCompanySettings = async (updatedData: any) => {
+        try {
+            await updateCompanyMutation.mutateAsync(updatedData);
+            toast.success('Payroll configuration updated successfully');
+            refetchCompany();
+            setIsPayrollConfigOpen(false);
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || 'Failed to update payroll configuration');
         }
-    }, [runYear, runMonth, currentYear, currentMonth]);
+    };
+
+    const handleRunPayrollDirect = async () => {
+        const currentYear = new Date().getFullYear();
+        const currentMonth = new Date().getMonth() + 1;
+        if (selectedYear > currentYear || (selectedYear === currentYear && selectedMonth > currentMonth)) {
+            toast.error("Payroll cannot be calculated for upcoming months.");
+            return;
+        }
+
+        if (!window.confirm(`Are you sure you want to run payroll for ${MONTHS.find(m => m.value === selectedMonth)?.label} ${selectedYear}?`)) {
+            return;
+        }
+
+        try {
+            await runPayrollMutation.mutateAsync({ month: selectedMonth, year: selectedYear });
+            toast.success("Payroll batch processing started! It will run in the background.");
+        } catch (error: any) {
+            toast.error(error?.response?.data?.message || "Failed to start payroll batch.");
+        }
+    };
+
+    const handleFinalizeDirect = async () => {
+        if (!window.confirm(`Are you sure you want to finalize payroll for ${MONTHS.find(m => m.value === selectedMonth)?.label} ${selectedYear}? This will lock all calculations permanently.`)) {
+            return;
+        }
+        try {
+            await finalizeMonthMutation.mutateAsync({ month: selectedMonth, year: selectedYear });
+            toast.success("Payroll finalized successfully!");
+        } catch (error: any) {
+            toast.error(error?.response?.data?.message || "Failed to finalize payroll.");
+        }
+    };
+
+    const [isExporting, setIsExporting] = useState(false);
+
+    const handleDownloadExcel = async (batchId: string, month: number, year: number) => {
+        if (!batchId) return;
+        try {
+            setIsExporting(true);
+            toast.info("Preparing Excel sheet...");
+            const blob = await payrollService.exportBatchExcel(batchId);
+            const downloadUrl = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = downloadUrl;
+            link.download = `payroll_${month}_${year}.xlsx`;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(downloadUrl);
+            toast.success('Excel sheet exported successfully!');
+        } catch (error: any) {
+            console.error('Failed to export Excel sheet:', error);
+            toast.error(error?.response?.data?.message || 'Failed to export Excel sheet.');
+        } finally {
+            setIsExporting(false);
+        }
+    };
+
+    // Map records from batch records
+    const accruals = useMemo(() => {
+        if (!periodData || !periodData.records) return [];
+        return periodData.records.map((rec: any) => ({
+            _id: rec._id,
+            employee: {
+                _id: rec.employeeId?._id || rec.employeeId,
+                name: rec.employeeName,
+                employeeId: rec.empIdString,
+                profile: {
+                    employment: {
+                        department: rec.department,
+                        designation: rec.employeeId?.profile?.employment?.designation || "N/A"
+                    }
+                }
+            },
+            month: periodData.batch.month,
+            year: periodData.batch.year,
+            daysConsidered: rec.workingDays,
+            daysAttended: rec.daysAttended,
+            lwpDays: rec.leave,
+            loanDeduction: rec.fixedDeductions?.advances || 0,
+            accruedGross: rec.grossTotal,
+            accruedAllowances: rec.allowancesSnapshot?.reduce((sum: number, a: any) => sum + (a.amount || 0), 0) || 0,
+            accruedDeductions: rec.totalDeduction,
+            accruedNetPay: rec.netPayable,
+            lastCalculatedDate: rec.updatedAt || rec.createdAt,
+
+            // Detailed day counts and breakdowns
+            totalCalendarDays: rec.totalDaysInMonth,
+            workingDaysCount: rec.workingDays,
+            presentDays: rec.presentDays,
+            absentDays: rec.absentDays,
+            paidLeaveDays: rec.paidLeave,
+            unpaidLeaveDays: rec.unpaidLeaveDays,
+            holidaysCount: rec.holidaysCount,
+            weekendsCount: rec.weekendsCount,
+            paidDays: rec.daysAttended,
+            preJoiningDays: rec.preJoiningDays,
+            totalDays: rec.totalDays,
+            payableEarnings: rec.payableEarnings,
+            ctc: rec.ctc,
+            perDaySalary: rec.totalDaysInMonth > 0 ? (rec.grossTotal / rec.totalDaysInMonth) : (rec.perDaySalary || 0),
+            basicSalary: rec.basic,
+            basic: rec.basic,
+            lwpDeduction: rec.lwpDeduction,
+            allowancesSnapshot: rec.allowancesSnapshot || [],
+            customDeductionsSnapshot: rec.customDeductionsSnapshot || [],
+            fixedDeductions: rec.fixedDeductions,
+            payslipPdfUrl: rec.payslipPdfUrl
+        }));
+    }, [periodData]);
+
+    // Filter by search term on client
+    const filteredAccruals = useMemo(() => {
+        const term = payrollSearch.toLowerCase().trim();
+        if (!term) return accruals;
+        return accruals.filter((r: any) => {
+            const name = (r.employee?.name || '').toLowerCase();
+            const empId = (r.employee?.employeeId || '').toLowerCase();
+            const dept = (r.employee?.profile?.employment?.department || '').toLowerCase();
+            return name.includes(term) || empId.includes(term) || dept.includes(term);
+        });
+    }, [accruals, payrollSearch]);
+
+    // Paginate client-side
+    const paginatedAccruals = useMemo(() => {
+        const start = (page - 1) * limit;
+        return filteredAccruals.slice(start, start + limit);
+    }, [filteredAccruals, page, limit]);
+
+    // Summary card data computed from batch statistics or aggregates
+    const summaryData = useMemo(() => {
+        if (!periodData || !periodData.batch || !accruals.length) {
+            return {
+                totalEmployees: 0,
+                totalGrossAccrued: 0,
+                totalDeductions: 0,
+                totalNetPayroll: 0,
+            };
+        }
+        
+        const totalGross = accruals.reduce((sum: number, r: any) => sum + r.accruedGross, 0);
+        const totalDeductions = accruals.reduce((sum: number, r: any) => sum + r.accruedDeductions + (r.lwpDeduction || 0), 0);
+        const totalNet = accruals.reduce((sum: number, r: any) => sum + r.accruedNetPay, 0);
+        
+        return {
+            totalEmployees: periodData.batch.totalEmployees || accruals.length,
+            totalGrossAccrued: totalGross,
+            totalDeductions: totalDeductions,
+            totalNetPayroll: totalNet,
+        };
+    }, [periodData, accruals]);
+
+
 
     // Recently completed active UI banner state (auto-dismiss after 60 seconds)
     const [recentlyCompleted, setRecentlyCompleted] = useState<{ id: string; month: number; year: number; excelFileUrl: string; totalEmployees: number } | null>(null);
@@ -203,9 +322,8 @@ export default function PayrollDashboard() {
         return () => clearInterval(interval);
     }, [recentlyCompleted]);
 
-    // Batch Preview State
     const [selectedBatchId, setSelectedBatchId] = useState<string | null>(null);
-    const selectedBatch = batches?.find((b: any) => b._id === selectedBatchId) || historyBatches?.find((b: any) => b._id === selectedBatchId);
+    const selectedBatch = batches?.find((b: any) => b._id === selectedBatchId);
     const isSelectedBatchProcessing = selectedBatch?.status === 'Processing';
 
     // Batch calculations hook (polls every 2s if selected batch is processing)
@@ -229,43 +347,11 @@ export default function PayrollDashboard() {
         }
     }, [isAuthenticated, canManagePayroll, router]);
 
-    const handleFinalizeSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        
-        const currentYear = new Date().getFullYear();
-        const currentMonth = new Date().getMonth() + 1;
-        if (finalizeYearVal > currentYear || (finalizeYearVal === currentYear && finalizeMonthVal > currentMonth)) {
-            toast.error("Payroll cannot be calculated for upcoming months.");
-            return;
-        }
 
-        try {
-            await finalizeMonthMutation.mutateAsync({ month: finalizeMonthVal, year: finalizeYearVal });
-            toast.success("Payroll finalized and snapshot successfully archived!");
-            setIsFinalizeModalOpen(false);
-            refetchAccrual();
-            refetchHistory();
-        } catch (error: any) {
-            toast.error(error?.response?.data?.message || "Failed to finalize payroll.");
-        }
-    };
 
-    const handleRunPayrollSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-
-        // Final secure validation
-        if (runYear > currentYear || (runYear === currentYear && runMonth > currentMonth)) {
-            toast.error("Payroll cannot be calculated for upcoming months.");
-            return;
-        }
-
-        try {
-            await runPayrollMutation.mutateAsync({ month: runMonth, year: runYear });
-            toast.success("Payroll batch processing started! It will run in the background.");
-            setIsRunModalOpen(false);
-        } catch (error: any) {
-            toast.error(error?.response?.data?.message || "Failed to start payroll batch.");
-        }
+    const handleSearchChange = (term: string) => {
+        setPayrollSearch(term);
+        setPage(1);
     };
 
     const getExcelDownloadUrl = (url: string) => {
@@ -312,55 +398,104 @@ export default function PayrollDashboard() {
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-200 dark:border-gray-900 pb-4">
                     <div>
                         <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-gray-100 transition-colors">
-                            Continuous Rolling Payroll
+                            Unified Monthly Payroll
                         </h1>
                         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 font-medium transition-colors">
-                            Monitor real-time monthly accruals and manage payroll historical records.
+                            Manage draft runs and lock monthly finalized records.
                         </p>
                     </div>
                     
                     <div className="flex flex-wrap items-center gap-3">
-                        <Button 
-                            variant="outline" 
-                            onClick={() => setIsHistoryModalOpen(true)} 
-                            className="gap-2 bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 shadow-sm whitespace-nowrap"
+                        {/* Current Period Badge */}
+                        <div className="h-10 px-4 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900/60 rounded-lg text-sm font-bold text-blue-700 dark:text-blue-400 flex items-center gap-1.5 shadow-sm animate-in fade-in duration-300">
+                            <Calendar size={15} />
+                            <span>Current Period: {MONTHS.find(m => m.value === selectedMonth)?.label} {selectedYear}</span>
+                        </div>
+
+                        <Button
+                            variant="outline"
+                            onClick={() => router.push('/payroll/history')}
+                            className="gap-2 bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 shadow-sm h-10 font-bold text-xs"
                         >
                             <History size={16} />
-                            <span className="hidden sm:inline">Payroll History & Batches</span>
+                            <span>Payroll History</span>
                         </Button>
-                        <Button 
-                            variant="primary" 
-                            onClick={() => setIsFinalizeModalOpen(true)} 
-                            disabled={finalizeMonthMutation.isPending}
-                            className="gap-2 shadow-sm font-semibold shadow-blue-500/20 whitespace-nowrap"
+
+                        <Button
+                            variant="outline"
+                            onClick={() => setIsPayrollConfigOpen(true)}
+                            className="gap-2 bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 shadow-sm h-10 font-bold text-xs"
                         >
-                            {finalizeMonthMutation.isPending ? (
-                                <Loader2 size={16} className="animate-spin" />
-                            ) : (
-                                <PlayCircle size={16} />
-                            )}
-                            <span className="hidden sm:inline">Finalize Current Month</span>
+                            <SettingsIcon size={16} />
+                            <span>Configure Engine</span>
                         </Button>
+
+                        {periodData?.batch?.isFinalized ? (
+                            <Badge variant="success" className="gap-1.5 h-10 px-4 font-bold text-sm bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-900/60">
+                                <CheckCircle2 size={16} /> Finalized / Read-Only
+                            </Badge>
+                        ) : null}
+
+                        {periodData?.batch?.status === 'Completed' && (
+                            <Button
+                                variant="outline"
+                                onClick={() => handleDownloadExcel(periodData.batch._id, periodData.batch.month, periodData.batch.year)}
+                                disabled={isExporting}
+                                className="gap-2 bg-white dark:bg-gray-900 border-emerald-200 dark:border-emerald-900 text-emerald-600 dark:text-emerald-455 hover:text-emerald-750 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 shadow-sm whitespace-nowrap h-10 font-bold text-xs"
+                            >
+                                {isExporting ? <Loader2 size={16} className="animate-spin" /> : <FileSpreadsheet size={16} />}
+                                <span>Export to Excel</span>
+                            </Button>
+                        )}
                     </div>
                 </div>
 
-                {/* ── Payroll Summary Cards ── */}
-                <PayrollSummaryCards data={summaryData} isLoading={isAccrualLoading} />
+                {!isPeriodLoading && !periodData?.batch ? (
+                    <Card className="p-12 text-center flex flex-col items-center justify-center border-dashed border-2 border-gray-250 dark:border-gray-800 bg-white dark:bg-gray-900/30">
+                        <div className="w-16 h-16 bg-blue-50 dark:bg-blue-950/40 rounded-full flex items-center justify-center mb-4 text-blue-600 dark:text-blue-400">
+                            <Calendar size={32} />
+                        </div>
+                        <h3 className="text-xl font-bold text-gray-905 dark:text-gray-100">
+                            No payroll batch generated for this month
+                        </h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 max-w-md font-medium">
+                            Payroll calculations have not been processed for {MONTHS.find(m => m.value === selectedMonth)?.label} {selectedYear}. Start a new calculations batch to get started.
+                        </p>
+                        <Button
+                            variant="primary"
+                            onClick={handleRunPayrollDirect}
+                            disabled={runPayrollMutation.isPending}
+                            className="mt-6 gap-2 shadow-md shadow-blue-500/20 font-bold h-11 px-6 text-sm"
+                        >
+                            {runPayrollMutation.isPending ? (
+                                <Loader2 size={18} className="animate-spin" />
+                            ) : (
+                                <PlayCircle size={18} />
+                            )}
+                            Run Payroll Batch
+                        </Button>
+                    </Card>
+                ) : (
+                    <>
+                        {/* ── Payroll Summary Cards ── */}
+                        <PayrollSummaryCards data={summaryData} isLoading={isPeriodLoading} />
 
-                {/* ── Payroll Data Table ── */}
-                <PayrollDataTable
-                    data={accruals}
-                    isLoading={isAccrualLoading}
-                    isError={isAccrualError}
-                    page={page}
-                    totalCount={accrualsTotal}
-                    pageSize={limit}
-                    onPageChange={(p) => setPage(p)}
-                    onPageSizeChange={(s) => { setLimit(s); setPage(1); }}
-                    searchTerm={payrollSearch}
-                    onSearchChange={setPayrollSearch}
-                    onRowClick={handleRowClick}
-                />
+                        {/* ── Payroll Data Table ── */}
+                        <PayrollDataTable
+                            data={paginatedAccruals}
+                            isLoading={isPeriodLoading}
+                            isError={isPeriodError}
+                            page={page}
+                            totalCount={filteredAccruals.length}
+                            pageSize={limit}
+                            onPageChange={(p) => setPage(p)}
+                            onPageSizeChange={(s) => { setLimit(s); setPage(1); }}
+                            searchTerm={payrollSearch}
+                            onSearchChange={handleSearchChange}
+                            onRowClick={handleRowClick}
+                        />
+                    </>
+                )}
 
                 {/* Real-time Payroll Processing UI block (Asynchronous Batch calculations progress banner) */}
                 {activeProcessingBatch ? (
@@ -461,14 +596,15 @@ export default function PayrollDashboard() {
                                     >
                                         View Calculations
                                     </Button>
-                                    {recentlyCompleted.excelFileUrl && (
+                                    {recentlyCompleted && (
                                         <Button
                                             variant="primary"
                                             size="sm"
-                                            onClick={() => window.open(getExcelDownloadUrl(recentlyCompleted.excelFileUrl), '_blank')}
+                                            onClick={() => handleDownloadExcel(recentlyCompleted.id, recentlyCompleted.month, recentlyCompleted.year)}
+                                            disabled={isExporting}
                                             className="bg-emerald-650 hover:bg-emerald-700 text-white border-none flex items-center gap-1.5 font-bold transition-all text-xs px-3 py-1.5 h-auto shadow-sm shadow-emerald-500/20"
                                         >
-                                            <FileSpreadsheet size={14} />
+                                            {isExporting ? <Loader2 size={14} className="animate-spin" /> : <FileSpreadsheet size={14} />}
                                             Download Excel
                                         </Button>
                                     )}
@@ -482,409 +618,6 @@ export default function PayrollDashboard() {
                         </CardContent>
                     </Card>
                 ) : null}
-
-               
-
-                {/* Finalize Month Modal */}
-                <Modal
-                    isOpen={isFinalizeModalOpen}
-                    onClose={() => setIsFinalizeModalOpen(false)}
-                    title="Finalize Payroll Month"
-                >
-                    <form onSubmit={handleFinalizeSubmit} className="space-y-4">
-                        <div className="text-sm text-gray-500 dark:text-gray-400 mb-2 leading-relaxed bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border border-blue-100 dark:border-blue-900">
-                            <strong>Note:</strong> Freezing the payroll month will lock the real-time accruals MTD, generate the final payslips ledger, generate the finalized Excel report, and archive it permanently.
-                        </div>
-                        
-                        <div className="space-y-2">
-                            <label className="text-xs font-bold text-gray-400 uppercase tracking-wider block">Select Month</label>
-                            <select
-                                value={finalizeMonthVal}
-                                onChange={(e) => setFinalizeMonthVal(Number(e.target.value))}
-                                className="w-full h-11 px-3 bg-gray-50 dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-lg text-sm font-medium text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-600/20 dark:focus:ring-blue-500/40 cursor-pointer"
-                            >
-                                {MONTHS.map(m => (
-                                    <option key={m.value} value={m.value} className="bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100">{m.label}</option>
-                                ))}
-                            </select>
-                        </div>
-                        
-                        <div className="space-y-2">
-                            <label className="text-xs font-bold text-gray-400 uppercase tracking-wider block">Select Year</label>
-                            <select
-                                value={finalizeYearVal}
-                                onChange={(e) => setFinalizeYearVal(Number(e.target.value))}
-                                className="w-full h-11 px-3 bg-gray-50 dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-lg text-sm font-medium text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-600/20 dark:focus:ring-blue-500/40 cursor-pointer"
-                            >
-                                <option value={new Date().getFullYear() - 1} className="bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100">{new Date().getFullYear() - 1}</option>
-                                <option value={new Date().getFullYear()} className="bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100">{new Date().getFullYear()}</option>
-                                <option value={new Date().getFullYear() + 1} className="bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100">{new Date().getFullYear() + 1}</option>
-                            </select>
-                        </div>
-
-                        <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-800 mt-4">
-                            <Button 
-                                type="button"
-                                variant="outline" 
-                                onClick={() => setIsFinalizeModalOpen(false)}
-                                className="h-11 px-5"
-                            >
-                                Cancel
-                            </Button>
-                            <Button 
-                                type="submit" 
-                                variant="primary"
-                                disabled={finalizeMonthMutation.isPending}
-                                className="h-11 px-6 font-semibold shadow-sm shadow-blue-500/20"
-                            >
-                                {finalizeMonthMutation.isPending ? (
-                                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                                ) : (
-                                    <PlayCircle className="w-4 h-4 mr-2" />
-                                )}
-                                {finalizeMonthMutation.isPending ? 'Finalizing...' : 'Finalize & Freeze'}
-                            </Button>
-                        </div>
-                    </form>
-                </Modal>
-
-                {/* Unified Payroll History & Asynchronous Batches Modal */}
-                <Modal
-                    isOpen={isHistoryModalOpen}
-                    onClose={() => setIsHistoryModalOpen(false)}
-                    title="Payroll History & Calculation Batches"
-                    className="max-w-5xl"
-                >
-                    <div className="space-y-4">
-                        {/* Tab Headers */}
-                        <div className="flex border-b border-gray-200 dark:border-gray-800 mb-2">
-                            <button
-                                onClick={() => setActiveHistoryTab('batches')}
-                                className={cn(
-                                    "px-4 py-2 text-sm font-bold border-b-2 transition-all duration-200 cursor-pointer",
-                                    activeHistoryTab === 'batches'
-                                        ? "border-blue-600 text-blue-600 dark:border-blue-500 dark:text-blue-500"
-                                        : "border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
-                                )}
-                            >
-                                Background Run Batches
-                            </button>
-                            <button
-                                onClick={() => setActiveHistoryTab('snapshots')}
-                                className={cn(
-                                    "px-4 py-2 text-sm font-bold border-b-2 transition-all duration-200 cursor-pointer",
-                                    activeHistoryTab === 'snapshots'
-                                        ? "border-blue-600 text-blue-600 dark:border-blue-500 dark:text-blue-500"
-                                        : "border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
-                                )}
-                            >
-                                Finalized Rolling Snapshots
-                            </button>
-                        </div>
-
-                        {/* Tab 1: Background Run Batches */}
-                        {activeHistoryTab === 'batches' && (
-                            <div className="space-y-4">
-                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-gray-50/50 dark:bg-gray-850 p-3 rounded-lg border border-gray-150 dark:border-gray-800/80">
-                                    <div className="text-xs font-semibold text-gray-500 dark:text-gray-400">
-                                        Track background asynchronous calculations or execute a new run.
-                                    </div>
-                                    <Button
-                                        variant="primary"
-                                        size="sm"
-                                        onClick={() => setIsRunModalOpen(true)}
-                                        disabled={runPayrollMutation.isPending || isProcessing}
-                                        className={cn(
-                                            "gap-2 shadow-sm font-semibold text-xs px-3 py-1.5 h-auto self-end sm:self-auto",
-                                            isProcessing ? "opacity-50 cursor-not-allowed" : ""
-                                        )}
-                                    >
-                                        <PlayCircle size={14} />
-                                        <span>{isProcessing ? 'Calculations Active' : 'Run New Payroll Batch'}</span>
-                                    </Button>
-                                </div>
-
-                                <div className="overflow-x-auto border border-gray-150 dark:border-gray-800 rounded-xl shadow-sm bg-white dark:bg-gray-900">
-                                    <table className="w-full text-left text-sm whitespace-nowrap border-collapse">
-                                        <thead className="bg-gray-50 dark:bg-gray-800/40 text-gray-500 dark:text-gray-400 font-semibold border-b border-gray-150 dark:border-gray-800">
-                                            <tr>
-                                                <th className="px-4 py-3.5">Employee Code</th>
-                                                <th className="px-4 py-3.5">Period</th>
-                                                <th className="px-4 py-3.5">Employees Processed</th>
-                                                <th className="px-4 py-3.5">Generated By</th>
-                                                <th className="px-4 py-3.5">Status</th>
-                                                <th className="px-4 py-3.5">Date Run</th>
-                                                <th className="px-4 py-3.5 text-right">Actions</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-gray-150 dark:divide-gray-800">
-                                            {isBatchesLoading ? (
-                                                <tr>
-                                                    <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
-                                                        <Loader2 className="w-8 h-8 animate-spin mx-auto text-blue-600" />
-                                                        <span className="block mt-2 text-xs font-semibold text-gray-400">Loading payroll batches...</span>
-                                                    </td>
-                                                </tr>
-                                            ) : batches?.length === 0 ? (
-                                                <tr>
-                                                    <td colSpan={7} className="px-6 py-12 text-center text-gray-550 font-medium">
-                                                        No payroll batches found. Start a batch calculation run to see details here.
-                                                    </td>
-                                                </tr>
-                                            ) : (
-                                                batches?.map((batch: any) => (
-                                                    <tr key={batch._id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/10 transition-colors">
-                                                        <td className="px-4 py-3.5 font-mono text-xs text-gray-500">{batch._id.slice(-6).toUpperCase()}</td>
-                                                        <td className="px-4 py-3.5 font-bold flex items-center gap-2 text-gray-900 dark:text-gray-100 transition-colors">
-                                                            <Calendar size={14} className="text-gray-400 dark:text-gray-550" />
-                                                            <span>{MONTHS.find(m => m.value === batch.month)?.label} {batch.year}</span>
-                                                        </td>
-                                                        <td className="px-4 py-3.5">
-                                                            <div className="flex items-center gap-1 text-gray-650 dark:text-gray-350 font-semibold">
-                                                                <Users size={14} />
-                                                                {batch.totalEmployees || 0}
-                                                            </div>
-                                                        </td>
-                                                        <td className="px-4 py-3.5 text-gray-700 dark:text-gray-300 font-medium text-xs">
-                                                            {batch.processedBy?.name || 'System'}
-                                                        </td>
-                                                        <td className="px-4 py-3.5">
-                                                            {getStatusBadge(batch.status)}
-                                                        </td>
-                                                        <td className="px-4 py-3.5 text-gray-500 text-xs">
-                                                            {new Date(batch.createdAt).toLocaleString()}
-                                                        </td>
-                                                        <td className="px-4 py-3 text-right">
-                                                            <div className="flex items-center justify-end gap-3">
-                                                                <Button
-                                                                    variant="outline"
-                                                                    size="sm"
-                                                                    onClick={() => setSelectedBatchId(batch._id)}
-                                                                    className="text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/10 border-blue-100 dark:border-blue-900/60 text-xs px-2.5 py-1.5 h-auto font-semibold"
-                                                                >
-                                                                    View Calculations
-                                                                </Button>
-                                                                {batch.status === 'Completed' && batch.excelFileUrl && (
-                                                                    <Button
-                                                                        variant="ghost"
-                                                                        size="sm"
-                                                                        onClick={() => window.open(getExcelDownloadUrl(batch.excelFileUrl), '_blank')}
-                                                                        className="text-emerald-600 dark:text-emerald-450 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 flex items-center gap-1.5 font-bold transition-all text-xs px-2.5 py-1.5 h-auto"
-                                                                    >
-                                                                        <FileSpreadsheet size={16} />
-                                                                        Download
-                                                                    </Button>
-                                                                )}
-                                                            </div>
-                                                        </td>
-                                                    </tr>
-                                                ))
-                                            )}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Tab 2: Finalized Rolling Snapshots */}
-                        {activeHistoryTab === 'snapshots' && (
-                            <div className="space-y-4">
-                                <div className="overflow-x-auto border border-gray-150 dark:border-gray-800 rounded-xl shadow-sm bg-white dark:bg-gray-900">
-                                    <table className="w-full text-left text-sm whitespace-nowrap border-collapse">
-                                        <thead className="bg-gray-50 dark:bg-gray-800/40 text-gray-500 dark:text-gray-400 font-semibold border-b border-gray-150 dark:border-gray-800">
-                                            <tr>
-                                                <th className="px-4 py-3.5">S.No</th>
-                                                <th className="px-4 py-3.5">Batch Name</th>
-                                                <th className="px-4 py-3.5">Date Finalized</th>
-                                                <th className="px-4 py-3.5">HR Admin Name</th>
-                                                <th className="px-4 py-3.5">Status</th>
-                                                <th className="px-4 py-3.5 text-right">Actions</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-gray-150 dark:divide-gray-800">
-                                            {isHistoryLoading ? (
-                                                <tr>
-                                                    <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
-                                                        <Loader2 className="w-8 h-8 animate-spin mx-auto text-blue-600 dark:text-blue-500" />
-                                                        <span className="block mt-2 text-xs font-semibold text-gray-400">Loading snapshot history...</span>
-                                                    </td>
-                                                </tr>
-                                            ) : isHistoryError ? (
-                                                <tr>
-                                                    <td colSpan={6} className="px-6 py-12 text-center text-red-500 font-bold">
-                                                        Failed to load snapshot history.
-                                                    </td>
-                                                </tr>
-                                            ) : historyBatches.length === 0 ? (
-                                                <tr>
-                                                    <td colSpan={6} className="px-6 py-12 text-center text-gray-550 font-medium">
-                                                        No finalized monthly snapshots found.
-                                                    </td>
-                                                </tr>
-                                            ) : (
-                                                historyBatches.map((batch: any, index: number) => (
-                                                    <tr key={batch._id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/10 transition-colors">
-                                                        <td className="px-4 py-3.5 font-mono text-xs text-gray-400">{(historyPage - 1) * historyLimit + index + 1}</td>
-                                                        <td className="px-4 py-3.5 font-bold text-gray-900 dark:text-gray-100">{batch.batchName || `${MONTHS.find(m => m.value === batch.month)?.label} ${batch.year} Payroll`}</td>
-                                                        <td className="px-4 py-3.5 text-gray-500 text-xs font-medium">
-                                                            {batch.processedAt ? new Date(batch.processedAt).toLocaleString() : new Date(batch.createdAt).toLocaleString()}
-                                                        </td>
-                                                        <td className="px-4 py-3.5 text-gray-700 dark:text-gray-300 font-medium text-xs">
-                                                            {batch.processedBy?.name || 'System'}
-                                                        </td>
-                                                        <td className="px-4 py-3.5">
-                                                            {getStatusBadge(batch.status)}
-                                                        </td>
-                                                        <td className="px-4 py-3.5 text-right">
-                                                            <div className="flex items-center justify-end gap-3">
-                                                                <Button
-                                                                    variant="outline"
-                                                                    size="sm"
-                                                                    onClick={() => setSelectedBatchId(batch._id)}
-                                                                    className="text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/10 border-blue-100 dark:border-blue-900/60 text-xs px-2.5 py-1.5 h-auto font-semibold"
-                                                                >
-                                                                    View Calculations
-                                                                </Button>
-                                                                {batch.status === 'Completed' && batch.excelFileUrl && (
-                                                                    <Button 
-                                                                        variant="ghost" 
-                                                                        size="sm" 
-                                                                        onClick={() => window.open(getExcelDownloadUrl(batch.excelFileUrl), '_blank')}
-                                                                        className="text-emerald-600 dark:text-emerald-450 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 flex items-center gap-1 font-bold transition-all text-xs px-2.5 py-1.5 h-auto"
-                                                                    >
-                                                                        <FileSpreadsheet size={14} />
-                                                                        Download Excel
-                                                                    </Button>
-                                                                )}
-                                                            </div>
-                                                        </td>
-                                                    </tr>
-                                                ))
-                                            )}
-                                        </tbody>
-                                    </table>
-                                </div>
-
-                                {/* Modal Snapshots Pagination */}
-                                {historyTotal > 0 && (
-                                    <div className="py-2 flex items-center justify-between gap-4">
-                                        <div className="text-xs font-semibold text-gray-500">
-                                            Showing <span className="text-gray-900 dark:text-gray-100">{(historyPage - 1) * historyLimit + 1}</span> to{' '}
-                                            <span className="text-gray-900 dark:text-gray-100">{Math.min(historyPage * historyLimit, historyTotal)}</span> of{' '}
-                                            <span className="text-gray-900 dark:text-gray-100">{historyTotal}</span> snapshots
-                                        </div>
-                                        <div className="flex items-center gap-1.5">
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() => setHistoryPage(prev => Math.max(1, prev - 1))}
-                                                disabled={historyPage === 1}
-                                                className="h-8 w-8 p-0"
-                                            >
-                                                <ChevronLeft size={16} />
-                                            </Button>
-                                            
-                                            {Array.from({ length: historyPages }).map((_, idx) => (
-                                                <Button
-                                                    key={idx}
-                                                    variant={historyPage === idx + 1 ? 'primary' : 'outline'}
-                                                    size="sm"
-                                                    onClick={() => setHistoryPage(idx + 1)}
-                                                    className={cn("h-8 w-8 p-0 text-xs font-bold", historyPage === idx + 1 ? 'bg-blue-600 text-white' : 'bg-white dark:bg-gray-900')}
-                                                >
-                                                    {idx + 1}
-                                                </Button>
-                                            ))}
-
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() => setHistoryPage(prev => Math.min(historyPages, prev + 1))}
-                                                disabled={historyPage === historyPages}
-                                                className="h-8 w-8 p-0"
-                                            >
-                                                <ChevronRight size={16} />
-                                            </Button>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        )}
-
-                        <div className="flex justify-end pt-2 border-t border-gray-100 dark:border-gray-800 mt-2">
-                            <Button 
-                                variant="outline" 
-                                onClick={() => setIsHistoryModalOpen(false)}
-                                className="h-10 px-5 font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
-                            >
-                                Close
-                            </Button>
-                        </div>
-                    </div>
-                </Modal>
-
-                {/* Run Payroll Dialog Modal */}
-                <Modal
-                    isOpen={isRunModalOpen}
-                    onClose={() => setIsRunModalOpen(false)}
-                    title="Generate Payroll Batch"
-                >
-                    <form onSubmit={handleRunPayrollSubmit} className="space-y-4">
-                        <div className="text-sm text-gray-500 dark:text-gray-400 mb-2 leading-relaxed bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border border-blue-100 dark:border-blue-900">
-                            <strong>Note:</strong> Generating payroll runs in the background. It will calculate dynamic allowances, deductions, and attendance records, then generate a downloadable Excel sheet for all active employees.
-                        </div>
-
-                        <div className="space-y-2">
-                            <label className="text-xs font-bold text-gray-450 dark:text-gray-400 uppercase tracking-wider">Select Month</label>
-                            <select
-                                value={runMonth}
-                                onChange={(e) => setRunMonth(Number(e.target.value))}
-                                className="w-full h-11 px-3 bg-gray-50 dark:bg-gray-955 border border-gray-200 dark:border-gray-800 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-600/20 dark:focus:ring-blue-500/40 cursor-pointer text-gray-900 dark:text-gray-100"
-                            >
-                                {availableMonths.map(m => (
-                                    <option key={m.value} value={m.value}>{m.label}</option>
-                                ))}
-                            </select>
-                        </div>
-
-                        <div className="space-y-2">
-                            <label className="text-xs font-bold text-gray-455 dark:text-gray-400 uppercase tracking-wider">Select Year</label>
-                            <select
-                                value={runYear}
-                                onChange={(e) => setRunYear(Number(e.target.value))}
-                                className="w-full h-11 px-3 bg-gray-50 dark:bg-gray-955 border border-gray-200 dark:border-gray-800 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-600/20 dark:focus:ring-blue-500/40 cursor-pointer text-gray-900 dark:text-gray-100"
-                            >
-                                {availableYears.map(y => (
-                                    <option key={y} value={y}>{y}</option>
-                                ))}
-                            </select>
-                        </div>
-
-                        <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-800 mt-4">
-                            <Button
-                                type="button"
-                                variant="outline"
-                                onClick={() => setIsRunModalOpen(false)}
-                                className="h-11 px-5"
-                            >
-                                Cancel
-                            </Button>
-                            <Button
-                                type="submit"
-                                variant="primary"
-                                disabled={runPayrollMutation.isPending}
-                                className="h-11 px-6 font-semibold shadow-sm shadow-blue-500/20"
-                            >
-                                {runPayrollMutation.isPending ? (
-                                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                                ) : (
-                                    <PlayCircle className="w-4 h-4 mr-2" />
-                                )}
-                                {runPayrollMutation.isPending ? 'Starting...' : 'Start Processing'}
-                            </Button>
-                        </div>
-                    </form>
-                </Modal>
 
                 {/* Batch Calculations Preview Modal */}
                 <Modal
@@ -954,7 +687,7 @@ export default function PayrollDashboard() {
                                                 </td>
                                                 <td className="px-4 py-3 text-gray-600 dark:text-gray-300 font-mono text-xs">₹{rec.basic?.toLocaleString('en-IN')}</td>
                                                 <td className="px-4 py-3 font-medium text-gray-800 dark:text-gray-200 font-mono text-xs">₹{rec.grossTotal?.toLocaleString('en-IN')}</td>
-                                                <td className="px-4 py-3 text-red-500 dark:text-red-400 font-mono text-xs">₹{rec.totalDeduction?.toLocaleString('en-IN')}</td>
+                                                <td className="px-4 py-3 text-red-500 dark:text-red-400 font-mono text-xs">₹{(rec.totalDeduction + (rec.fixedDeductions?.unpaidLeaveDeduction || rec.lwpDeduction || 0))?.toLocaleString('en-IN')}</td>
                                                 <td className="px-4 py-3 text-emerald-600 dark:text-emerald-400 font-bold font-mono text-xs">₹{rec.netPayable?.toLocaleString('en-IN')}</td>
                                             </tr>
                                         ))
@@ -980,6 +713,19 @@ export default function PayrollDashboard() {
                     onClose={() => { setIsDrawerOpen(false); setSelectedEmployee(null); }}
                     data={selectedEmployee}
                 />
+
+                {/* ── Payroll Engine Config Modal ── */}
+                <Modal
+                    isOpen={isPayrollConfigOpen}
+                    onClose={() => setIsPayrollConfigOpen(false)}
+                    title="Configure Payroll Engine"
+                    className="max-w-4xl"
+                >
+                    <PayrollSettings 
+                        initialData={companyData} 
+                        onSave={handleSaveCompanySettings}
+                    />
+                </Modal>
 
             </div>
         </div>

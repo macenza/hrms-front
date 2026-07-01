@@ -112,6 +112,24 @@ export default function PersonalInfoTab({
         return isNaN(date.getTime()) ? '' : date.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
     }, [data.rawDob]);
 
+    const formattedAddress = useMemo(() => {
+        const address = data.address;
+        if (!address) return "N/A";
+        if (typeof address === 'string') return address;
+
+        const addr = address as any;
+        const parts = [
+            addr.addressLine1,
+            addr.addressLine2,
+            addr.landmark ? `Near ${addr.landmark}` : null,
+            addr.city || addr.district,
+            addr.state,
+            addr.country,
+            addr.postalCode
+        ];
+        return parts.filter(Boolean).join(", ");
+    }, [data.address]);
+
     return (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in fade-in duration-300">
             <div className="lg:col-span-2 space-y-6">
@@ -153,7 +171,7 @@ export default function PersonalInfoTab({
                             <div className="md:col-span-2 pt-2 border-t border-gray-100 dark:border-gray-800 transition-colors">
                                 <DetailItem 
                                     label="Current Address" 
-                                    value={formatAddress(data.address)} 
+                                    value={formatAddress(data.address)}
                                     icon={MapPin} 
                                     iconColor="text-red-500 dark:text-red-400" 
                                 />

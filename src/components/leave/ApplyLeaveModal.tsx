@@ -5,7 +5,8 @@ import { Calendar, AlignLeft, Briefcase, Loader2, Clock } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { useApplyLeave } from '@/hooks/api/useLeave';
+import { useApplyLeave, useLeaveStats } from '@/hooks/api/useLeave';
+import { useAppSelector } from '@/store/hooks';
 
 export interface LeaveApplicationPayload {
     leaveType: string;
@@ -54,15 +55,39 @@ export default function ApplyLeaveModal({ isOpen, onClose }: ApplyLeaveModalProp
         onClose();
     };
 
-    let calculatedDays = 0;
-    if (formData.startDate && formData.endDate) {
-        const start = new Date(formData.startDate);
-        const end = new Date(formData.endDate);
-        if (end >= start) {
-            const timeDiff = end.getTime() - start.getTime();
-            calculatedDays = Math.ceil(timeDiff / (1000 * 60 * 60 * 24)) + 1;
+    const { user } = useAppSelector((state) => state.auth);
+    const { data: statsData } = useLeaveStats(user?.id);
+    
+    const quotaNotSet = statsData?.quotaNotSet || statsData?.data?.quotaNotSet || false;
+    const paidLeaveBalance = statsData?.paidLeaveBalance !== undefined && statsData?.paidLeaveBalance !== null
+        ? statsData.paidLeaveBalance 
+        : (statsData?.data?.paidLeaveBalance !== undefined && statsData?.data?.paidLeaveBalance !== null
+            ? statsData.data.paidLeaveBalance 
+            : 0);
+
+    const getWorkingDaysCount = (startStr: string, endStr: string) => {
+        if (!startStr || !endStr) return 0;
+        const start = new Date(startStr);
+        const end = new Date(endStr);
+        if (end < start) return 0;
+        
+        let count = 0;
+        const cur = new Date(start);
+        while (cur <= end) {
+            const day = cur.getDay(); // 0 = Sun, 6 = Sat
+            if (day !== 0 && day !== 6) {
+                count++;
+            }
+            cur.setDate(cur.getDate() + 1);
         }
-    }
+        return count;
+    };
+
+    const calculatedDays = getWorkingDaysCount(formData.startDate, formData.endDate);
+    
+    const isSubmitDisabled = applyLeaveMutation.isPending || 
+        calculatedDays <= 0 || 
+        (formData.leaveType !== 'Unpaid' && formData.leaveType !== '' && quotaNotSet);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -121,9 +146,12 @@ export default function ApplyLeaveModal({ isOpen, onClose }: ApplyLeaveModalProp
                         >
                             <option value="" disabled>Select leave type...</option>
                             <option value="Sick">Sick Leave</option>
+                            <option value="Casual">Casual Leave</option>
+                            <option value="Earned">Earned Leave</option>
                             <option value="Vacation">Vacation Leave</option>
-                            <option value="Personal">Personal Leave</option>
-                            <option value="Emergency">Emergency</option>
+                            <option value="Maternity">Maternity Leave</option>
+                            <option value="Paternity">Paternity Leave</option>
+                            <option value="Unpaid">Unpaid Leave (LWP)</option>
                             <option value="Other">Other</option>
                         </select>
                     </div>
@@ -162,9 +190,31 @@ export default function ApplyLeaveModal({ isOpen, onClose }: ApplyLeaveModalProp
                     </div>
 
                     {calculatedDays > 0 && !error && (
-                        <div className="p-3 bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 text-sm rounded-lg border border-blue-200 dark:border-blue-900/50 font-medium flex items-center gap-2 animate-in fade-in zoom-in-95 duration-200 transition-colors">
-                            <Clock size={16} className="text-blue-500 dark:text-blue-400" />
-                            Requesting {calculatedDays} day{calculatedDays > 1 ? 's' : ''} of leave.
+                        <div className="space-y-2 animate-in fade-in zoom-in-95 duration-200">
+                            <div className="p-3 bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 text-sm rounded-lg border border-blue-200 dark:border-blue-900/50 font-medium flex items-center gap-2 transition-colors">
+                                <Clock size={16} className="text-blue-500 dark:text-blue-400" />
+                                Requesting {calculatedDays} working day{calculatedDays > 1 ? 's' : ''} of leave.
+                            </div>
+                            
+                              {formData.leaveType && formData.leaveType !== 'Unpaid' && (
+                                quotaNotSet ? (
+                                    <div className="p-3 bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 text-sm rounded-lg border border-amber-200 dark:border-amber-900/50 font-medium transition-colors">
+                                        ⚠️ Your organization has not set the annual paid leave quota. Kindly ask your admin to do so.
+                                    </div>
+                                ) : paidLeaveBalance === 0 ? (
+                                    <div className="p-3 bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-400 text-sm rounded-lg border border-red-200 dark:border-red-900/50 font-medium transition-colors">
+                                        ⚠️ You cannot apply for a paid leave as your quota has finished. This request will be treated as Unpaid Leave (LWP).
+                                    </div>
+                                ) : calculatedDays > paidLeaveBalance ? (
+                                    <div className="p-3 bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 text-sm rounded-lg border border-amber-200 dark:border-amber-900/50 font-medium transition-colors">
+                                        ⚠️ You can take only {paidLeaveBalance} days as paid leave. The remaining {calculatedDays - paidLeaveBalance} days will be considered as unpaid leave (LWP).
+                                    </div>
+                                ) : (
+                                    <div className="p-3 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 text-sm rounded-lg border border-emerald-200 dark:border-emerald-900/50 font-medium transition-colors">
+                                        ✓ You have {paidLeaveBalance - calculatedDays} days of paid leave quota remaining.
+                                    </div>
+                                )
+                            )}
                         </div>
                     )}
 
@@ -197,7 +247,7 @@ export default function ApplyLeaveModal({ isOpen, onClose }: ApplyLeaveModalProp
                     <Button 
                         type="submit" 
                         variant="primary" 
-                        disabled={applyLeaveMutation.isPending || calculatedDays <= 0}
+                        disabled={isSubmitDisabled}
                         className="shadow-sm shadow-blue-500/25 dark:shadow-none font-semibold min-w-[150px]"
                     >
                         {applyLeaveMutation.isPending ? <Loader2 className="animate-spin mr-2" size={18} /> : null}

@@ -132,7 +132,7 @@ export default function AttendanceTab({
                 absent: calendarData.summary.absent || 0,
                 onLeave: calendarData.summary.leave || 0,
                 halfDay: calendarData.summary.halfDay || 0,
-                attendancePercentage: calendarData.summary.attendancePercentage || 100
+                attendancePercentage: calendarData.summary.attendancePercentage ?? 100
             };
         }
         return { present: 0, absent: 0, onLeave: 0, halfDay: 0, attendancePercentage: 100 };

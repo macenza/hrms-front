@@ -14,7 +14,7 @@ import { useShifts } from '@/hooks/api/useShifts';
 import { toast } from 'sonner';
 
 // Aligned with backend Mongoose Schema enum
-export type AttendanceStatus = 'Present' | 'Absent' | 'Half-Day' | 'On Leave' | 'Late';
+export type AttendanceStatus = 'Present' | 'Absent' | 'Half-Day' | 'On Leave' | 'Late' | null;
 
 export interface AttendanceRecord {
     id: string; // Employee ID
@@ -369,18 +369,28 @@ export default function AttendanceTable({
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-1.5 shrink-0">
-                                        <Badge variant="success" className="shrink-0">
-                                            Present
-                                        </Badge>
-                                        {(record.status === 'Late' || (record.late && record.late !== '-')) && (
-                                            <Badge variant="warning" className="shrink-0">
-                                                Late
+                                        {record.status === null ? (
+                                            <Badge variant="default" className="shrink-0">
+                                                Null
                                             </Badge>
-                                        )}
-                                        {record.status !== 'Present' && record.status !== 'Late' && (
-                                            <Badge variant={getStatusBadgeVariant(record.status)} className="shrink-0">
-                                                {record.status}
-                                            </Badge>
+                                        ) : (
+                                            <>
+                                                {(record.status === 'Present' || record.status === 'Late') && (
+                                                    <Badge variant="success" className="shrink-0">
+                                                        Present
+                                                    </Badge>
+                                                )}
+                                                {(record.status === 'Late' || (record.late && record.late !== '-')) && (
+                                                    <Badge variant="warning" className="shrink-0">
+                                                        Late
+                                                    </Badge>
+                                                )}
+                                                {record.status !== 'Present' && record.status !== 'Late' && (
+                                                    <Badge variant={getStatusBadgeVariant(record.status)} className="shrink-0">
+                                                        {record.status}
+                                                    </Badge>
+                                                )}
+                                            </>
                                         )}
                                     </div>
                                 </div>
@@ -389,14 +399,16 @@ export default function AttendanceTable({
                                         <Clock size={12} />
                                         <span className="font-medium">{record.checkIn || '--:--'} – {record.checkOut || '--:--'}</span>
                                     </div>
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => handleEditClick(record)}
-                                        className="font-bold text-xs h-7 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/10 px-2 rounded-lg"
-                                    >
-                                        Adjust
-                                    </Button>
+                                    {record.status !== null && (
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => handleEditClick(record)}
+                                            className="font-bold text-xs h-7 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/10 px-2 rounded-lg"
+                                        >
+                                            Adjust
+                                        </Button>
+                                    )}
                                 </div>
                             </div>
                         ))
@@ -466,19 +478,27 @@ export default function AttendanceTable({
                                             )}
                                         </td>
                                         <td className="px-6 py-4">
-                                            <Badge variant={record.status === 'Late' ? 'success' : getStatusBadgeVariant(record.status)}>
-                                                {record.status === 'Late' ? 'Present' : record.status}
-                                            </Badge>
+                                            {record.status === null ? (
+                                                <Badge variant="default">
+                                                    Null
+                                                </Badge>
+                                            ) : (
+                                                <Badge variant={record.status === 'Late' ? 'success' : getStatusBadgeVariant(record.status)}>
+                                                    {record.status === 'Late' ? 'Present' : record.status}
+                                                </Badge>
+                                            )}
                                         </td>
                                         <td className="px-6 py-4 text-center">
-                                            <Button 
-                                                variant="ghost" 
-                                                size="sm" 
-                                                onClick={() => handleEditClick(record)}
-                                                className="font-bold text-xs h-8 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/10 px-3 rounded-lg transition-all"
-                                            >
-                                                Adjust
-                                            </Button>
+                                            {record.status !== null && (
+                                                <Button 
+                                                    variant="ghost" 
+                                                    size="sm" 
+                                                    onClick={() => handleEditClick(record)}
+                                                    className="font-bold text-xs h-8 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/10 px-3 rounded-lg transition-all"
+                                                >
+                                                    Adjust
+                                                </Button>
+                                            )}
                                         </td>
                                     </tr>
                                 ))
@@ -586,7 +606,7 @@ export default function AttendanceTable({
                                 <label className="block text-[10px] font-extrabold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Attendance Status</label>
                                 <div className="relative">
                                     <select
-                                        value={status}
+                                        value={status || ''}
                                         onChange={(e) => setStatus(e.target.value as AttendanceStatus)}
                                         className="w-full h-10 pl-3 pr-8 appearance-none bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-lg text-sm font-semibold text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 dark:focus:border-blue-500 shadow-sm transition-all"
                                     >

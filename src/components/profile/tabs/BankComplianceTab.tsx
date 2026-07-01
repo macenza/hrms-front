@@ -34,6 +34,7 @@ export interface SalaryComponent {
 }
 
 export interface SalaryData {
+    monthlyCTC?: number;
     basicSalary: number;
     activeAllowances: SalaryComponent[];
     activeDeductions: SalaryComponent[];
@@ -102,7 +103,7 @@ export default function BankComplianceTab({
     
     const [bankForm, setBankForm] = useState<Partial<BankDetails>>(bankData || {});
     const [statForm, setStatForm] = useState<Partial<StatutoryDetails>>(statutoryData || {});
-    const [salaryForm, setSalaryForm] = useState<Partial<SalaryData>>(salaryData || { basicSalary: 0, activeAllowances: [], activeDeductions: [] });
+    const [salaryForm, setSalaryForm] = useState<Partial<SalaryData>>(salaryData || { monthlyCTC: 0, basicSalary: 0, activeAllowances: [], activeDeductions: [] });
     
     const { data: companySettings } = useCompanySettings();
 
@@ -119,6 +120,25 @@ export default function BankComplianceTab({
     }, [salaryData]);
 
     const canEdit = currentUserRole?.toLowerCase() === 'admin' || currentUserRole?.toLowerCase() === 'hr';
+
+    // Calculate Monthly CTC dynamically: basic + allowances + pf + esic
+    const basic = Number(salaryForm.basicSalary) || 0;
+    const allowancesSum = (salaryForm.activeAllowances || [])
+        .filter((a) => (a.name && a.name.trim() !== "") || a.amount !== 0)
+        .reduce((sum, a) => sum + (Number(a.amount) || 0), 0);
+    const gross = basic + allowancesSum;
+
+    const getDeductionAmountLocal = (list: any[], keys: string[]) => {
+        const found = (list || []).find(d => {
+            const name = (d.name || '').toLowerCase().trim();
+            return keys.some(key => name === key || name.includes(key));
+        });
+        return found ? (Number(found.amount) || 0) : 0;
+    };
+
+    const pf = getDeductionAmountLocal(salaryForm.activeDeductions || [], ['pf', 'epf', 'provident fund']);
+    const esic = getDeductionAmountLocal(salaryForm.activeDeductions || [], ['esic', 'esi']);
+    const calculatedCTC = gross + pf + esic;
 
     const handleBankChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setBankForm({ ...bankForm, [e.target.name]: e.target.value });
@@ -187,6 +207,7 @@ export default function BankComplianceTab({
         setIsSaving(true);
         try {
             await employeeService.update(employeeId, { 
+                'profile.financial.monthlyCTC': calculatedCTC,
                 'profile.financial.basicSalary': Number(salaryForm.basicSalary) || 0,
                 'profile.financial.activeAllowances': filteredAllowances,
                 'profile.financial.activeDeductions': filteredDeductions
@@ -396,6 +417,14 @@ export default function BankComplianceTab({
                     <CardContent className="pt-4 flex-1">
                         {isEditingSalary ? (
                             <div className="space-y-6 animate-in fade-in">
+                                <Input 
+                                    label="Monthly CTC (Calculated: Gross + PF + ESIC)" 
+                                    name="monthlyCTC" 
+                                    type="number" 
+                                    value={calculatedCTC || ''} 
+                                    disabled 
+                                    className="bg-gray-100 dark:bg-gray-800 text-gray-500 cursor-not-allowed" 
+                                />
                                 <Input label="Basic Salary (Monthly)" name="basicSalary" type="number" value={salaryForm.basicSalary || ''} onChange={(e) => setSalaryForm({...salaryForm, basicSalary: Number(e.target.value)})} placeholder="e.g. 50000" />
                                 
                                 {/* Allowances */}
@@ -473,6 +502,10 @@ export default function BankComplianceTab({
                             </div>
                         ) : (
                             <div className="space-y-4">
+                                <div className="flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-800">
+                                    <span className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase">Monthly CTC</span>
+                                    <span className="text-lg font-bold text-gray-900 dark:text-gray-100">${salaryData?.monthlyCTC || 0}</span>
+                                </div>
                                 <div className="flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-800">
                                     <span className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase">Basic Salary</span>
                                     <span className="text-lg font-bold text-gray-900 dark:text-gray-100">${salaryData?.basicSalary || 0}</span>

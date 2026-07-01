@@ -7,7 +7,7 @@ import { employeeService } from '@/services/employeeService';
 import apiClient from '@/services/apiClient';
 import { 
     Download, Upload, CheckCircle2, AlertTriangle, AlertCircle, 
-    X, RefreshCw, ChevronDown, ChevronUp, Loader2, Sparkles, Send, Check, AlertOctagon
+    X, RefreshCw, ChevronDown, ChevronUp, Loader2, Send, Check, AlertOctagon
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/utils/cn';

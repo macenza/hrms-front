@@ -25,6 +25,9 @@ export interface CompanySettings {
     district?: string;
     city?: string;
     zipCode?: string;
+    leave?: {
+        defaultAnnualLeaveQuota: number;
+    };
 }
 
 interface GeneralSettingsProps {
@@ -77,6 +80,7 @@ export default function GeneralSettings({
     const [district, setDistrict] = useState('');
     const [city, setCity] = useState('');
     const [zipCode, setZipCode] = useState('');
+    const [defaultAnnualLeaveQuota, setDefaultAnnualLeaveQuota] = useState(21);
 
     const [logoFile, setLogoFile] = useState<File | null>(null);
     const [logoPreview, setLogoPreview] = useState<string | null>(null);
@@ -106,6 +110,7 @@ export default function GeneralSettings({
             setDistrict(initialData.district || '');
             setCity(initialData.city || '');
             setZipCode(initialData.zipCode || '');
+            setDefaultAnnualLeaveQuota(initialData.leave?.defaultAnnualLeaveQuota || 21);
             setLogoFile(null);
 
             if (initialData.companyLogoUrl) {
@@ -256,6 +261,7 @@ export default function GeneralSettings({
         formData.append('district', district);
         formData.append('city', city);
         formData.append('zipCode', zipCode);
+        formData.append('leave', JSON.stringify({ defaultAnnualLeaveQuota }));
 
         if (logoFile) {
             formData.append('logo', logoFile);
@@ -518,6 +524,22 @@ export default function GeneralSettings({
                                         <option value="MM/DD/YYYY">MM/DD/YYYY (e.g. 12/25/2026)</option>
                                         <option value="DD/MM/YYYY">DD/MM/YYYY (e.g. 25/12/2026)</option>
                                     </select>
+                                </div>
+                            </div>
+
+                            {/* Leave Quota */}
+                            <div className="space-y-1.5">
+                                <label className="text-sm font-bold text-gray-700 dark:text-gray-300 transition-colors">Default Annual Paid Leaves Quota</label>
+                                <div className="relative flex items-center">
+                                    <Input
+                                        type="number"
+                                        value={defaultAnnualLeaveQuota}
+                                        onChange={(e) => setDefaultAnnualLeaveQuota(Number(e.target.value))}
+                                        disabled={!canEditGeneral}
+                                        min={1}
+                                        max={365}
+                                        className="text-gray-900 dark:text-gray-100 disabled:bg-gray-50 dark:disabled:bg-gray-900/50 disabled:text-gray-500 dark:disabled:text-gray-400 transition-colors font-medium"
+                                    />
                                 </div>
                             </div>
 

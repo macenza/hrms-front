@@ -16,7 +16,6 @@ import Cookies from 'js-cookie';
 import GeneralSettings from '@/components/settings/GeneralSettings';
 import SecuritySettings from '@/components/settings/SecuritySettings';
 import NotificationSettings from '@/components/settings/NotificationSettings';
-import PayrollSettings from '@/components/settings/PayrollSettings';
 import ShiftSettings from '@/components/settings/ShiftSettings';
 
 import { 
@@ -31,7 +30,6 @@ const settingsTabs = [
     { id: 'general', label: 'General & Company', icon: Building, description: 'Workspace details and branding' },
     { id: 'security', label: 'Security & Access', icon: Lock, description: 'Manage passwords and access' },
     { id: 'notifications', label: 'Notifications', icon: Bell, description: 'Email and system webhook alerts' },
-    { id: 'payroll', label: 'Payroll Engine', icon: Calculator, description: 'Manage dynamic allowances and deductions' },
 ] as const;
 
 type SettingsTabId = typeof settingsTabs[number]['id'];
@@ -52,21 +50,15 @@ export default function SettingsPage() {
         if (typeof window !== 'undefined') {
             const params = new URLSearchParams(window.location.search);
             const tab = params.get('tab');
-            if (tab === 'security' || tab === 'notifications' || tab === 'payroll' || tab === 'general') {
+            if (tab === 'security' || tab === 'notifications' || tab === 'general') {
                 setActiveTab(tab as SettingsTabId);
             }
         }
     }, []);
-    // Filter tabs based on role permissions (Payroll Engine is Admin/HR only)
+    // Filter tabs based on role permissions
     const visibleTabs = useMemo(() => {
-        return settingsTabs.filter((tab) => {
-            if (tab.id === 'payroll') {
-                const role = user?.role?.toLowerCase();
-                return role === 'admin' || role === 'hr';
-            }
-            return true;
-        });
-    }, [user]);
+        return [...settingsTabs];
+    }, []);
 
     // Auto-redirect if active tab is restricted for current user role
     useEffect(() => {
@@ -322,12 +314,6 @@ export default function SettingsPage() {
                                     <NotificationSettings 
                                         initialData={notificationData}
                                         onUpdate={handleUpdateNotifications}
-                                    />
-                                )}
-                                {activeTab === 'payroll' && (
-                                    <PayrollSettings 
-                                        initialData={companyData} 
-                                        onSave={handleSaveCompanySettings}
                                     />
                                 )}
 

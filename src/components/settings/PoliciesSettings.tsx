@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef } from 'react';
-import { FileText, UploadCloud, Lock, Eye, CheckCircle, Info, ShieldAlert, ArrowRight, ShieldCheck } from 'lucide-react';
+import { FileText, UploadCloud, Lock, Eye, CheckCircle, Info, ShieldAlert, ArrowRight, ShieldCheck, Download } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAppSelector } from '@/store/hooks';
 import { Button } from '@/components/ui/Button';
@@ -200,10 +200,6 @@ export default function PoliciesSettings() {
                         Review, download, or manage company regulations and compliance guidelines.
                     </p>
                 </div>
-                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300 rounded-lg border border-gray-200 dark:border-gray-700 text-xs font-semibold uppercase tracking-wider transition-colors">
-                    <ShieldCheck size={14} className="text-primary" />
-                    <span>Role: <strong className="text-primary">{userRole}</strong></span>
-                </div>
             </div>
 
             {/* Grid of Policies */}
@@ -254,7 +250,9 @@ export default function PoliciesSettings() {
 
                                 <div className="mt-6 flex items-center justify-between border-t border-gray-100/50 dark:border-gray-800/50 pt-4 w-full text-xs font-bold text-primary group-hover:translate-x-1 transition-transform">
                                     <span className="flex items-center gap-1.5">
-                                        {isUploaded ? 'View & Manage Document' : 'Setup Policy'}
+                                        {isUploaded 
+                                            ? ((userRole === 'employee' || userRole === 'manager') ? 'View Document' : 'View & Manage Document') 
+                                            : 'Setup Policy'}
                                     </span>
                                     <ArrowRight size={14} />
                                 </div>
@@ -295,14 +293,42 @@ export default function PoliciesSettings() {
 
                                 <div className="flex items-center justify-between gap-4 border-t border-gray-150 dark:border-gray-800 pt-3 text-xs text-gray-500">
                                     <span>Uploaded by: <strong className="text-gray-700 dark:text-gray-300 font-semibold">{typeof activePolicy.uploadedBy === 'object' ? activePolicy.uploadedBy?.name : 'Administrator'}</strong></span>
-                                    <a
-                                        href={getPreviewUrl(activePolicy)}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="inline-flex items-center gap-1.5 font-bold text-primary hover:underline"
-                                    >
-                                        <Eye size={14} /> Preview Policy
-                                    </a>
+                                    <div className="flex items-center gap-3">
+                                        <a
+                                            href={getPreviewUrl(activePolicy)}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="inline-flex items-center gap-1.5 font-bold text-primary hover:underline"
+                                        >
+                                            <Eye size={14} /> Preview
+                                        </a>
+                                        <span className="text-gray-300 dark:text-gray-700">|</span>
+                                        <a
+                                            href={getPreviewUrl(activePolicy)}
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                fetch(getPreviewUrl(activePolicy))
+                                                    .then(resp => resp.blob())
+                                                    .then(blob => {
+                                                        const url = window.URL.createObjectURL(blob);
+                                                        const a = document.createElement('a');
+                                                        a.style.display = 'none';
+                                                        a.href = url;
+                                                        a.download = activePolicy.fileName || 'policy.pdf';
+                                                        document.body.appendChild(a);
+                                                        a.click();
+                                                        window.URL.revokeObjectURL(url);
+                                                    })
+                                                    .catch(err => {
+                                                        console.error('Failed to download policy:', err);
+                                                        window.open(getPreviewUrl(activePolicy), '_blank');
+                                                    });
+                                            }}
+                                            className="inline-flex items-center gap-1.5 font-bold text-primary hover:underline cursor-pointer"
+                                        >
+                                            <Download size={14} /> Download
+                                        </a>
+                                    </div>
                                 </div>
                             </div>
                         ) : (
@@ -317,100 +343,85 @@ export default function PoliciesSettings() {
                     </div>
 
                     {/* Upload / Replace Section */}
-                    {selectedCategory && (
-                        writePermission ? (
-                            <form onSubmit={handleSubmit} className="space-y-4 border-t border-gray-100 dark:border-gray-800 pt-5">
-                                <h4 className="text-xs font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 flex items-center gap-1.5">
-                                    <UploadCloud size={12} /> Upload or Replace Policy
-                                </h4>
+                    {selectedCategory && writePermission && (
+                        <form onSubmit={handleSubmit} className="space-y-4 border-t border-gray-100 dark:border-gray-800 pt-5">
+                            <h4 className="text-xs font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 flex items-center gap-1.5">
+                                <UploadCloud size={12} /> Upload or Replace Policy
+                            </h4>
 
-                                <div
-                                    onDragEnter={handleDrag}
-                                    onDragOver={handleDrag}
-                                    onDragLeave={handleDrag}
-                                    onDrop={handleDrop}
-                                    onClick={triggerFileInput}
-                                    className={cn(
-                                        "border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all duration-200 relative group overflow-hidden",
-                                        dragActive
-                                            ? "border-primary bg-primary/5"
-                                            : "border-gray-250 dark:border-gray-800 bg-gray-50/20 hover:bg-gray-50/70 dark:hover:bg-gray-900/50 hover:border-primary/40"
-                                    )}
-                                >
-                                    <input
-                                        type="file"
-                                        ref={fileInputRef}
-                                        onChange={handleFileChange}
-                                        className="hidden"
-                                        accept="application/pdf"
-                                    />
-                                    
-                                    {selectedFile ? (
-                                        <div className="space-y-2">
-                                            <CheckCircle className="w-8 h-8 text-emerald-500 mx-auto animate-bounce" />
-                                            <p className="text-sm font-bold text-gray-800 dark:text-gray-200 truncate px-4">{selectedFile.name}</p>
-                                            <p className="text-xs text-gray-400">{formatBytes(selectedFile.size)} • PDF Document</p>
-                                            <p className="text-[10px] text-primary font-bold mt-2 hover:underline">Click or drag to replace file</p>
-                                        </div>
-                                    ) : (
-                                        <div className="space-y-2">
-                                            <UploadCloud className="w-8 h-8 text-gray-400 mx-auto group-hover:scale-110 transition-transform text-primary/80" />
-                                            <p className="text-sm font-bold text-gray-700 dark:text-gray-300">Drag and drop your PDF here</p>
-                                            <p className="text-xs text-gray-400">or click to browse local files (PDF only, up to 10MB)</p>
-                                        </div>
-                                    )}
-                                </div>
-
-                                {fileError && (
-                                    <p className="text-xs text-red-500 font-semibold flex items-center gap-1.5">
-                                        <ShieldAlert size={14} className="shrink-0" />
-                                        {fileError}
-                                    </p>
+                            <div
+                                onDragEnter={handleDrag}
+                                onDragOver={handleDrag}
+                                onDragLeave={handleDrag}
+                                onDrop={handleDrop}
+                                onClick={triggerFileInput}
+                                className={cn(
+                                    "border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all duration-200 relative group overflow-hidden",
+                                    dragActive
+                                        ? "border-primary bg-primary/5"
+                                        : "border-gray-250 dark:border-gray-800 bg-gray-50/20 hover:bg-gray-50/70 dark:hover:bg-gray-900/50 hover:border-primary/40"
                                 )}
-
-                                <div className="flex justify-end gap-3 pt-2">
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        onClick={handleCloseModal}
-                                        disabled={uploadPolicyMutation.isPending}
-                                    >
-                                        Cancel
-                                    </Button>
-                                    <Button
-                                        type="submit"
-                                        variant="primary"
-                                        disabled={!selectedFile || uploadPolicyMutation.isPending}
-                                        className="font-semibold shadow-md shadow-primary/10 gap-1.5"
-                                    >
-                                        {uploadPolicyMutation.isPending ? (
-                                            <>
-                                                <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                                Uploading...
-                                            </>
-                                        ) : (
-                                            <>
-                                                <UploadCloud size={16} />
-                                                Submit Policy
-                                            </>
-                                        )}
-                                    </Button>
-                                </div>
-                            </form>
-                        ) : (
-                            <div className="p-4 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/30 rounded-xl flex items-start gap-2.5 transition-colors border-t border-gray-100 dark:border-gray-800 pt-5">
-                                <Lock className="w-4.5 h-4.5 text-amber-600 dark:text-amber-500 shrink-0 mt-0.5" />
-                                <div className="space-y-1">
-                                    <h5 className="text-xs font-bold text-amber-800 dark:text-amber-300 uppercase tracking-wider">Access Restrained</h5>
-                                    <p className="text-xs text-amber-700 dark:text-amber-400/90 leading-relaxed font-medium">
-                                        {userRole === 'employee' 
-                                            ? 'You have employee role access. Employees are restricted to only viewing active organization policies and cannot upload, modify, or delete files.'
-                                            : `You have HR role access. HR accounts are permitted to upload and update HR Policies ONLY. Updates to Admin, IT, and Company policies require Administrator credentials.`
-                                        }
-                                    </p>
-                                </div>
+                            >
+                                <input
+                                    type="file"
+                                    ref={fileInputRef}
+                                    onChange={handleFileChange}
+                                    className="hidden"
+                                    accept="application/pdf"
+                                />
+                                
+                                {selectedFile ? (
+                                    <div className="space-y-2">
+                                        <CheckCircle className="w-8 h-8 text-emerald-500 mx-auto animate-bounce" />
+                                        <p className="text-sm font-bold text-gray-800 dark:text-gray-200 truncate px-4">{selectedFile.name}</p>
+                                        <p className="text-xs text-gray-400">{formatBytes(selectedFile.size)} • PDF Document</p>
+                                        <p className="text-[10px] text-primary font-bold mt-2 hover:underline">Click or drag to replace file</p>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-2">
+                                        <UploadCloud className="w-8 h-8 text-gray-400 mx-auto group-hover:scale-110 transition-transform text-primary/80" />
+                                        <p className="text-sm font-bold text-gray-700 dark:text-gray-300">Drag and drop your PDF here</p>
+                                        <p className="text-xs text-gray-400">or click to browse local files (PDF only, up to 10MB)</p>
+                                    </div>
+                                )}
                             </div>
-                        )
+
+                            {fileError && (
+                                <p className="text-xs text-red-500 font-semibold flex items-center gap-1.5">
+                                    <ShieldAlert size={14} className="shrink-0" />
+                                    {fileError}
+                                </p>
+                            )}
+
+                            <div className="flex justify-end gap-3 pt-2">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={handleCloseModal}
+                                    disabled={uploadPolicyMutation.isPending}
+                                >
+                                    Cancel
+                                </Button>
+                                <Button
+                                    type="submit"
+                                    variant="primary"
+                                    disabled={!selectedFile || uploadPolicyMutation.isPending}
+                                    className="font-semibold shadow-md shadow-primary/10 gap-1.5"
+                                >
+                                    {uploadPolicyMutation.isPending ? (
+                                        <>
+                                            <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                            Uploading...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <UploadCloud size={16} />
+                                            Submit Policy
+                                        </>
+                                    )}
+                                </Button>
+                            </div>
+                        </form>
                     )}
                 </div>
             </Modal>

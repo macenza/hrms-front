@@ -85,6 +85,7 @@ export function useRunPayroll() {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['payroll', 'dashboard'] });
             queryClient.invalidateQueries({ queryKey: ['payroll', 'batches'] });
+            queryClient.invalidateQueries({ queryKey: ['payroll', 'by-period'] });
         }
     });
 }
@@ -138,11 +139,11 @@ export function useMyPayslips(enabled: boolean = true) {
     });
 }
 
-export function useRealTimeAccrual(page: number, limit: number) {
+export function useRealTimeAccrual(page: number, limit: number, search: string = '') {
     return useQuery({
-        queryKey: ['payroll', 'real-time', page, limit],
+        queryKey: ['payroll', 'real-time', page, limit, search],
         queryFn: async () => {
-            const res = await payrollService.getRealTimeAccrual(page, limit);
+            const res = await payrollService.getRealTimeAccrual(page, limit, search);
             return res || { data: [], totalCount: 0 };
         },
         staleTime: 30 * 1000,
@@ -168,6 +169,24 @@ export function useFinalizeMonth() {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['payroll', 'real-time'] });
             queryClient.invalidateQueries({ queryKey: ['payroll', 'history'] });
+            queryClient.invalidateQueries({ queryKey: ['payroll', 'by-period'] });
+            queryClient.invalidateQueries({ queryKey: ['payroll', 'batches'] });
         }
+    });
+}
+
+export function usePayrollBatchByPeriod(month: number, year: number) {
+    return useQuery({
+        queryKey: ['payroll', 'by-period', month, year],
+        queryFn: async () => {
+            const res = await payrollService.getPayrollBatchByPeriod(month, year);
+            return res.data || null;
+        },
+        staleTime: 10 * 1000,
+        refetchInterval: (query) => {
+            const data = query.state.data;
+            const status = data?.batch?.status;
+            return status === 'Processing' ? 3000 : false;
+        },
     });
 }

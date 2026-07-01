@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import {
     Eye, EyeOff, Loader2, AlertCircle, Building2, CreditCard, QrCode,
     Check, ChevronRight, ChevronLeft, Shield, Sparkles, Users, Zap,
-    Crown, CheckCircle2, Upload, X, ImageIcon, MapPin, Phone, Info, ArrowLeft
+    Crown, CheckCircle2, Upload, X, ImageIcon, MapPin, Phone, Info, ArrowLeft, ArrowRight, Globe
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -831,7 +831,7 @@ export default function RegisterCompanyPage() {
                         <CardHeader className="border-b border-gray-100 dark:border-gray-800 pb-4">
                             <div className="flex items-center gap-2.5">
                                 <div className="p-2 rounded-lg bg-[#6D5DFD]/10">
-                                    <Sparkles className="w-5 h-5 text-[#6D5DFD]" />
+                                    <Shield className="w-5 h-5 text-[#6D5DFD]" />
                                 </div>
                                 <div>
                                     <CardTitle className="text-base font-bold text-gray-900 dark:text-gray-100">

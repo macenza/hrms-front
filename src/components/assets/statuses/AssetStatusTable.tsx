@@ -78,13 +78,9 @@ export default function AssetStatusTable({
                                 <td className="px-6 py-4 flex items-center gap-4 max-w-sm truncate">
                                     {/* Color Indicator Box */}
                                     <div 
-                                        className="w-10 h-10 rounded-lg shadow-sm border border-gray-100 dark:border-gray-800 transition-transform hover:scale-105 shrink-0 flex items-center justify-center"
+                                        className="w-10 h-10 rounded-lg shadow-sm border border-gray-100 dark:border-gray-800 transition-transform hover:scale-105 shrink-0"
                                         style={{ backgroundColor: rec.color }}
-                                    >
-                                        <span className="text-[10px] font-mono text-white mix-blend-difference drop-shadow-sm font-semibold">
-                                            {rec.color.toUpperCase()}
-                                        </span>
-                                    </div>
+                                    />
                                     <div className="truncate">
                                         <p className={cn(
                                             "font-bold transition-colors truncate",

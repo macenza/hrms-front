@@ -33,8 +33,8 @@ export const payrollService = {
         return response.data;
     },
 
-    getRealTimeAccrual: async (page: number = 1, limit: number = 10) => {
-        const response = await apiClient.get(`/payroll/real-time?page=${page}&limit=${limit}`);
+    getRealTimeAccrual: async (page: number = 1, limit: number = 10, search: string = '') => {
+        const response = await apiClient.get(`/payroll/real-time?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}`);
         return response.data;
     },
 
@@ -45,6 +45,30 @@ export const payrollService = {
 
     finalizeMonth: async (month: number, year: number) => {
         const response = await apiClient.post(`/payroll/finalize-month`, { month, year });
+        return response.data;
+    },
+
+    getPayrollBatchByPeriod: async (month: number, year: number) => {
+        const response = await apiClient.get(`/payroll/by-period?month=${month}&year=${year}`);
+        return response.data;
+    },
+    
+    exportBatchExcel: async (batchId: string) => {
+        const response = await apiClient.get(`/payroll/export-excel?batchId=${batchId}`, {
+            responseType: 'blob'
+        });
+        return response.data;
+    },
+
+    downloadPayslip: async (recordId: string) => {
+        const response = await apiClient.get(`/payroll/payslip/${recordId}/download`, {
+            responseType: 'blob'
+        });
+        return response.data;
+    },
+
+    sendPayslipEmail: async (recordId: string) => {
+        const response = await apiClient.post(`/payroll/payslip/${recordId}/send-email`);
         return response.data;
     }
 };
