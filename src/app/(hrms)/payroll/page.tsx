@@ -17,7 +17,8 @@ import {
     IndianRupee,
     ChevronLeft,
     ChevronRight,
-    RefreshCw
+    RefreshCw,
+    Settings as SettingsIcon
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
@@ -33,6 +34,8 @@ import {
     useBatchRecords,
     usePayrollBatchByPeriod
 } from '@/hooks/api/usePayroll';
+import { useCompanySettings, useUpdateCompanySettings } from '@/hooks/api/useSettings';
+import PayrollSettings from '@/components/settings/PayrollSettings';
 import { cn } from '@/utils/cn';
 import { toast } from 'sonner';
 import PayrollSummaryCards from '@/components/payroll/PayrollSummaryCards';
@@ -109,6 +112,22 @@ export default function PayrollDashboard() {
     
     const runPayrollMutation = useRunPayroll();
     const finalizeMonthMutation = useFinalizeMonth();
+
+    // Payroll Engine Config State & Hooks
+    const { data: companyData, refetch: refetchCompany } = useCompanySettings();
+    const updateCompanyMutation = useUpdateCompanySettings();
+    const [isPayrollConfigOpen, setIsPayrollConfigOpen] = useState(false);
+
+    const handleSaveCompanySettings = async (updatedData: any) => {
+        try {
+            await updateCompanyMutation.mutateAsync(updatedData);
+            toast.success('Payroll configuration updated successfully');
+            refetchCompany();
+            setIsPayrollConfigOpen(false);
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || 'Failed to update payroll configuration');
+        }
+    };
 
     const handleRunPayrollDirect = async () => {
         const currentYear = new Date().getFullYear();
@@ -402,6 +421,15 @@ export default function PayrollDashboard() {
                             <span>Payroll History</span>
                         </Button>
 
+                        <Button
+                            variant="outline"
+                            onClick={() => setIsPayrollConfigOpen(true)}
+                            className="gap-2 bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 shadow-sm h-10 font-bold text-xs"
+                        >
+                            <SettingsIcon size={16} />
+                            <span>Configure Engine</span>
+                        </Button>
+
                         {periodData?.batch?.isFinalized ? (
                             <Badge variant="success" className="gap-1.5 h-10 px-4 font-bold text-sm bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-900/60">
                                 <CheckCircle2 size={16} /> Finalized / Read-Only
@@ -685,6 +713,19 @@ export default function PayrollDashboard() {
                     onClose={() => { setIsDrawerOpen(false); setSelectedEmployee(null); }}
                     data={selectedEmployee}
                 />
+
+                {/* ── Payroll Engine Config Modal ── */}
+                <Modal
+                    isOpen={isPayrollConfigOpen}
+                    onClose={() => setIsPayrollConfigOpen(false)}
+                    title="Configure Payroll Engine"
+                    className="max-w-4xl"
+                >
+                    <PayrollSettings 
+                        initialData={companyData} 
+                        onSave={handleSaveCompanySettings}
+                    />
+                </Modal>
 
             </div>
         </div>

@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
     Eye, EyeOff, Loader2, AlertCircle, Building2, CreditCard, QrCode,
-    Check, ChevronRight, ChevronLeft, Shield, Sparkles, Users, Zap,
+    Check, ChevronRight, ChevronLeft, Shield, Users, Zap,
     Crown, CheckCircle2, ArrowRight, Globe, MapPin, Phone, Info
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
@@ -568,7 +568,7 @@ export default function RegisterCompanyPage() {
                     <div className="space-y-6 animate-in slide-in-from-right-4 duration-300">
                         <div className="text-center mb-2">
                             <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100 tracking-tight flex items-center justify-center gap-2">
-                                <Sparkles className="w-5 h-5 text-[#6D5DFD]" />
+                                <Shield className="w-5 h-5 text-[#6D5DFD]" />
                                 Choose Your Plan
                             </h1>
                             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 font-medium">

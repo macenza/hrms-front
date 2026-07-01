@@ -6,7 +6,7 @@ import apiClient from '@/services/apiClient';
 import { useRouter } from 'next/navigation';
 import {
     CreditCard, Shield, Users, CheckCircle2,
-    Sparkles, Building2,
+    Building2,
     Mail, Phone, Clock, RefreshCw,
     AlertTriangle, Loader2, History, Plus, X, Lock, Activity
 } from 'lucide-react';
@@ -321,7 +321,7 @@ export default function SubscriptionManagementPage() {
                     {/* Choose a plan */}
                     <div className="space-y-4">
                         <h2 className="text-lg font-black text-gray-900 dark:text-white tracking-tight flex items-center gap-1.5">
-                            <Sparkles className="w-5 h-5 text-indigo-500" /> Available HRMS Plans
+                            <CreditCard className="w-5 h-5 text-indigo-500" /> Available HRMS Plans
                         </h2>
                         
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -418,7 +418,7 @@ export default function SubscriptionManagementPage() {
                                 </span>
                             </div>
                             <p className="text-sm text-gray-400 mt-1 font-semibold flex items-center gap-1.5">
-                                <Sparkles className="w-4 h-4 text-blue-500" /> Subscription Management
+                                <Shield className="w-4 h-4 text-blue-500" /> Subscription Management
                             </p>
                         </div>
                     </div>

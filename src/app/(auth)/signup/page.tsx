@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Eye, EyeOff, Loader2, AlertCircle, CreditCard, QrCode, Sparkles, Shield, CheckCircle2 } from 'lucide-react';
+import { Eye, EyeOff, Loader2, AlertCircle, CreditCard, QrCode, Shield, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
@@ -102,7 +102,7 @@ export default function SaaSBuyerSignupPage() {
             <div className="bg-white dark:bg-gray-900 dark:border-gray-800 p-8 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-800 animate-in fade-in zoom-in-95 duration-300">
                 <div className="mb-6 text-center">
                     <h1 className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight flex items-center justify-center gap-1.5">
-                        <Sparkles className="w-5 h-5 text-[#6D5DFD]" /> Get Started Today
+                        <Shield className="w-5 h-5 text-[#6D5DFD]" /> Get Started Today
                     </h1>
                     <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 font-medium">
                         Setup your secure B2B tenant and deploy HRMS modules.

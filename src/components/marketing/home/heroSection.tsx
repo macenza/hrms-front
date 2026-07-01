@@ -11,7 +11,7 @@ export default function HeroSection() {
             className="w-full h-auto flex flex-col lg:flex-row lg:items-center justify-between px-6 py-20 md:px-12 lg:px-20
   bg-cover bg-center bg-no-repeat"
             style={{
-                backgroundImage: "url('/bg.png')",
+                backgroundImage: "url('/bg.webp')",
             }}
         >
             <div className="w-full lg:w-1/2 flex flex-col items-start justify-start pt-0">
@@ -125,7 +125,7 @@ export default function HeroSection() {
             </div>
             <div className="w-full lg:w-1/2 mt-14 lg:mt-0 flex justify-center">
   <img
-    src="/1.png"
+    src="/1.webp"
     alt="Dashboard Preview"
     className="w-full max-w-2xl object-contain  max-w-4xl
             rounded-3xl

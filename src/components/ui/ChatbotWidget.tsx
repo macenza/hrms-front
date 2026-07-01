@@ -6,7 +6,7 @@ import {
   X,
   Send,
   Trash2,
-  Sparkles,
+  Bot,
   HelpCircle,
   AlertCircle
 } from 'lucide-react';
@@ -516,7 +516,7 @@ export default function ChatbotWidget() {
           <div className="flex items-center gap-3">
             <div className="relative">
               <div className="w-10 h-10 rounded-2xl bg-white/10 flex items-center justify-center backdrop-blur-md">
-                <Sparkles size={20} className="text-white" />
+                <Bot size={20} className="text-white" />
               </div>
               <span className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-400 border-2 border-[#6D5DFD] rounded-full animate-pulse" />
             </div>
@@ -754,7 +754,7 @@ export default function ChatbotWidget() {
 
             <div className="flex items-start gap-2 pr-2">
               <div className="w-5 h-5 rounded-lg bg-[#6D5DFD]/10 flex items-center justify-center shrink-0 mt-0.5">
-                <Sparkles size={12} className="text-[#6D5DFD] animate-pulse" />
+                <Bot size={12} className="text-[#6D5DFD] animate-pulse" />
               </div>
               <div>
                 <p className="text-xs font-bold leading-tight">Ask your queries here!</p>

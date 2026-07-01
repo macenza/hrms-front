@@ -7,7 +7,7 @@ export default function RolesCard() {
     {
       id: 1,
       title: "Admin",
-      image: "/RoleModel1.png",
+      image: "/RoleModel1.webp",
       icon: Shield,
       badgeColor: "bg-purple-100 text-purple-600",
       titleColor: "text-purple-600",
@@ -22,7 +22,7 @@ export default function RolesCard() {
     {
       id: 2,
       title: "HR Executive",
-      image: "/RoleModel1.png",
+      image: "/RoleModel1.webp",
       icon: Users,
       badgeColor: "bg-blue-100 text-blue-600",
       titleColor: "text-blue-600",
@@ -37,7 +37,7 @@ export default function RolesCard() {
     {
       id: 3,
       title: "Employee",
-      image: "/RoleModel3.png",
+      image: "/RoleModel3.webp",
       icon: User,
       badgeColor: "bg-green-100 text-green-600",
       titleColor: "text-green-600",

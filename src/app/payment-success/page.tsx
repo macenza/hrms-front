@@ -3,7 +3,7 @@
 import React, { Suspense, useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { CheckCircle2, Printer, Home, LogIn, Sparkles, Calendar, Building2, CreditCard, Hash } from 'lucide-react';
+import { CheckCircle2, Printer, Home, LogIn, Package, Calendar, Building2, CreditCard, Hash } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 
 function PaymentSuccessContent() {
@@ -84,7 +84,7 @@ function PaymentSuccessContent() {
                             </div>
                             <div className="flex items-center justify-between py-3 border-b border-gray-100 dark:border-gray-800">
                                 <span className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 font-medium">
-                                    <Sparkles size={14} className="text-gray-400" /> Plan
+                                    <Package size={14} className="text-gray-400" /> Plan
                                 </span>
                                 <span className="text-sm font-bold text-[#6D5DFD]">{plan}</span>
                             </div>

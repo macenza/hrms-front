@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Briefcase, MapPin, Clock, Search, ChevronRight, Sparkles, Calendar, Banknote } from "lucide-react";
+import { Briefcase, MapPin, Clock, Search, ChevronRight, Calendar, Banknote } from "lucide-react";
 import { cn } from "@/utils/cn";
 import { recruitmentService } from "@/services/recruitmentService";
 
@@ -135,7 +135,7 @@ export default function CareerPortalIndex() {
                 
                 <div className="relative max-w-3xl mx-auto space-y-4">
                     <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/10 text-white rounded-full text-xs font-bold uppercase tracking-wider backdrop-blur-md">
-                        <Sparkles className="w-3.5 h-3.5" /> Join Our Team
+                        <Briefcase className="w-3.5 h-3.5" /> Join Our Team
                     </span>
                     <h1 className="text-3xl md:text-5xl font-black tracking-tight">{companyTitle} Careers</h1>
                     <p className="text-sm md:text-base text-white/80 max-w-xl mx-auto leading-relaxed">

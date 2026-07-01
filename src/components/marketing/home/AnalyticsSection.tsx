@@ -22,7 +22,7 @@ export default function AnalyticsSection() {
       bg-no-repeat
       "
       style={{
-        backgroundImage: "url('/bg.png')",
+        backgroundImage: "url('/bg.webp')",
       }}
     >
 
@@ -107,7 +107,7 @@ export default function AnalyticsSection() {
         <div className="w-full lg:w-2/3 flex justify-center">
 
           <Image
-            src="/1.png"
+            src="/1.webp"
             alt="Analytics Dashboard"
             width={900}
             height={600}

@@ -5,7 +5,7 @@ import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { 
     Briefcase, MapPin, Clock, ArrowLeft, Send, 
-    FileText, CheckCircle, Sparkles, AlertCircle, Phone, Mail, User,
+    FileText, CheckCircle, AlertCircle, Phone, Mail, User,
     Calendar, Globe, Building, Banknote
 } from "lucide-react";
 import { FaGithub, FaLinkedin } from "react-icons/fa";
