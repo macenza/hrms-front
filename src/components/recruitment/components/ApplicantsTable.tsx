@@ -15,6 +15,23 @@ interface ApplicantsTableProps {
     onDeleteApplicant: (id: string, name: string) => void;
 }
 
+const getApplicantRowHoverStyles = (status: Applicant['status']) => {
+    switch (status) {
+        case 'Applied':
+            return 'hover:from-blue-50/70 hover:via-blue-50/20 hover:to-transparent dark:hover:from-blue-950/20 dark:hover:via-blue-950/5';
+        case 'Shortlisted':
+            return 'hover:from-purple-50/70 hover:via-purple-50/20 hover:to-transparent dark:hover:from-purple-950/20 dark:hover:via-purple-950/5';
+        case 'Interview':
+            return 'hover:from-amber-50/70 hover:via-amber-50/20 hover:to-transparent dark:hover:from-amber-950/20 dark:hover:via-amber-950/5';
+        case 'Selected':
+            return 'hover:from-emerald-50/70 hover:via-emerald-50/20 hover:to-transparent dark:hover:from-emerald-950/20 dark:hover:via-emerald-950/5';
+        case 'Rejected':
+            return 'hover:from-rose-50/70 hover:via-rose-50/20 hover:to-transparent dark:hover:from-rose-950/20 dark:hover:via-rose-950/5';
+        default:
+            return 'hover:from-slate-50/75 hover:via-slate-50/20 hover:to-transparent dark:hover:from-slate-900/20 dark:hover:via-slate-900/5';
+    }
+};
+
 export default function ApplicantsTable({
     applicants,
     openDropdownId,
@@ -91,8 +108,23 @@ export default function ApplicantsTable({
                             </tr>
                         ) : (
                             filteredApplicants.map((applicant) => (
-                                <tr key={applicant.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors">
-                                    <td className="p-4 font-bold text-gray-900 dark:text-gray-150">
+                                <tr 
+                                    key={applicant.id} 
+                                    className={cn(
+                                        "hover:bg-gradient-to-r hover:to-transparent cursor-pointer transition-all duration-205 group hover:translate-x-1",
+                                        getApplicantRowHoverStyles(applicant.status)
+                                    )}
+                                >
+                                    <td className="p-4 font-bold text-gray-900 dark:text-gray-150 relative">
+                                        {/* Left Side Glowing Status Bar Indicator on hover */}
+                                        <div className={cn(
+                                            "absolute left-0 top-0 bottom-0 w-[4px] transition-all duration-300 scale-y-0 group-hover:scale-y-100 origin-center",
+                                            applicant.status === "Applied" && "bg-blue-500 shadow-[0_0_12px_rgba(59,130,246,0.7)]",
+                                            applicant.status === "Shortlisted" && "bg-purple-500 shadow-[0_0_12px_rgba(139,92,246,0.7)]",
+                                            applicant.status === "Interview" && "bg-yellow-500 shadow-[0_0_12px_rgba(245,158,11,0.7)]",
+                                            applicant.status === "Selected" && "bg-green-500 shadow-[0_0_12px_rgba(16,185,129,0.7)]",
+                                            applicant.status === "Rejected" && "bg-red-500 shadow-[0_0_12px_rgba(244,63,94,0.7)]"
+                                        )} />
                                         <div>{applicant.candidateName}</div>
                                         <span className="text-xs text-gray-450 dark:text-gray-500 font-normal block mt-0.5">
                                             {applicant.email} • {applicant.phone}

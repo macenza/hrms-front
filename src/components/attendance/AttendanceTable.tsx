@@ -34,8 +34,9 @@ export interface AttendanceRecord {
 interface AttendanceTableProps {
     data?: AttendanceRecord[];
     isLoading?: boolean;
-    selectedDate: string; // YYYY-MM-DD
-    onDateChange: (date: string) => void;
+    selectedDate?: string; // YYYY-MM-DD
+    onDateChange?: (date: string) => void;
+    onAdjust?: (record: AttendanceRecord) => void;
 }
 
 const getInitials = (name: string) => name ? name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : '??';
@@ -52,6 +53,88 @@ const getAvatarColor = (name: string) => {
     ];
     const hash = name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
     return colors[hash % colors.length];
+};
+
+const getAvatarGradient = (name: string) => {
+    if (!name) return 'bg-gradient-to-br from-gray-400 to-gray-500 text-white';
+    const gradients = [
+        'bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-sm shadow-blue-500/20',
+        'bg-gradient-to-br from-emerald-400 to-teal-600 text-white shadow-sm shadow-emerald-500/20',
+        'bg-gradient-to-br from-purple-500 to-indigo-600 text-white shadow-sm shadow-purple-500/20',
+        'bg-gradient-to-br from-amber-400 to-orange-600 text-white shadow-sm shadow-amber-500/20',
+        'bg-gradient-to-br from-rose-400 to-pink-600 text-white shadow-sm shadow-rose-500/20',
+        'bg-gradient-to-br from-cyan-400 to-blue-600 text-white shadow-sm shadow-cyan-500/20'
+    ];
+    const hash = name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    return gradients[hash % gradients.length];
+};
+
+const getEffectiveStatus = (record: AttendanceRecord): AttendanceStatus => {
+    if (record.status === 'Late' || (record.late && record.late !== '-' && record.late !== 'No')) {
+        return 'Late';
+    }
+    return record.status;
+};
+
+const getStatusStyles = (status: AttendanceStatus) => {
+    switch (status) {
+        case 'Present': 
+            return 'bg-emerald-50/70 text-emerald-700 border border-emerald-200/50 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20 shadow-[0_0_8px_rgba(16,185,129,0.06)]';
+        case 'Late': 
+            return 'bg-amber-50/70 text-amber-700 border border-amber-200/50 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20 shadow-[0_0_8px_rgba(245,158,11,0.06)]';
+        case 'Half-Day': 
+            return 'bg-blue-50/70 text-blue-700 border border-blue-200/50 dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-500/20 shadow-[0_0_8px_rgba(59,130,246,0.06)]';
+        case 'On Leave': 
+            return 'bg-purple-50/70 text-purple-700 border border-purple-200/50 dark:bg-purple-500/10 dark:text-purple-400 dark:border-purple-500/20 shadow-[0_0_8px_rgba(139,92,246,0.06)]';
+        case 'Absent': 
+            return 'bg-rose-50/70 text-rose-700 border border-rose-200/50 dark:bg-rose-500/10 dark:text-rose-400 dark:border-rose-500/20 shadow-[0_0_8px_rgba(244,63,94,0.06)]';
+        default: 
+            return 'bg-gray-50/70 text-gray-700 border border-gray-250/50 dark:bg-gray-500/10 dark:text-gray-400 dark:border-gray-500/20';
+    }
+};
+
+const getRowHoverStyles = (status: AttendanceStatus) => {
+    switch (status) {
+        case 'Present':
+            return 'hover:from-emerald-50/70 hover:via-emerald-50/20 hover:to-transparent dark:hover:from-emerald-950/20 dark:hover:via-emerald-950/5';
+        case 'Late':
+            return 'hover:from-amber-50/70 hover:via-amber-50/20 hover:to-transparent dark:hover:from-amber-950/20 dark:hover:via-amber-950/5';
+        case 'Half-Day':
+            return 'hover:from-blue-50/70 hover:via-blue-50/20 hover:to-transparent dark:hover:from-blue-950/20 dark:hover:via-blue-950/5';
+        case 'On Leave':
+            return 'hover:from-purple-50/70 hover:via-purple-50/20 hover:to-transparent dark:hover:from-purple-950/20 dark:hover:via-purple-950/5';
+        case 'Absent':
+            return 'hover:from-rose-50/70 hover:via-rose-50/20 hover:to-transparent dark:hover:from-rose-950/20 dark:hover:via-rose-950/5';
+        default:
+            return 'hover:from-blue-50/60 hover:via-indigo-50/30 hover:to-transparent dark:hover:from-blue-950/20 dark:hover:via-indigo-950/10 dark:hover:to-transparent';
+    }
+};
+
+const getCardHoverStyles = (status: AttendanceStatus) => {
+    switch (status) {
+        case 'Present':
+            return 'hover:from-emerald-500/5 hover:to-teal-500/5 dark:hover:from-emerald-500/10 dark:hover:to-teal-500/10 hover:border-emerald-500/30 dark:hover:border-emerald-400/30';
+        case 'Late':
+            return 'hover:from-amber-500/5 hover:to-orange-500/5 dark:hover:from-amber-500/10 dark:hover:to-orange-500/10 hover:border-amber-500/30 dark:hover:border-amber-400/30';
+        case 'Half-Day':
+            return 'hover:from-blue-500/5 hover:to-indigo-500/5 dark:hover:from-blue-500/10 dark:hover:to-indigo-500/10 hover:border-blue-500/30 dark:hover:border-blue-400/30';
+        case 'On Leave':
+            return 'hover:from-purple-500/5 hover:to-indigo-500/5 dark:hover:from-purple-500/10 dark:hover:to-indigo-500/10 hover:border-purple-500/30 dark:hover:border-purple-400/30';
+        case 'Absent':
+            return 'hover:from-rose-500/5 hover:to-pink-500/5 dark:hover:from-rose-500/10 dark:hover:to-pink-500/10 hover:border-rose-500/30 dark:hover:border-rose-400/30';
+        default:
+            return 'hover:from-blue-500/5 hover:to-indigo-500/5 dark:hover:from-blue-500/10 dark:hover:to-indigo-500/10 hover:border-blue-500/30 dark:hover:border-blue-400/30';
+    }
+};
+
+const getDepartmentColor = (dept: string) => {
+    const d = dept?.toLowerCase() || '';
+    if (d.includes('eng')) return 'text-blue-600 dark:text-blue-400';
+    if (d.includes('hr') || d.includes('human')) return 'text-purple-600 dark:text-purple-400';
+    if (d.includes('sale') || d.includes('market')) return 'text-emerald-600 dark:text-emerald-400';
+    if (d.includes('fin') || d.includes('pay') || d.includes('loan')) return 'text-amber-600 dark:text-amber-400';
+    if (d.includes('prod') || d.includes('design')) return 'text-pink-600 dark:text-pink-400';
+    return 'text-indigo-600 dark:text-indigo-400';
 };
 
 const getStatusBadgeVariant = (status: AttendanceStatus) => {
@@ -203,7 +286,10 @@ export default function AttendanceTable({
             const matchesSearch = record.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 record.id.toLowerCase().includes(searchTerm.toLowerCase());
             const matchesDept = selectedDept === 'All' || record.dept === selectedDept;
-            const matchesStatus = selectedStatus === 'All' || record.status === selectedStatus;
+            const matchesStatus = selectedStatus === 'All' || 
+                (selectedStatus === 'Present' 
+                    ? (record.status === 'Present' || record.status === 'Late') 
+                    : record.status === selectedStatus);
             const matchesShift = selectedShift === 'All' || record.shiftId === selectedShift;
             return matchesSearch && matchesDept && matchesStatus && matchesShift;
         });
@@ -212,7 +298,7 @@ export default function AttendanceTable({
     // Reset page to 1 on filter or page size changes
     React.useEffect(() => {
         setCurrentPage(1);
-    }, [searchTerm, selectedDept, selectedStatus, selectedShift, entriesPerPage, selectedDate]);
+    }, [searchTerm, selectedDept, selectedStatus, selectedShift, entriesPerPage]);
 
     const paginatedData = useMemo(() => {
         const startIndex = (currentPage - 1) * entriesPerPage;
@@ -248,37 +334,7 @@ export default function AttendanceTable({
                         className="w-full h-10 pl-10 pr-4 rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 text-sm placeholder:text-gray-400 dark:placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20 dark:focus:ring-blue-500/40 focus:border-blue-600 dark:focus:border-blue-500 transition-all shadow-sm dark:shadow-none"
                     />
                 </div>
-                
                 <div className="flex flex-wrap gap-3 w-full md:w-auto items-center">
-                    {/* Mark Attendance Trigger Button */}
-                    <Button
-                        variant="primary"
-                        onClick={() => {
-                            setSelectedRecord(null);
-                            setEmployeeId('');
-                            setStatus('Present');
-                            setCheckInTime('');
-                            setCheckOutTime('');
-                            setIsLate(false);
-                            setLateMinutes(0);
-                            setWorkFormat('Office');
-                            setIsMarkModalOpen(true);
-                        }}
-                        className="h-10 text-xs font-extrabold gap-1.5 shadow-sm shadow-blue-500/25 dark:shadow-none mr-2 flex items-center justify-center whitespace-nowrap"
-                    >
-                        <Plus size={14} strokeWidth={3} />
-                        <span className="hidden sm:inline">Mark Attendance</span>
-                    </Button>
-
-                    {/* Date Picker */}
-                    <div className="relative">
-                        <input
-                            type="date"
-                            value={selectedDate}
-                            onChange={(e) => onDateChange(e.target.value)}
-                            className="h-10 px-3 appearance-none bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-600/20 dark:focus:ring-blue-500/40 focus:border-blue-600 dark:focus:border-blue-500 shadow-sm dark:shadow-none transition-all cursor-pointer [color-scheme:light] dark:[color-scheme:dark]"
-                        />
-                    </div>
                     
                     {/* Department Filter */}
                     <div className="relative">
@@ -356,37 +412,40 @@ export default function AttendanceTable({
                             <p className="text-sm mt-1">No records matching your filters.</p>
                         </div>
                     ) : (
-                        paginatedData.map((record) => (
+                        paginatedData.map((record, idx) => (
                             <div
                                 key={record.dbId}
-                                className="p-4 rounded-xl bg-gray-50/50 dark:bg-gray-800/20 border border-gray-100 dark:border-gray-800 hover:bg-gray-100 dark:hover:bg-gray-800/40 transition-colors"
+                                style={{ animationDelay: `${idx * 40}ms` }}
+                                className={cn(
+                                    "p-4 rounded-xl bg-gray-50/50 dark:bg-gray-900/25 border border-gray-100 dark:border-gray-800/60 hover:shadow-md cursor-pointer transition-all duration-300 active:scale-[0.99] group relative overflow-hidden",
+                                    getCardHoverStyles(getEffectiveStatus(record))
+                                )}
                             >
+                                {/* Left Side Glowing Status Bar Indicator on hover */}
+                                <div className={cn(
+                                    "absolute left-0 top-0 bottom-0 w-[4px] transition-all duration-300 scale-y-0 group-hover:scale-y-100 origin-center",
+                                    getEffectiveStatus(record) === 'Present' && 'bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.7)]',
+                                    getEffectiveStatus(record) === 'Late' && 'bg-amber-500 shadow-[0_0_12px_rgba(245,158,11,0.7)]',
+                                    getEffectiveStatus(record) === 'Half-Day' && 'bg-blue-500 shadow-[0_0_12px_rgba(59,130,246,0.7)]',
+                                    getEffectiveStatus(record) === 'On Leave' && 'bg-purple-500 shadow-[0_0_12px_rgba(139,92,246,0.7)]',
+                                    getEffectiveStatus(record) === 'Absent' && 'bg-rose-500 shadow-[0_0_12px_rgba(244,63,94,0.7)]'
+                                )} />
+
                                 <div className="flex items-center justify-between mb-2.5">
                                     <div className="flex items-center gap-2.5 min-w-0">
                                         <div className="min-w-0">
-                                            <p className="font-semibold text-gray-900 dark:text-gray-100 truncate text-sm" title={record.name}>{record.name}</p>
-                                            <p className="text-xs text-gray-500 dark:text-gray-400">{record.id}</p>
+                                            <p className="font-semibold text-gray-900 dark:text-gray-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors cursor-pointer truncate text-sm" title={record.name}>{record.name}</p>
+                                            <p className="text-[10px] font-extrabold text-gray-400 dark:text-gray-500 uppercase tracking-widest mt-0.5">{record.id}</p>
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-1.5 shrink-0">
-                                        <Badge variant="success" className="shrink-0">
-                                            Present
-                                        </Badge>
-                                        {(record.status === 'Late' || (record.late && record.late !== '-')) && (
-                                            <Badge variant="warning" className="shrink-0">
-                                                Late
-                                            </Badge>
-                                        )}
-                                        {record.status !== 'Present' && record.status !== 'Late' && (
-                                            <Badge variant={getStatusBadgeVariant(record.status)} className="shrink-0">
-                                                {record.status}
-                                            </Badge>
-                                        )}
+                                        <span className={cn("px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wide uppercase border", getStatusStyles(record.status === 'Late' ? 'Present' : record.status))}>
+                                            {record.status === 'Late' ? 'Present' : record.status}
+                                        </span>
                                     </div>
                                 </div>
                                 <div className="flex items-center justify-between text-xs">
                                     <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
-                                        <Clock size={12} />
                                         <span className="font-medium">{record.checkIn || '--:--'} – {record.checkOut || '--:--'}</span>
                                     </div>
                                     <Button
@@ -435,17 +494,35 @@ export default function AttendanceTable({
                                 </tr>
                             ) : (
                                 paginatedData.map((record) => (
-                                    <tr key={record.dbId} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors group">
-                                        <td className="px-6 py-4 flex items-center gap-3">
+                                    <tr 
+                                        key={record.dbId} 
+                                        className={cn(
+                                            "hover:bg-gradient-to-r hover:to-transparent cursor-pointer transition-all duration-205 group animate-in fade-in slide-in-from-bottom-1 duration-250 hover:translate-x-1",
+                                            getRowHoverStyles(getEffectiveStatus(record))
+                                        )}
+                                    >
+                                        <td className="px-6 py-4 relative overflow-hidden">
+                                            {/* Left Side Glowing Status Bar Indicator on hover of row */}
                                             <div className={cn(
-                                                "w-9 h-9 rounded-full flex items-center justify-center font-bold text-xs shrink-0 shadow-sm dark:shadow-none transition-colors",
-                                                getAvatarColor(record.name)
-                                            )}>
-                                                {getInitials(record.name)}
-                                            </div>
-                                            <div>
-                                                <p className="font-semibold text-gray-900 dark:text-gray-100 transition-colors">{record.name}</p>
-                                                <p className="text-xs text-gray-500 dark:text-gray-400 transition-colors">{record.id}</p>
+                                                "absolute left-0 top-0 bottom-0 w-[4px] transition-all duration-300 scale-y-0 group-hover:scale-y-100 origin-center",
+                                                getEffectiveStatus(record) === 'Present' && 'bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.7)]',
+                                                getEffectiveStatus(record) === 'Late' && 'bg-amber-500 shadow-[0_0_12px_rgba(245,158,11,0.7)]',
+                                                getEffectiveStatus(record) === 'Half-Day' && 'bg-blue-500 shadow-[0_0_12px_rgba(59,130,246,0.7)]',
+                                                getEffectiveStatus(record) === 'On Leave' && 'bg-purple-500 shadow-[0_0_12px_rgba(139,92,246,0.7)]',
+                                                getEffectiveStatus(record) === 'Absent' && 'bg-rose-500 shadow-[0_0_12px_rgba(244,63,94,0.7)]'
+                                            )} />
+
+                                            <div className="flex items-center gap-3">
+                                                <div className={cn(
+                                                    "w-9 h-9 rounded-full flex items-center justify-center font-black text-xs shrink-0 tracking-wider shadow-inner",
+                                                    getAvatarGradient(record.name)
+                                                )}>
+                                                    {getInitials(record.name)}
+                                                </div>
+                                                <div>
+                                                    <p className="font-semibold text-gray-900 dark:text-gray-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors text-sm">{record.name}</p>
+                                                    <p className="text-[10px] font-extrabold text-gray-400 dark:text-gray-500 uppercase tracking-widest mt-0.5 transition-colors">{record.id}</p>
+                                                </div>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 text-gray-600 dark:text-gray-300 transition-colors hidden lg:table-cell">{record.dept}</td>
@@ -466,9 +543,9 @@ export default function AttendanceTable({
                                             )}
                                         </td>
                                         <td className="px-6 py-4">
-                                            <Badge variant={record.status === 'Late' ? 'success' : getStatusBadgeVariant(record.status)}>
+                                            <span className={cn("px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wide uppercase border", getStatusStyles(record.status === 'Late' ? 'Present' : record.status))}>
                                                 {record.status === 'Late' ? 'Present' : record.status}
-                                            </Badge>
+                                            </span>
                                         </td>
                                         <td className="px-6 py-4 text-center">
                                             <Button 

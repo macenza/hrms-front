@@ -70,6 +70,32 @@ const handleDownload = async (url: string, filename: string) => {
     }
 };
 
+const getNoticeCardStyles = (category?: string) => {
+    const cat = (category || 'General').toLowerCase();
+    switch (cat) {
+        case 'event':
+            return {
+                cardClass: 'hover:shadow-[0_20px_50px_-12px_rgba(139,92,246,0.18)] hover:border-purple-300 dark:hover:border-purple-800',
+                borderLine: 'bg-gradient-to-r from-purple-500 via-fuchsia-500 to-violet-500'
+            };
+        case 'policy':
+            return {
+                cardClass: 'hover:shadow-[0_20px_50px_-12px_rgba(245,158,11,0.22)] hover:border-amber-300 dark:hover:border-amber-800',
+                borderLine: 'bg-gradient-to-r from-yellow-400 via-amber-500 to-orange-500'
+            };
+        case 'holiday':
+            return {
+                cardClass: 'hover:shadow-[0_20px_50px_-12px_rgba(16,185,129,0.18)] hover:border-emerald-300 dark:hover:border-emerald-800',
+                borderLine: 'bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-400'
+            };
+        default:
+            return {
+                cardClass: 'hover:shadow-[0_20px_50px_-12px_rgba(59,130,246,0.18)] hover:border-blue-300 dark:hover:border-blue-800',
+                borderLine: 'bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500'
+            };
+    }
+};
+
 export default function NoticeFeed({
     notices,
     isLoading,
@@ -109,16 +135,22 @@ export default function NoticeFeed({
                 const targetDate = isEdited ? notice.updatedAt! : notice.createdAt;
                 const datePrefix = isEdited ? "Modified" : "Published";
 
+                const styles = getNoticeCardStyles(notice.category);
+
                 return (
                     <div
                         key={notice._id}
                         className={cn(
-                            "p-5 rounded-xl border transition-all duration-300 hover:shadow-md dark:hover:shadow-none",
+                            "p-5 pt-7 rounded-xl border transition-all duration-300 relative overflow-hidden hover:-translate-y-1",
+                            styles.cardClass,
                             notice.isPinned
-                                ? "bg-blue-50/40 dark:bg-blue-900/10 border-blue-200 dark:border-blue-900/50"
+                                ? "bg-blue-50/20 dark:bg-blue-900/5 border-blue-200 dark:border-blue-900/50"
                                 : "bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800"
                         )}
                     >
+                        {/* Top dynamic gradient border line */}
+                        <div className={cn("absolute top-0 left-0 right-0 h-[4px]", styles.borderLine)} />
+                        
                         <div className="flex justify-between items-start mb-3">
                             <div className="flex flex-wrap items-center gap-2">
                                 {notice.isPinned && (

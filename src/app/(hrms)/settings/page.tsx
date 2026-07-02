@@ -36,6 +36,46 @@ const settingsTabs = [
 
 type SettingsTabId = typeof settingsTabs[number]['id'];
 
+const getTabTheme = (tabId: string) => {
+    switch (tabId) {
+        case 'general':
+            return {
+                activeBg: 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg shadow-blue-500/15 border-blue-400/20',
+                iconColor: 'text-blue-500 dark:text-blue-400',
+                borderAccent: 'bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500',
+                badgeText: 'group-hover:text-blue-600 dark:group-hover:text-blue-450'
+            };
+        case 'security':
+            return {
+                activeBg: 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg shadow-orange-500/15 border-orange-400/20',
+                iconColor: 'text-amber-500 dark:text-amber-400',
+                borderAccent: 'bg-gradient-to-r from-yellow-400 via-amber-500 to-orange-500',
+                badgeText: 'group-hover:text-amber-600 dark:group-hover:text-amber-450'
+            };
+        case 'notifications':
+            return {
+                activeBg: 'bg-gradient-to-r from-purple-500 to-violet-500 text-white shadow-lg shadow-purple-500/15 border-purple-400/20',
+                iconColor: 'text-purple-500 dark:text-purple-400',
+                borderAccent: 'bg-gradient-to-r from-purple-500 via-fuchsia-500 to-violet-500',
+                badgeText: 'group-hover:text-purple-600 dark:group-hover:text-purple-450'
+            };
+        case 'payroll':
+            return {
+                activeBg: 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-500/15 border-emerald-400/20',
+                iconColor: 'text-emerald-500 dark:text-emerald-400',
+                borderAccent: 'bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-400',
+                badgeText: 'group-hover:text-emerald-600 dark:group-hover:text-emerald-450'
+            };
+        default:
+            return {
+                activeBg: 'bg-primary text-white shadow-md shadow-primary/20',
+                iconColor: 'text-gray-400 dark:text-gray-500',
+                borderAccent: 'bg-primary',
+                badgeText: 'group-hover:text-primary'
+            };
+    }
+};
+
 export default function SettingsPage() {
     const router = useRouter();
     const dispatch = useAppDispatch();
@@ -227,7 +267,7 @@ export default function SettingsPage() {
                                             className={cn(
                                                 "w-full flex items-center justify-between px-4 py-3.5 rounded-xl text-sm font-bold transition-all text-left group",
                                                 isActive
-                                                    ? "bg-primary text-white shadow-md shadow-primary/20"
+                                                    ? getTabTheme(tab.id).activeBg
                                                     : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50 hover:text-gray-900 dark:hover:text-gray-100"
                                             )}
                                         >
@@ -238,7 +278,7 @@ export default function SettingsPage() {
                                                         "transition-colors",
                                                         isActive 
                                                             ? "text-white" 
-                                                            : "text-gray-400 dark:text-gray-500 group-hover:text-gray-600 dark:group-hover:text-gray-300"
+                                                            : getTabTheme(tab.id).iconColor
                                                     )}
                                                 />
                                                 <div>
@@ -268,9 +308,9 @@ export default function SettingsPage() {
                                         key={tab.id}
                                         onClick={() => setActiveTab(tab.id)}
                                         className={cn(
-                                            "w-full flex items-center justify-between px-4 py-3.5 rounded-xl text-sm font-bold transition-all text-left group",
+                                            "w-full flex items-center justify-between px-4 py-3.5 rounded-xl text-sm font-bold transition-all text-left group hover:scale-[1.01] active:scale-[0.99]",
                                             isActive
-                                                ? "bg-primary text-white shadow-md shadow-primary/20"
+                                                ? getTabTheme(tab.id).activeBg
                                                 : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50 hover:text-gray-900 dark:hover:text-gray-100"
                                         )}
                                     >
@@ -281,7 +321,7 @@ export default function SettingsPage() {
                                                     "transition-colors",
                                                     isActive 
                                                         ? "text-white" 
-                                                        : "text-gray-400 dark:text-gray-500 group-hover:text-gray-600 dark:group-hover:text-gray-300"
+                                                        : getTabTheme(tab.id).iconColor
                                                 )}
                                             />
                                             <span>{tab.label}</span>
@@ -297,7 +337,9 @@ export default function SettingsPage() {
 
                     {/* Main Content Area */}
                     <main className="flex-1 w-full min-w-0">
-                        <Card className="border-gray-200 dark:border-gray-800 shadow-sm dark:shadow-none min-h-[65vh] bg-white dark:bg-gray-900 overflow-hidden relative transition-colors duration-300">
+                        <Card className="border-gray-200 dark:border-gray-800 shadow-sm dark:shadow-none min-h-[65vh] bg-white dark:bg-gray-900 overflow-hidden relative transition-colors duration-300 pt-7">
+                            {/* Top dynamic gradient border line */}
+                            <div className={cn("absolute top-0 left-0 right-0 h-[4px] transition-all duration-300", getTabTheme(activeTab).borderAccent)} />
                             
                             {/* Loading Overlay */}
                             {isCurrentTabLoading && (

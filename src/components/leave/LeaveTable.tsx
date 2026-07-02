@@ -32,6 +32,20 @@ const TableRowSkeleton = ({ isHrOrAdmin, viewMode }: { isHrOrAdmin: boolean, vie
     </tr>
 );
 
+const getLeaveRowHoverStyles = (status: string) => {
+    switch (status) {
+        case 'Approved':
+            return 'hover:from-emerald-50/70 hover:via-emerald-50/20 hover:to-transparent dark:hover:from-emerald-950/20 dark:hover:via-emerald-950/5';
+        case 'Pending':
+            return 'hover:from-amber-50/70 hover:via-amber-50/20 hover:to-transparent dark:hover:from-amber-950/20 dark:hover:via-amber-950/5';
+        case 'Rejected':
+            return 'hover:from-rose-50/70 hover:via-rose-50/20 hover:to-transparent dark:hover:from-rose-950/20 dark:hover:via-rose-950/5';
+        case 'Cancelled':
+        default:
+            return 'hover:from-gray-100 hover:via-gray-50/50 hover:to-transparent dark:hover:from-gray-800/40 dark:hover:via-gray-800/10';
+    }
+};
+
 export default function LeaveTable() {
     const { user } = useAppSelector((state) => state.auth);
     const userRole = user?.role?.toLowerCase();
@@ -393,9 +407,23 @@ export default function LeaveTable() {
                                 </tr>
                             ) : (
                                 currentData.map((leave) => (
-                                    <tr key={leave._id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                                    <tr 
+                                        key={leave._id} 
+                                        className={cn(
+                                            "hover:bg-gradient-to-r hover:to-transparent cursor-pointer transition-all duration-205 group hover:translate-x-1",
+                                            getLeaveRowHoverStyles(leave.status)
+                                        )}
+                                    >
                                         {isHrOrAdmin && viewMode === 'all' && (
-                                            <td className="p-4">
+                                            <td className="p-4 relative">
+                                                {/* Left Side Glowing Status Bar Indicator on hover */}
+                                                <div className={cn(
+                                                    "absolute left-0 top-0 bottom-0 w-[4px] transition-all duration-300 scale-y-0 group-hover:scale-y-100 origin-center",
+                                                    leave.status === 'Approved' && 'bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.7)]',
+                                                    leave.status === 'Pending' && 'bg-amber-500 shadow-[0_0_12px_rgba(245,158,11,0.7)]',
+                                                    leave.status === 'Rejected' && 'bg-rose-500 shadow-[0_0_12px_rgba(244,63,94,0.7)]',
+                                                    (leave.status === 'Cancelled' || !leave.status) && 'bg-gray-400 dark:bg-gray-500 shadow-[0_0_12px_rgba(156,163,175,0.7)]'
+                                                )} />
                                                 <div className="text-sm font-bold text-gray-900 dark:text-gray-100 transition-colors">
                                                     {typeof (leave as any).user === 'object' && (leave as any).user !== null ? ((leave as any).user as any).name : 'Unknown Employee'}
                                                 </div>
@@ -404,9 +432,23 @@ export default function LeaveTable() {
                                                 </div>
                                             </td>
                                         )}
-                                        <td className="p-4 text-sm font-semibold text-gray-700 dark:text-gray-300 transition-colors">
-                                            {leave.leaveType}
-                                        </td>
+                                        {!(isHrOrAdmin && viewMode === 'all') ? (
+                                            <td className="p-4 text-sm font-semibold text-gray-700 dark:text-gray-300 transition-colors relative">
+                                                {/* Left Side Glowing Status Bar Indicator on hover */}
+                                                <div className={cn(
+                                                    "absolute left-0 top-0 bottom-0 w-[4px] transition-all duration-300 scale-y-0 group-hover:scale-y-100 origin-center",
+                                                    leave.status === 'Approved' && 'bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.7)]',
+                                                    leave.status === 'Pending' && 'bg-amber-500 shadow-[0_0_12px_rgba(245,158,11,0.7)]',
+                                                    leave.status === 'Rejected' && 'bg-rose-500 shadow-[0_0_12px_rgba(244,63,94,0.7)]',
+                                                    (leave.status === 'Cancelled' || !leave.status) && 'bg-gray-400 dark:bg-gray-500 shadow-[0_0_12px_rgba(156,163,175,0.7)]'
+                                                )} />
+                                                {leave.leaveType}
+                                            </td>
+                                        ) : (
+                                            <td className="p-4 text-sm font-semibold text-gray-700 dark:text-gray-300 transition-colors">
+                                                {leave.leaveType}
+                                            </td>
+                                        )}
                                         <td className="p-4 text-sm text-gray-600 dark:text-gray-400 transition-colors">
                                             {new Date(leave.startDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })} 
                                             <span className="text-gray-300 dark:text-gray-600 mx-2 transition-colors">→</span> 

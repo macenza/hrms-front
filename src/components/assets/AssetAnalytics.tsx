@@ -130,7 +130,7 @@ export default function AssetAnalytics({ assets, isLoading = false }: AssetAnaly
                     <p className="text-xs text-gray-550 dark:text-gray-400 font-semibold">Breakdown of total inventory items by category</p>
                 </CardHeader>
                 <CardContent className="pt-6 h-[290px]">
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                         <PieChart>
                             <Pie
                                 data={categoryCounts}
@@ -170,7 +170,7 @@ export default function AssetAnalytics({ assets, isLoading = false }: AssetAnaly
                     <p className="text-xs text-gray-550 dark:text-gray-400 font-semibold">Total procurement investment grouped by category</p>
                 </CardHeader>
                 <CardContent className="pt-6 h-[290px]">
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                         <BarChart data={categoryCosts} margin={{ top: 15, right: 10, left: 15, bottom: 15 }}>
                             <defs>
                                 {COLORS.map((color, index) => (

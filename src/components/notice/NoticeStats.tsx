@@ -28,6 +28,31 @@ const StatSkeleton = () => (
     </Card>
 );
 
+const getNoticeStatStyles = (index: number) => {
+    switch (index) {
+        case 1: // Pinned/Important (Red)
+            return {
+                borderLine: 'bg-gradient-to-r from-rose-500 via-pink-500 to-red-500',
+                cardClass: 'hover:-translate-y-1 hover:shadow-lg hover:shadow-red-500/10 hover:border-red-300 dark:hover:border-red-800'
+            };
+        case 2: // Upcoming Events (Green)
+            return {
+                borderLine: 'bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-400',
+                cardClass: 'hover:-translate-y-1 hover:shadow-lg hover:shadow-emerald-500/10 hover:border-emerald-300 dark:hover:border-emerald-800'
+            };
+        case 3: // This Month (Purple)
+            return {
+                borderLine: 'bg-gradient-to-r from-purple-500 via-fuchsia-500 to-violet-500',
+                cardClass: 'hover:-translate-y-1 hover:shadow-lg hover:shadow-purple-500/10 hover:border-purple-300 dark:hover:border-purple-800'
+            };
+        default: // Total Notices (Blue)
+            return {
+                borderLine: 'bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500',
+                cardClass: 'hover:-translate-y-1 hover:shadow-lg hover:shadow-blue-500/10 hover:border-blue-300 dark:hover:border-blue-800'
+            };
+    }
+};
+
 export default function NoticeStats({ data, isLoading }: NoticeStatsProps) {
     if (isLoading) {
         return (
@@ -73,26 +98,35 @@ export default function NoticeStats({ data, isLoading }: NoticeStatsProps) {
 
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 animate-in fade-in duration-300">
-            {statCards.map((stat, index) => (
-                <Card 
-                    key={index} 
-                    className="border-gray-100 dark:border-gray-800 shadow-sm dark:shadow-none bg-white dark:bg-gray-900 hover:shadow-md dark:hover:shadow-none hover:border-blue-200 dark:hover:border-blue-900/50 transition-all duration-300 group"
-                >
-                    <CardContent className="p-5 flex items-start justify-between">
-                        <div>
-                            <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1 transition-colors">
-                                {stat.title}
-                            </p>
-                            <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 tracking-tight transition-colors">
-                                {stat.value}
-                            </p>
-                        </div>
-                        <div className={cn("p-3 rounded-xl shrink-0 shadow-sm dark:shadow-none transition-colors", stat.colorClass)}>
-                            {stat.icon}
-                        </div>
-                    </CardContent>
-                </Card>
-            ))}
+            {statCards.map((stat, index) => {
+                const styles = getNoticeStatStyles(index);
+                return (
+                    <Card 
+                        key={index} 
+                        className={cn(
+                            "border-gray-100 dark:border-gray-800 shadow-sm dark:shadow-none bg-white dark:bg-gray-900 transition-all duration-300 group relative overflow-hidden pt-7 pb-6",
+                            styles.cardClass
+                        )}
+                    >
+                        {/* Top gradient border line */}
+                        <div className={cn("absolute top-0 left-0 right-0 h-[4px]", styles.borderLine)} />
+                        
+                        <CardContent className="p-5 pt-0 flex items-start justify-between">
+                            <div>
+                                <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1 transition-colors">
+                                    {stat.title}
+                                </p>
+                                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 tracking-tight transition-colors">
+                                    {stat.value}
+                                </p>
+                            </div>
+                            <div className={cn("p-3 rounded-xl shrink-0 shadow-sm dark:shadow-none transition-colors", stat.colorClass)}>
+                                {stat.icon}
+                            </div>
+                        </CardContent>
+                    </Card>
+                );
+            })}
         </div>
     );
 }

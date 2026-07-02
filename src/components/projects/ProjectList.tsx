@@ -104,31 +104,87 @@ export default function ProjectList({ projects, view, onActionClick }: ProjectLi
         );
     }
 
+const getProjectCardStyles = (idx: number) => {
+    const themes = [
+        // 0: Blue/Indigo
+        {
+            cardClass: 'hover:shadow-[0_20px_50px_-12px_rgba(59,130,246,0.2)] hover:border-blue-300 dark:hover:border-blue-850',
+            borderLine: 'bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500',
+            hoverText: 'group-hover:text-blue-600 dark:group-hover:text-blue-400'
+        },
+        // 1: Green/Teal
+        {
+            cardClass: 'hover:shadow-[0_20px_50px_-12px_rgba(16,185,129,0.2)] hover:border-emerald-300 dark:hover:border-emerald-850',
+            borderLine: 'bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-400',
+            hoverText: 'group-hover:text-emerald-600 dark:group-hover:text-emerald-400'
+        },
+        // 2: Yellow/Amber
+        {
+            cardClass: 'hover:shadow-[0_20px_50px_-12px_rgba(245,158,11,0.22)] hover:border-amber-300 dark:hover:border-amber-800',
+            borderLine: 'bg-gradient-to-r from-yellow-400 via-amber-500 to-orange-500',
+            hoverText: 'group-hover:text-amber-600 dark:group-hover:text-amber-400'
+        },
+        // 3: Red/Rose
+        {
+            cardClass: 'hover:shadow-[0_20px_50px_-12px_rgba(244,63,94,0.22)] hover:border-rose-300 dark:hover:border-rose-850',
+            borderLine: 'bg-gradient-to-r from-rose-500 via-pink-500 to-red-500',
+            hoverText: 'group-hover:text-rose-600 dark:group-hover:text-rose-400'
+        },
+        // 4: Purple/Fuchsia
+        {
+            cardClass: 'hover:shadow-[0_20px_50px_-12px_rgba(139,92,246,0.2)] hover:border-purple-300 dark:hover:border-purple-850',
+            borderLine: 'bg-gradient-to-r from-purple-500 via-fuchsia-500 to-violet-500',
+            hoverText: 'group-hover:text-purple-600 dark:group-hover:text-purple-400'
+        },
+        // 5: Black/Slate
+        {
+            cardClass: 'hover:shadow-[0_20px_50px_-12px_rgba(15,23,42,0.25)] dark:hover:shadow-[0_20px_50px_-12px_rgba(255,255,255,0.08)] hover:border-slate-400 dark:hover:border-slate-700',
+            borderLine: 'bg-gradient-to-r from-slate-700 via-slate-800 to-slate-950 dark:from-slate-400 dark:via-slate-500 dark:to-slate-600',
+            hoverText: 'group-hover:text-slate-800 dark:group-hover:text-slate-200'
+        },
+        // 6: Brown/Amber-900
+        {
+            cardClass: 'hover:shadow-[0_20px_50px_-12px_rgba(120,53,4,0.22)] hover:border-amber-700 dark:hover:border-amber-900',
+            borderLine: 'bg-gradient-to-r from-amber-700 via-amber-800 to-amber-950',
+            hoverText: 'group-hover:text-amber-800 dark:group-hover:text-amber-600'
+        }
+    ];
+    return themes[idx % themes.length];
+};
+
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 animate-in fade-in duration-300">
-            {projects.map((project) => (
-                <Card 
-                    key={project.id} 
-                    onClick={() => onActionClick(project.id)}
-                    className="group flex flex-col border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm dark:shadow-none hover:border-blue-300 dark:hover:border-blue-900/50 hover:shadow-md dark:hover:shadow-none cursor-pointer transition-all duration-300"
-                >
-                    <CardContent className="p-6 flex flex-col flex-1">
-                        <div className="flex justify-between items-start mb-4">
-                            <div className={cn(
-                                "p-2.5 rounded-xl shadow-sm dark:shadow-none transition-colors",
-                                project.status === 'Completed' ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : 
-                                project.status === 'On Hold' ? "bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400" : 
-                                "bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400"
-                            )}>
-                                {project.status === 'Completed' ? <CheckCircle2 size={22} /> : <Timer size={22} />}
+            {projects.map((project, idx) => {
+                const styles = getProjectCardStyles(idx);
+                return (
+                    <Card 
+                        key={project.id} 
+                        onClick={() => onActionClick(project.id)}
+                        className={cn(
+                            "group flex flex-col border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm dark:shadow-none cursor-pointer transition-all duration-300 relative overflow-hidden hover:-translate-y-1.5",
+                            styles.cardClass
+                        )}
+                    >
+                        {/* Top gradient border line */}
+                        <div className={cn("absolute top-0 left-0 right-0 h-[4px]", styles.borderLine)} />
+                        
+                        <CardContent className="p-6 pt-7 flex flex-col flex-1">
+                            <div className="flex justify-between items-start mb-4">
+                                <div className={cn(
+                                    "p-2.5 rounded-xl shadow-sm dark:shadow-none transition-all duration-300 group-hover:scale-105",
+                                    project.status === 'Completed' ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : 
+                                    project.status === 'On Hold' ? "bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400" : 
+                                    "bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400"
+                                )}>
+                                    {project.status === 'Completed' ? <CheckCircle2 size={22} /> : <Timer size={22} />}
+                                </div>
                             </div>
-                        </div>
-                        <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-1">
-                            {project.name}
-                        </h3>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 line-clamp-2 min-h-[40px] transition-colors">
-                            {project.description}
-                        </p> 
+                            <h3 className={cn("text-lg font-bold text-gray-900 dark:text-gray-100 transition-colors line-clamp-1", styles.hoverText)}>
+                                {project.name}
+                            </h3>
+                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 line-clamp-2 min-h-[40px] transition-colors">
+                                {project.description}
+                            </p> 
                         
                         <div className="flex-grow" /> 
                         
@@ -167,7 +223,8 @@ export default function ProjectList({ projects, view, onActionClick }: ProjectLi
                         </div>
                     </CardContent>
                 </Card>
-            ))}
+            );
+        })}
         </div>
     );
 }

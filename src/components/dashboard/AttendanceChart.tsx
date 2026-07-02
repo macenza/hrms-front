@@ -25,6 +25,85 @@ const CustomTooltip = ({ active, payload, label, colors }: any) => {
     return null;
 };
 
+const Custom3DBar = (props: any) => {
+    const { fill, x, y, width, height } = props;
+    if (!height || isNaN(y) || isNaN(x)) return null;
+
+    // Subtle, elegant depth proportioned to the bar width
+    const depth = Math.max(Math.min(width * 0.22, 4), 2.5);
+
+    const frontX = x;
+    const frontY = y;
+    const frontW = Math.max(width - depth, 3);
+    const frontH = height;
+
+    // Top Face points (subtle isometric skew)
+    const topPoints = [
+        `${frontX},${frontY}`,
+        `${frontX + frontW},${frontY}`,
+        `${frontX + frontW + depth},${frontY - depth}`,
+        `${frontX + depth},${frontY - depth}`
+    ].join(" ");
+
+    // Right Side Face points (extruded right and back)
+    const rightPoints = [
+        `${frontX + frontW},${frontY}`,
+        `${frontX + frontW + depth},${frontY - depth}`,
+        `${frontX + frontW + depth},${frontY + frontH - depth}`,
+        `${frontX + frontW},${frontY + frontH}`
+    ].join(" ");
+
+    return (
+        <g className="transition-all duration-300">
+            {/* Ambient occlusion base shadow */}
+            <rect
+                x={frontX + 0.5}
+                y={frontY + frontH - 0.5}
+                width={frontW + depth - 1}
+                height={3}
+                fill="rgba(15, 23, 42, 0.15)"
+                rx={1.5}
+                style={{ filter: "blur(1px)" }}
+            />
+
+            {/* Right Side Face (Subtle Shadow side) */}
+            <polygon
+                points={rightPoints}
+                fill={fill}
+                style={{ filter: "brightness(0.78)" }}
+            />
+
+            {/* Front Face (Solid colored side) */}
+            <rect
+                x={frontX}
+                y={frontY}
+                width={frontW}
+                height={frontH}
+                fill={fill}
+                style={{ filter: "brightness(0.95)" }}
+            />
+
+            {/* Top Face (Bright overhead highlight side) */}
+            <polygon
+                points={topPoints}
+                fill={fill}
+                style={{ filter: "brightness(1.12)" }}
+            />
+
+            {/* Delicate light-bevel lines for realistic 3D reflection */}
+            <line
+                x1={frontX}
+                y1={frontY}
+                x2={frontX + frontW}
+                y2={frontY}
+                stroke="#ffffff"
+                strokeWidth={1}
+                strokeOpacity={0.35}
+            />
+        </g>
+    );
+};
+
 interface AttendanceChartProps {
     timeframe?: 'week' | 'month';
     isEmployee?: boolean;
@@ -269,14 +348,14 @@ const AttendanceChart = ({
                             <p className="text-sm font-semibold text-gray-400 dark:text-gray-500">No data for this period</p>
                         </div>
                 ) : (
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                         {chartType === 'bar' ? (
                             <BarChart
                                 data={chartData}
                                 barCategoryGap="25%"
                                 barGap={4}
                                 margin={{ top: 10, right: 10, bottom: 0, left: -15 }}
-                                onMouseMove={(state) => {
+                                onMouseMove={(state: any) => {
                                     if (state && state.activePayload && state.activePayload.length > 0) {
                                         const item = state.activePayload[0].payload;
                                         const val = Math.max(
@@ -349,9 +428,9 @@ const AttendanceChart = ({
                                     <Bar
                                         key={item.key}
                                         dataKey={item.key}
-                                        fill={item.key === 'present' ? 'url(#presentGrad)' : 'url(#absentGrad)'}
-                                        radius={[6, 6, 0, 0]}
-                                        maxBarSize={14}
+                                        fill={item.key === 'present' ? colors.present : colors.absent}
+                                        shape={<Custom3DBar />}
+                                        maxBarSize={11}
                                         isAnimationActive={!disableAnimations}
                                         animationDuration={800}
                                         hide={!activeKeys.includes(item.key)}
@@ -362,7 +441,7 @@ const AttendanceChart = ({
                             <LineChart
                                 data={chartData}
                                 margin={{ top: 10, right: 10, bottom: 0, left: -15 }}
-                                onMouseMove={(state) => {
+                                onMouseMove={(state: any) => {
                                     if (state && state.activePayload && state.activePayload.length > 0) {
                                         const item = state.activePayload[0].payload;
                                         const val = Math.max(
@@ -440,7 +519,7 @@ const AttendanceChart = ({
                             <AreaChart
                                 data={chartData}
                                 margin={{ top: 10, right: 10, bottom: 0, left: -15 }}
-                                onMouseMove={(state) => {
+                                onMouseMove={(state: any) => {
                                     if (state && state.activePayload && state.activePayload.length > 0) {
                                         const item = state.activePayload[0].payload;
                                         const val = Math.max(

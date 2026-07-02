@@ -49,27 +49,73 @@ const getInitials = (name: string) => {
     return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
 };
 
-const getAvatarColor = (name: string) => {
-    if (!name) return 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300';
+const getAvatarGradient = (name: string) => {
+    if (!name) return 'bg-gradient-to-br from-gray-400 to-gray-500 text-white';
     
-    const colors = [
-        'bg-blue-100 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400',
-        'bg-green-100 text-green-700 dark:bg-green-500/10 dark:text-green-400',
-        'bg-purple-100 text-purple-700 dark:bg-purple-500/10 dark:text-purple-400',
-        'bg-orange-100 text-orange-700 dark:bg-orange-500/10 dark:text-orange-400',
-        'bg-pink-100 text-pink-700 dark:bg-pink-500/10 dark:text-pink-400'
+    const gradients = [
+        'bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-sm shadow-blue-500/20',
+        'bg-gradient-to-br from-emerald-400 to-teal-600 text-white shadow-sm shadow-emerald-500/20',
+        'bg-gradient-to-br from-purple-500 to-indigo-600 text-white shadow-sm shadow-purple-500/20',
+        'bg-gradient-to-br from-amber-400 to-orange-600 text-white shadow-sm shadow-amber-500/20',
+        'bg-gradient-to-br from-rose-400 to-pink-600 text-white shadow-sm shadow-rose-500/20',
+        'bg-gradient-to-br from-cyan-400 to-blue-600 text-white shadow-sm shadow-cyan-500/20'
     ];
     const hash = name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-    return colors[hash % colors.length];
+    return gradients[hash % gradients.length];
 };
 
-const getStatusBadgeVariant = (status: EmployeeStatus) => {
+const getStatusStyles = (status: EmployeeStatus) => {
     switch (status) {
-        case 'Active': return 'success';
-        case 'Pending': return 'warning';
-        case 'On Leave': return 'warning';
-        case 'Inactive': return 'error';
-        default: return 'default';
+        case 'Active': 
+            return 'bg-emerald-50/70 text-emerald-700 border border-emerald-200/50 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20 shadow-[0_0_8px_rgba(16,185,129,0.06)]';
+        case 'Pending': 
+            return 'bg-amber-50/70 text-amber-700 border border-amber-200/50 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20 shadow-[0_0_8px_rgba(245,158,11,0.06)]';
+        case 'On Leave': 
+            return 'bg-purple-50/70 text-purple-700 border border-purple-200/50 dark:bg-purple-500/10 dark:text-purple-400 dark:border-purple-500/20 shadow-[0_0_8px_rgba(139,92,246,0.06)]';
+        case 'Inactive': 
+            return 'bg-rose-50/70 text-rose-700 border border-rose-200/50 dark:bg-rose-500/10 dark:text-rose-400 dark:border-rose-500/20 shadow-[0_0_8px_rgba(244,63,94,0.06)]';
+        default: 
+            return 'bg-gray-50/70 text-gray-700 border border-gray-250/50 dark:bg-gray-500/10 dark:text-gray-400 dark:border-gray-500/20';
+    }
+};
+
+const getDepartmentColor = (dept: string) => {
+    const d = dept?.toLowerCase() || '';
+    if (d.includes('eng')) return 'text-blue-600 dark:text-blue-400';
+    if (d.includes('hr') || d.includes('human')) return 'text-purple-600 dark:text-purple-400';
+    if (d.includes('sale') || d.includes('market')) return 'text-emerald-600 dark:text-emerald-400';
+    if (d.includes('fin') || d.includes('pay') || d.includes('loan')) return 'text-amber-600 dark:text-amber-400';
+    if (d.includes('prod') || d.includes('design')) return 'text-pink-600 dark:text-pink-400';
+    return 'text-indigo-600 dark:text-indigo-400';
+};
+
+const getRowHoverStyles = (status: EmployeeStatus) => {
+    switch (status) {
+        case 'Active':
+            return 'hover:from-emerald-50/70 hover:via-emerald-50/20 hover:to-transparent dark:hover:from-emerald-950/20 dark:hover:via-emerald-950/5';
+        case 'Pending':
+            return 'hover:from-amber-50/70 hover:via-amber-50/20 hover:to-transparent dark:hover:from-amber-950/20 dark:hover:via-amber-950/5';
+        case 'On Leave':
+            return 'hover:from-purple-50/70 hover:via-purple-50/20 hover:to-transparent dark:hover:from-purple-950/20 dark:hover:via-purple-950/5';
+        case 'Inactive':
+            return 'hover:from-rose-50/70 hover:via-rose-50/20 hover:to-transparent dark:hover:from-rose-950/20 dark:hover:via-rose-950/5';
+        default:
+            return 'hover:from-blue-50/60 hover:via-indigo-50/30 hover:to-transparent dark:hover:from-blue-950/20 dark:hover:via-indigo-950/10 dark:hover:to-transparent';
+    }
+};
+
+const getCardHoverStyles = (status: EmployeeStatus) => {
+    switch (status) {
+        case 'Active':
+            return 'hover:from-emerald-500/5 hover:to-teal-500/5 dark:hover:from-emerald-500/10 dark:hover:to-teal-500/10 hover:border-emerald-500/30 dark:hover:border-emerald-400/30';
+        case 'Pending':
+            return 'hover:from-amber-500/5 hover:to-orange-500/5 dark:hover:from-amber-500/10 dark:hover:to-orange-500/10 hover:border-amber-500/30 dark:hover:border-amber-400/30';
+        case 'On Leave':
+            return 'hover:from-purple-500/5 hover:to-indigo-500/5 dark:hover:from-purple-500/10 dark:hover:to-indigo-500/10 hover:border-purple-500/30 dark:hover:border-purple-400/30';
+        case 'Inactive':
+            return 'hover:from-rose-500/5 hover:to-pink-500/5 dark:hover:from-rose-500/10 dark:hover:to-pink-500/10 hover:border-rose-500/30 dark:hover:border-rose-400/30';
+        default:
+            return 'hover:from-blue-500/5 hover:to-indigo-500/5 dark:hover:from-blue-500/10 dark:hover:to-indigo-500/10 hover:border-blue-500/30 dark:hover:border-blue-400/30';
     }
 };
 
@@ -127,52 +173,67 @@ export default function EmployeeTable({
     const isInitialLoad = isLoading && data.length === 0;
 
     return (
-        <Card className="overflow-hidden border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm dark:shadow-none relative transition-colors duration-300">
+        <Card className="overflow-hidden border-gray-200/80 dark:border-gray-800/60 bg-white/90 dark:bg-[#0a0a0a]/90 backdrop-blur-md shadow-lg shadow-gray-200/10 dark:shadow-none relative transition-all duration-300 rounded-2xl">
             
             {/* Soft overlay for background fetches */}
             {isLoading && !isInitialLoad && (
                 <div className="absolute inset-0 bg-white/40 dark:bg-black/20 z-10 pointer-events-none transition-opacity duration-200 backdrop-blur-[1px]" />
             )}
-
+ 
             {/* Mobile Card View */}
             {isMobile ? (
-                <div className="p-3 space-y-3">
+                <div className="p-4 space-y-3.5">
                     {isInitialLoad ? (
                         Array.from({ length: 5 }).map((_, idx) => <CardSkeleton key={idx} />)
                     ) : data.length === 0 ? (
-                        <div className="px-4 py-12 text-center text-gray-500 dark:text-gray-400">
+                        <div className="px-4 py-12 text-center text-gray-400 dark:text-gray-500 font-semibold">
                             No employees found matching your criteria.
                         </div>
                     ) : (
-                        data.map((employee) => (
-                            <div
+                        data.map((employee, idx) => (
+                          <div
                                 key={employee.id}
                                 onClick={() => onRowClick(employee)}
-                                className="p-4 rounded-xl bg-gray-50/50 dark:bg-gray-800/20 border border-gray-100 dark:border-gray-800 hover:bg-gray-100 dark:hover:bg-gray-800/40 cursor-pointer transition-colors active:scale-[0.99]"
+                                style={{ animationDelay: `${idx * 40}ms` }}
+                                className={cn(
+                                    "p-4.5 rounded-2xl bg-gray-55/50 dark:bg-gray-900/25 hover:bg-gradient-to-tr hover:shadow-md cursor-pointer transition-all duration-300 active:scale-[0.99] group animate-in fade-in slide-in-from-bottom-2 duration-300 relative overflow-hidden border border-gray-150/60 dark:border-gray-800/60",
+                                    getCardHoverStyles(employee.status)
+                                )}
                             >
-                                <div className="flex items-center gap-3 mb-2.5">
+                                {/* Left Side Glowing Status Bar Indicator on hover */}
+                                <div className={cn(
+                                    "absolute left-0 top-0 bottom-0 w-[4px] transition-all duration-300 scale-y-0 group-hover:scale-y-100 origin-center",
+                                    employee.status === 'Active' && 'bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.7)]',
+                                    employee.status === 'Pending' && 'bg-amber-500 shadow-[0_0_12px_rgba(245,158,11,0.7)]',
+                                    employee.status === 'On Leave' && 'bg-purple-500 shadow-[0_0_12px_rgba(139,92,246,0.7)]',
+                                    employee.status === 'Inactive' && 'bg-rose-500 shadow-[0_0_12px_rgba(244,63,94,0.7)]'
+                                )} />
+                                
+                                <div className="flex items-center gap-3.5 mb-3">
                                     <div className={cn(
-                                        "w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm shrink-0",
-                                        getAvatarColor(employee.name)
+                                        "w-11 h-11 rounded-full flex items-center justify-center font-black text-sm shrink-0 tracking-wider shadow-inner",
+                                        getAvatarGradient(employee.name)
                                     )}>
                                         {getInitials(employee.name)}
                                     </div>
                                     <div className="min-w-0 flex-1">
-                                        <p className="font-semibold text-gray-900 dark:text-gray-100 truncate" title={employee.name}>
+                                        <p className="font-bold text-gray-900 dark:text-gray-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors cursor-pointer truncate text-sm" title={employee.name}>
                                             {employee.name}
                                         </p>
-                                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                                        <p className="text-[10px] font-extrabold text-gray-400 dark:text-gray-500 uppercase tracking-widest mt-0.5">
                                             {employee.empId}
                                         </p>
                                     </div>
-                                    <Badge variant={getStatusBadgeVariant(employee.status)} className="shrink-0">
+                                    <span className={cn("px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wide uppercase shrink-0 border", getStatusStyles(employee.status))}>
                                         {employee.status}
-                                    </Badge>
+                                    </span>
                                 </div>
-                                <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400 pl-[52px]">
-                                    <span className="font-medium">{employee.department}</span>
-                                    <span className="text-gray-300 dark:text-gray-600">•</span>
-                                    <span>{employee.role}</span>
+                                <div className="flex items-center gap-2.5 text-xs pl-[58px]">
+                                    <span className={cn("font-bold text-[11px] uppercase tracking-wider", getDepartmentColor(employee.department))}>
+                                        {employee.department}
+                                    </span>
+                                    <span className="text-gray-300 dark:text-gray-700 font-bold">•</span>
+                                    <span className="font-semibold text-gray-500 dark:text-gray-400">{employee.role}</span>
                                 </div>
                             </div>
                         ))
@@ -182,56 +243,73 @@ export default function EmployeeTable({
                 /* Desktop / Tablet Table View */
                 <div className="overflow-x-auto">
                     <table className="w-full text-left text-sm whitespace-nowrap">
-                        <thead className="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-400 font-medium transition-colors">
+                        <thead className="bg-gray-50/70 dark:bg-gray-900/40 border-b border-gray-150 dark:border-gray-800/80 text-gray-400 dark:text-gray-500 font-extrabold transition-colors">
                             <tr>
-                                <th className="px-6 py-4 tracking-wider text-xs uppercase">Employee</th>
-                                <th className="px-6 py-4 tracking-wider text-xs uppercase">Department</th>
-                                <th className="px-6 py-4 tracking-wider text-xs uppercase">Role</th>
-                                <th className="px-6 py-4 tracking-wider text-xs uppercase hidden lg:table-cell">Email</th>
-                                <th className="px-6 py-4 tracking-wider text-xs uppercase hidden lg:table-cell">Phone</th>
-                                <th className="px-6 py-4 tracking-wider text-xs uppercase hidden xl:table-cell">Joining Date</th>
-                                <th className="px-6 py-4 tracking-wider text-xs uppercase">Status</th>
+                                <th className="px-6 py-4 tracking-wider text-[10px] uppercase font-black">Employee</th>
+                                <th className="px-6 py-4 tracking-wider text-[10px] uppercase font-black">Department</th>
+                                <th className="px-6 py-4 tracking-wider text-[10px] uppercase font-black">Role</th>
+                                <th className="px-6 py-4 tracking-wider text-[10px] uppercase font-black hidden lg:table-cell">Email</th>
+                                <th className="px-6 py-4 tracking-wider text-[10px] uppercase font-black hidden lg:table-cell">Phone</th>
+                                <th className="px-6 py-4 tracking-wider text-[10px] uppercase font-black hidden xl:table-cell">Joining Date</th>
+                                <th className="px-6 py-4 tracking-wider text-[10px] uppercase font-black">Status</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                        <tbody className="divide-y-0">
                             {isInitialLoad ? (
                                 Array.from({ length: 5 }).map((_, idx) => <TableRowSkeleton key={idx} />)
                             ) : data.length === 0 ? (
                                 <tr>
-                                    <td colSpan={7} className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
+                                    <td colSpan={7} className="px-6 py-12 text-center text-gray-400 dark:text-gray-500 font-semibold">
                                         No employees found matching your criteria.
                                     </td>
                                 </tr>
                             ) : (
-                                data.map((employee) => (
+                                data.map((employee, idx) => (
                                     <tr
                                         key={employee.id}
                                         onClick={() => onRowClick(employee)}
-                                        className="hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer transition-colors group"
+                                        style={{ animationDelay: `${idx * 30}ms` }}
+                                        className={cn(
+                                            "hover:bg-gradient-to-r hover:to-transparent cursor-pointer transition-all duration-205 group animate-in fade-in slide-in-from-bottom-1 duration-250 hover:translate-x-1",
+                                            getRowHoverStyles(employee.status)
+                                        )}
                                     >
-                                        <td className="px-6 py-4">
-                                            <div className="flex items-center space-x-3">
+                                        <td className="px-6 py-4 relative">
+                                            {/* Left Side Glowing Status Bar Indicator on hover */}
+                                            <div className={cn(
+                                                "absolute left-0 top-0 bottom-0 w-[4px] transition-all duration-300 scale-y-0 group-hover:scale-y-100 origin-center",
+                                                employee.status === 'Active' && 'bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.7)]',
+                                                employee.status === 'Pending' && 'bg-amber-500 shadow-[0_0_12px_rgba(245,158,11,0.7)]',
+                                                employee.status === 'On Leave' && 'bg-purple-500 shadow-[0_0_12px_rgba(139,92,246,0.7)]',
+                                                employee.status === 'Inactive' && 'bg-rose-500 shadow-[0_0_12px_rgba(244,63,94,0.7)]'
+                                            )} />
+
+                                            <div className="flex items-center space-x-3.5">
                                                 <div className={cn(
-                                                    "w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm shrink-0",
-                                                    getAvatarColor(employee.name)
+                                                    "w-10 h-10 rounded-full flex items-center justify-center font-black text-sm shrink-0 tracking-wider shadow-inner",
+                                                    getAvatarGradient(employee.name)
                                                 )}>
                                                     {getInitials(employee.name)}
                                                 </div>
                                                 <div>
-                                                    <p className="font-semibold text-gray-900 dark:text-gray-100 transition-colors">{employee.name}</p>
-                                                    <p className="text-xs text-gray-500 dark:text-gray-400 transition-colors">{employee.empId}</p>
+                                                    <p className="font-bold text-gray-900 dark:text-gray-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors cursor-pointer text-sm">{employee.name}</p>
+                                                    <p className="text-[10px] font-extrabold text-gray-400 dark:text-gray-500 uppercase tracking-widest mt-0.5 transition-colors">{employee.empId}</p>
                                                 </div>
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4 text-gray-600 dark:text-gray-300 transition-colors">{employee.department}</td>
-                                        <td className="px-6 py-4 text-gray-600 dark:text-gray-300 transition-colors">{employee.role}</td>
-                                        <td className="px-6 py-4 text-gray-600 dark:text-gray-300 transition-colors hidden lg:table-cell">{employee.email}</td>
-                                        <td className="px-6 py-4 text-gray-600 dark:text-gray-300 transition-colors hidden lg:table-cell">{employee.phone}</td>
-                                        <td className="px-6 py-4 text-gray-600 dark:text-gray-300 transition-colors hidden xl:table-cell">{employee.joiningDate}</td>
                                         <td className="px-6 py-4">
-                                            <Badge variant={getStatusBadgeVariant(employee.status)}>
+                                            <span className={cn("font-bold text-[11px] uppercase tracking-wider px-2 py-0.5 rounded-md bg-gray-50 dark:bg-gray-950/40 border border-gray-100 dark:border-gray-800/80 shadow-sm", getDepartmentColor(employee.department))}>
+                                                {employee.department}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 text-gray-600 dark:text-gray-300 font-semibold transition-colors">{employee.role}</td>
+                                        <td className="px-6 py-4 text-gray-500 dark:text-gray-400 transition-colors hidden lg:table-cell">{employee.email}</td>
+                                        <td className="px-6 py-4 text-gray-500 dark:text-gray-400 transition-colors hidden lg:table-cell">{employee.phone}</td>
+                                        <td className="px-6 py-4 text-gray-500 dark:text-gray-400 transition-colors hidden xl:table-cell">{employee.joiningDate}</td>
+                                        <td className="px-6 py-4">
+                                            <span className={cn("px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wide uppercase border", getStatusStyles(employee.status))}>
                                                 {employee.status}
-                                            </Badge>
+                                            </span>
                                         </td>
                                     </tr>
                                 ))

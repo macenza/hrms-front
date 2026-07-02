@@ -18,6 +18,19 @@ interface JobOpeningsTableProps {
     onDelete: (id: string) => void;
 }
 
+const getJobRowHoverStyles = (status: JobOpening['status']) => {
+    switch (status) {
+        case 'Active':
+            return 'hover:from-emerald-50/70 hover:via-emerald-50/20 hover:to-transparent dark:hover:from-emerald-950/20 dark:hover:via-emerald-950/5';
+        case 'Draft':
+            return 'hover:from-gray-100 hover:via-gray-50/50 hover:to-transparent dark:hover:from-gray-800/40 dark:hover:via-gray-800/10';
+        case 'Closed':
+            return 'hover:from-rose-50/70 hover:via-rose-50/20 hover:to-transparent dark:hover:from-rose-950/20 dark:hover:via-rose-950/5';
+        default:
+            return 'hover:from-slate-50/75 hover:via-slate-50/20 hover:to-transparent dark:hover:from-slate-900/20 dark:hover:via-slate-900/5';
+    }
+};
+
 export default function JobOpeningsTable({
     jobs,
     organizationSlug,
@@ -96,8 +109,21 @@ export default function JobOpeningsTable({
                             </tr>
                         ) : (
                             filteredJobs.map((job) => (
-                                <tr key={job.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors">
-                                    <td className="p-4 font-bold text-gray-900 dark:text-gray-150">
+                                <tr 
+                                    key={job.id} 
+                                    className={cn(
+                                        "hover:bg-gradient-to-r hover:to-transparent cursor-pointer transition-all duration-205 group hover:translate-x-1",
+                                        getJobRowHoverStyles(job.status)
+                                    )}
+                                >
+                                    <td className="p-4 font-bold text-gray-900 dark:text-gray-150 relative">
+                                        {/* Left Side Glowing Status Bar Indicator on hover */}
+                                        <div className={cn(
+                                            "absolute left-0 top-0 bottom-0 w-[4px] transition-all duration-300 scale-y-0 group-hover:scale-y-100 origin-center",
+                                            job.status === "Active" && "bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.7)]",
+                                            job.status === "Draft" && "bg-gray-400 dark:bg-gray-500 shadow-[0_0_12px_rgba(156,163,175,0.7)]",
+                                            job.status === "Closed" && "bg-rose-500 shadow-[0_0_12px_rgba(244,63,94,0.7)]"
+                                        )} />
                                         <div>
                                             <span>{job.title}</span>
                                             <span className="ml-2 inline-flex items-center text-[10px] font-medium bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded text-gray-500 dark:text-gray-400">
