@@ -276,7 +276,7 @@ const AttendanceChart = ({
                                 barCategoryGap="25%"
                                 barGap={4}
                                 margin={{ top: 10, right: 10, bottom: 0, left: -15 }}
-                                onMouseMove={(state) => {
+                                onMouseMove={(state: any) => {
                                     if (state && state.activePayload && state.activePayload.length > 0) {
                                         const item = state.activePayload[0].payload;
                                         const val = Math.max(
@@ -362,7 +362,7 @@ const AttendanceChart = ({
                             <LineChart
                                 data={chartData}
                                 margin={{ top: 10, right: 10, bottom: 0, left: -15 }}
-                                onMouseMove={(state) => {
+                                onMouseMove={(state: any) => {
                                     if (state && state.activePayload && state.activePayload.length > 0) {
                                         const item = state.activePayload[0].payload;
                                         const val = Math.max(
@@ -440,7 +440,7 @@ const AttendanceChart = ({
                             <AreaChart
                                 data={chartData}
                                 margin={{ top: 10, right: 10, bottom: 0, left: -15 }}
-                                onMouseMove={(state) => {
+                                onMouseMove={(state: any) => {
                                     if (state && state.activePayload && state.activePayload.length > 0) {
                                         const item = state.activePayload[0].payload;
                                         const val = Math.max(
