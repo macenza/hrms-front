@@ -62,7 +62,7 @@ const ShortlistedTab = dynamic(() => import("./components/ShortlistedTab"), {
     loading: () => <TabSkeleton />
 });
 
-const InterviewsTab = dynamic(() => import("./components/Placeholders").then(m => m.InterviewsTab), {
+const InterviewsTab = dynamic(() => import("./components/InterviewsTab"), {
     ssr: false,
     loading: () => <TabSkeleton />
 });
@@ -452,7 +452,7 @@ export default function RecruitmentPage() {
                                 onViewApplication={setSelectedApplicant}
                             />
                         )}
-                        {currentTab === "interviews" && <InterviewsTab />}
+                        {currentTab === "interviews" && <InterviewsTab jobs={jobs} />}
                         {currentTab === "analytics" && <AnalyticsTab />}
                         {currentTab === "decisions" && <HiringDecisionsTab />}
                     </div>

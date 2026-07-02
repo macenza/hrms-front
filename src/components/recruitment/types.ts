@@ -33,6 +33,7 @@ export interface JobOpening {
 
 export interface Applicant {
     id: string;
+    _id?: string;
     jobId: string;
     jobTitle: string;
     candidateName: string;
@@ -55,6 +56,55 @@ export interface Applicant {
     expectedCtc?: string;
     noticePeriod?: string;
     coverLetterName?: string;
-    coverLetterData?: string;
+    coverLetterData?: string; // base64
     screeningAnswers?: ScreeningAnswer[];
+}
+
+export interface InterviewEvaluation {
+    id?: string;
+    _id?: string;
+    roundId: string;
+    evaluatorId?: string;
+    isAiEvaluated: boolean;
+    score: number;
+    strengths: string[];
+    weaknesses: string[];
+    detailedFeedback: string;
+    categoryRatings?: Record<string, number>;
+}
+
+export interface InterviewRound {
+    id?: string;
+    _id?: string;
+    interviewId: string;
+    roundNumber: number;
+    roundType: 'Technical' | 'HR' | 'System-Coding' | 'System-MCQ' | 'AI-Video-Screening' | 'Behavioral';
+    status: 'Scheduled' | 'In-Progress' | 'Completed' | 'Evaluation-Completed' | 'Failed';
+    interviewerIds?: Array<{ _id: string; name: string; email: string }>;
+    scheduledTime: string;
+    durationMinutes: number;
+    meetingUrl?: string;
+    aiSessionId?: string;
+    proctoringEnabled: boolean;
+    candidateToken?: string;
+    notes?: string;
+    evaluations?: InterviewEvaluation[];
+    createdAt?: string;
+    updatedAt?: string;
+}
+
+export interface Interview {
+    id?: string;
+    _id?: string;
+    organizationId: string;
+    jobId: string | Omit<JobOpening, 'description'>;
+    applicantId: string | Pick<Applicant, 'id' | '_id' | 'candidateName' | 'email' | 'phone' | 'status'>;
+    status: 'Scheduled' | 'In-Progress' | 'Completed' | 'Cancelled' | 'Evaluation-Pending';
+    overallScore: number;
+    recommendation: 'Hire' | 'Reject' | 'Next-Round' | 'Hold' | 'None';
+    notes?: string;
+    rounds?: InterviewRound[];
+    hiringDecision?: any;
+    createdAt?: string;
+    updatedAt?: string;
 }
