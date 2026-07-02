@@ -78,7 +78,11 @@ const step1Schema = z.object({
 const step2Schema = z.object({
     department: z.string().trim().min(1, 'Department is required'),
     role: z.string().trim().min(1, 'System role is required'),
-    salary: z.string().trim().optional(),
+    salary: z.string().trim().optional().refine((val) => {
+        if (!val) return true;
+        const num = Number(val);
+        return !isNaN(num) && num >= 0;
+    }, { message: 'Salary must be a non-negative number' }),
     joiningDate: z.string().trim().min(1, 'Joining date is required'),
     employmentType: z.enum(['Full-Time', 'Part-Time', 'Contract', 'Internship']),
     reportingManager: z.string().trim().optional(),
@@ -115,6 +119,10 @@ export default function AddEmployeeModal({ isOpen, onClose, onSubmit, isSubmitti
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         setError(''); // Clear errors when user types
         const { name, value } = e.target;
+        if (name === 'salary') {
+            const numVal = Number(value);
+            if (numVal < 0 || isNaN(numVal)) return;
+        }
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
@@ -379,6 +387,7 @@ export default function AddEmployeeModal({ isOpen, onClose, onSubmit, isSubmitti
                                         disabled={isSubmitting}
                                         type="number"
                                         name="salary"
+                                        min="0"
                                         value={formData.salary}
                                         onChange={handleChange}
                                         placeholder="50000"

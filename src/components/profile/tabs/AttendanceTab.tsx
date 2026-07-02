@@ -112,12 +112,37 @@ export default function AttendanceTab({
                 ? new Date(record.date + 'T12:00:00.000Z').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) 
                 : '---';
 
+            let totalHoursFormatted = '0.00 hrs';
+            if (record.checkInTime && record.checkOutTime) {
+                const diffMs = new Date(record.checkOutTime).getTime() - new Date(record.checkInTime).getTime();
+                if (diffMs > 0) {
+                    const diffSecs = Math.floor(diffMs / 1000);
+                    const diffMins = Math.floor(diffSecs / 60);
+                    const hours = Math.floor(diffMins / 60);
+                    
+                    if (hours > 0) {
+                        const hoursDecimal = diffMs / (1000 * 60 * 60);
+                        totalHoursFormatted = `${hoursDecimal.toFixed(2)} hrs`;
+                    } else if (diffMins > 0) {
+                        const mins = diffMins;
+                        const secs = diffSecs % 60;
+                        totalHoursFormatted = `${mins} mins ${secs} secs`;
+                    } else {
+                        totalHoursFormatted = `${diffSecs} secs`;
+                    }
+                }
+            } else if (record.checkInTime && !record.checkOutTime) {
+                totalHoursFormatted = '--';
+            } else if (!record.checkInTime) {
+                totalHoursFormatted = '-';
+            }
+
             return {
                 id: record.date || String(index),
                 date,
                 checkIn: record.checkIn,
                 checkOut: record.checkOut,
-                totalHours: record.duration,
+                totalHours: totalHoursFormatted,
                 status: getAttendanceLabel(record.status),
                 shift: record.shift || '---',
                 remarks: record.notes || '---'
@@ -253,7 +278,7 @@ export default function AttendanceTab({
                                         <th className="px-6 py-4 uppercase text-xs tracking-wider">Status</th>
                                         <th className="px-6 py-4 uppercase text-xs tracking-wider">Check In</th>
                                         <th className="px-6 py-4 uppercase text-xs tracking-wider">Check Out</th>
-                                        <th className="px-6 py-4 uppercase text-xs tracking-wider">Total Hours</th>
+                                        <th className="px-6 py-4 uppercase text-xs tracking-wider">Time</th>
                                         <th className="hidden lg:table-cell px-6 py-4 uppercase text-xs tracking-wider">Shift</th>
                                         <th className="hidden lg:table-cell px-6 py-4 uppercase text-xs tracking-wider">Remarks</th>
                                         <th className="lg:hidden px-6 py-4 text-center uppercase text-xs tracking-wider">Details</th>
@@ -370,7 +395,7 @@ export default function AttendanceTab({
                                         <span className="font-semibold text-gray-800 dark:text-gray-200">{log.checkOut}</span>
                                     </div>
                                     <div>
-                                        <span className="block text-[9px] font-extrabold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-0.5">Duration</span>
+                                        <span className="block text-[9px] font-extrabold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-0.5">Time</span>
                                         <span className="font-semibold text-gray-850 dark:text-gray-200">{log.totalHours}</span>
                                     </div>
                                     <div>

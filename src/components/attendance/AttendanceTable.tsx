@@ -424,7 +424,7 @@ export default function AttendanceTable({
                                 <th className="px-6 py-4 uppercase text-xs tracking-wider hidden lg:table-cell">Department</th>
                                 <th className="px-6 py-4 uppercase text-xs tracking-wider">Check In</th>
                                 <th className="px-6 py-4 uppercase text-xs tracking-wider">Check Out</th>
-                                <th className="px-6 py-4 uppercase text-xs tracking-wider hidden lg:table-cell">Total Hours</th>
+                                <th className="px-6 py-4 uppercase text-xs tracking-wider hidden lg:table-cell">Time</th>
                                 <th className="px-6 py-4 uppercase text-xs tracking-wider">Late</th>
                                 <th className="px-6 py-4 uppercase text-xs tracking-wider">Status</th>
                                 <th className="px-6 py-4 text-center uppercase text-xs tracking-wider">Actions</th>

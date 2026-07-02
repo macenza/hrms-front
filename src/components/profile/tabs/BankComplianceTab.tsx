@@ -251,13 +251,23 @@ export default function BankComplianceTab({
 
     const handleAllowanceChange = (index: number, field: string, value: any) => {
         const newArr = [...(salaryForm.activeAllowances || [])];
-        newArr[index] = { ...newArr[index], [field]: field === 'amount' ? Number(value) : value };
+        let finalValue = value;
+        if (field === 'amount') {
+            const num = Number(value);
+            finalValue = isNaN(num) || num < 0 ? 0 : num;
+        }
+        newArr[index] = { ...newArr[index], [field]: finalValue };
         setSalaryForm({ ...salaryForm, activeAllowances: newArr });
     };
 
     const handleDeductionChange = (index: number, field: string, value: any) => {
         const newArr = [...(salaryForm.activeDeductions || [])];
-        newArr[index] = { ...newArr[index], [field]: field === 'amount' ? Number(value) : value };
+        let finalValue = value;
+        if (field === 'amount') {
+            const num = Number(value);
+            finalValue = isNaN(num) || num < 0 ? 0 : num;
+        }
+        newArr[index] = { ...newArr[index], [field]: finalValue };
         setSalaryForm({ ...salaryForm, activeDeductions: newArr });
     };
 
@@ -425,7 +435,20 @@ export default function BankComplianceTab({
                                     disabled 
                                     className="bg-gray-100 dark:bg-gray-800 text-gray-500 cursor-not-allowed" 
                                 />
-                                <Input label="Basic Salary (Monthly)" name="basicSalary" type="number" value={salaryForm.basicSalary || ''} onChange={(e) => setSalaryForm({...salaryForm, basicSalary: Number(e.target.value)})} placeholder="e.g. 50000" />
+                                <Input 
+                                    label="Basic Salary (Monthly)" 
+                                    name="basicSalary" 
+                                    type="number" 
+                                    min={0}
+                                    value={salaryForm.basicSalary || ''} 
+                                    onChange={(e) => {
+                                        const val = Number(e.target.value);
+                                        if (val >= 0 || e.target.value === '') {
+                                            setSalaryForm({...salaryForm, basicSalary: Math.max(0, val)});
+                                        }
+                                    }} 
+                                    placeholder="e.g. 50000" 
+                                />
                                 
                                 {/* Allowances */}
                                 <div>
@@ -450,8 +473,14 @@ export default function BankComplianceTab({
                                                 <Input 
                                                     name={`allowanceAmount_${idx}`} 
                                                     type="number" 
+                                                    min={0}
                                                     value={allowance.amount} 
-                                                    onChange={(e) => handleAllowanceChange(idx, 'amount', e.target.value)}
+                                                    onChange={(e) => {
+                                                        const val = Number(e.target.value);
+                                                        if (val >= 0 || e.target.value === '') {
+                                                            handleAllowanceChange(idx, 'amount', Math.max(0, val));
+                                                        }
+                                                    }}
                                                     placeholder="Amount"
                                                 />
                                                 <Button variant="ghost" size="sm" onClick={() => removeAllowance(idx)} className="text-red-500 hover:bg-red-50 p-2"><Trash2 size={16}/></Button>
@@ -483,8 +512,14 @@ export default function BankComplianceTab({
                                                 <Input 
                                                     name={`deductionAmount_${idx}`} 
                                                     type="number" 
+                                                    min={0}
                                                     value={deduction.amount} 
-                                                    onChange={(e) => handleDeductionChange(idx, 'amount', e.target.value)}
+                                                    onChange={(e) => {
+                                                        const val = Number(e.target.value);
+                                                        if (val >= 0 || e.target.value === '') {
+                                                            handleDeductionChange(idx, 'amount', Math.max(0, val));
+                                                        }
+                                                    }}
                                                     placeholder="Amount"
                                                 />
                                                 <Button variant="ghost" size="sm" onClick={() => removeDeduction(idx)} className="text-red-500 hover:bg-red-50 p-2"><Trash2 size={16}/></Button>

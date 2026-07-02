@@ -14,13 +14,18 @@ export const attendanceService = {
         }
     },
     
-    clockIn: async () => {
-        const response = await apiClient.post(ENDPOINTS.ATTENDANCE.CLOCK_IN);
+    clockIn: async (workFormat: string = 'Office') => {
+        const response = await apiClient.post(ENDPOINTS.ATTENDANCE.CLOCK_IN, { workFormat });
         return response.data;
     },
     
     clockOut: async () => {
-        const response = await apiClient.post(ENDPOINTS.ATTENDANCE.CLOCK_OUT);
+        const response = await apiClient.put(ENDPOINTS.ATTENDANCE.CLOCK_OUT);
+        return response.data;
+    },
+
+    getMyAttendance: async () => {
+        const response = await apiClient.get('/attendance/me');
         return response.data;
     },
     
@@ -49,5 +54,10 @@ export const attendanceService = {
             console.error("Error fetching calendar attendance:", error);
             throw error;
         }
+    },
+
+    resetTodayAttendance: async () => {
+        const response = await apiClient.delete('/attendance/reset-today');
+        return response.data;
     }
 };

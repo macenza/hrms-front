@@ -31,3 +31,17 @@ export function useDashboardAttendance(timeframe: 'week' | 'month') {
         staleTime: 5 * 60 * 1000,
     });
 }
+
+export function useDashboardAttendanceByDateRange(range: { from: string; to: string } | null) {
+    return useQuery<DashboardAttendance>({
+        queryKey: ['dashboard', 'attendance', 'range', range?.from, range?.to],
+        queryFn: async () => {
+            const { data } = await apiClient.get(ENDPOINTS.DASHBOARD.ATTENDANCE, {
+                params: { from: range!.from, to: range!.to },
+            });
+            return normalizeDashboardAttendance(data);
+        },
+        enabled: !!range,
+        staleTime: 2 * 60 * 1000,
+    });
+}
